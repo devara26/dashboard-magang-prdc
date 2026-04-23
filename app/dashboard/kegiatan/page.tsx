@@ -134,8 +134,8 @@ export default function KegiatanPage() {
   if (loading) return (
     <div className="flex h-[80vh] items-center justify-center">
       <div className="flex flex-col items-center gap-4">
-        <div className="w-10 h-10 border-4 border-zinc-800 border-t-cyan-500 rounded-full animate-spin"></div>
-        <p className="text-zinc-500 text-sm font-medium animate-pulse">Memuat data kegiatan...</p>
+        <div className="w-10 h-10 border-4 border-gray-200 border-t-[#1A73E8] rounded-full animate-spin"></div>
+        <p className="text-[#5F6368] text-sm font-medium animate-pulse">Memuat data kegiatan...</p>
       </div>
     </div>
   )
@@ -144,23 +144,22 @@ export default function KegiatanPage() {
     <div className="pb-12 animate-[fade-in_0.7s_ease-out]">
       {/* Header Section */}
       <div className="mb-10 relative">
-        <div className="absolute -top-10 -left-10 w-64 h-64 bg-purple-500/10 blur-[80px] rounded-full pointer-events-none" />
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 relative z-10">
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white mb-2 flex items-center gap-3">
-              <List className="w-8 h-8 text-purple-400" />
-              Jurnal <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">Kegiatan</span>
+            <h1 className="text-3xl font-medium tracking-tight text-[#202124] mb-2 flex items-center gap-3">
+              <List className="w-8 h-8 text-[#1A73E8]" />
+              Jurnal Kegiatan
             </h1>
-            <p className="text-zinc-400 text-base">
+            <p className="text-[#5F6368] text-base">
               Catat dan pantau seluruh aktivitas magang harian Anda
             </p>
           </div>
           <button
             onClick={() => showForm ? resetForm() : setShowForm(true)}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-lg active:scale-95 border ${
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-colors shadow-sm active:scale-95 border ${
               showForm 
-                ? 'bg-zinc-800 hover:bg-zinc-700 text-white border-zinc-700 shadow-none' 
-                : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white border-transparent shadow-purple-500/20 hover:shadow-purple-500/40'
+                ? 'bg-white hover:bg-gray-50 text-[#5F6368] border-gray-300' 
+                : 'bg-[#1A73E8] hover:bg-[#1967D2] text-white border-transparent'
             }`}
           >
             {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
@@ -172,39 +171,39 @@ export default function KegiatanPage() {
       {/* Form Section */}
       {showForm && (
         <div className="mb-8 animate-[fade-in_0.3s_ease-out] relative">
-          <form onSubmit={handleSubmit} className="bg-zinc-900/50 backdrop-blur-sm border border-purple-500/30 rounded-2xl p-6 md:p-8 relative z-10 hover:border-purple-500/50 transition-colors">
-            <h2 className="text-white text-lg font-semibold mb-6 flex items-center gap-2">
-              {editingId ? <Edit2 className="w-5 h-5 text-amber-400" /> : <FileText className="w-5 h-5 text-purple-400" />}
+          <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-xl p-6 md:p-8 relative z-10 hover:shadow-sm transition-shadow">
+            <h2 className="text-[#202124] text-lg font-medium mb-6 flex items-center gap-2">
+              {editingId ? <Edit2 className="w-5 h-5 text-[#FBBC04]" /> : <FileText className="w-5 h-5 text-[#1A73E8]" />}
               {editingId ? 'Edit Jurnal Kegiatan' : 'Form Tambah Kegiatan'}
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
-                <label className="block text-xs font-medium text-zinc-400 mb-1.5">Tanggal Kegiatan</label>
+                <label className="block text-sm font-medium text-[#5F6368] mb-2">Tanggal Kegiatan</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Calendar className="w-4 h-4 text-zinc-500" />
+                    <Calendar className="w-4 h-4 text-[#9AA0A6]" />
                   </div>
                   <input
                     type="date"
                     value={form.tanggal}
                     onChange={e => setForm({ ...form, tanggal: e.target.value })}
                     required
-                    className="w-full bg-zinc-950 text-white rounded-xl pl-11 pr-4 py-3 text-sm border border-zinc-800 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors"
+                    className="w-full bg-white text-[#202124] rounded-lg pl-11 pr-4 py-3 text-sm border border-gray-300 focus:outline-none focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] transition-colors"
                   />
                 </div>
               </div>
               
               <div>
-                <label className="block text-xs font-medium text-zinc-400 mb-1.5">Status Pengerjaan</label>
+                <label className="block text-sm font-medium text-[#5F6368] mb-2">Status Pengerjaan</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Activity className="w-4 h-4 text-zinc-500" />
+                    <Activity className="w-4 h-4 text-[#9AA0A6]" />
                   </div>
                   <select
                     value={form.status}
                     onChange={e => setForm({ ...form, status: e.target.value })}
-                    className="w-full bg-zinc-950 text-white rounded-xl pl-11 pr-4 py-3 text-sm border border-zinc-800 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors appearance-none"
+                    className="w-full bg-white text-[#202124] rounded-lg pl-11 pr-4 py-3 text-sm border border-gray-300 focus:outline-none focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] transition-colors appearance-none"
                   >
                     <option value="Selesai">Selesai</option>
                     <option value="Proses">Proses</option>
@@ -215,32 +214,32 @@ export default function KegiatanPage() {
             </div>
             
             <div className="mb-6">
-              <label className="block text-xs font-medium text-zinc-400 mb-1.5">Deskripsi / Detail Kegiatan</label>
+              <label className="block text-sm font-medium text-[#5F6368] mb-2">Deskripsi / Detail Kegiatan</label>
               <textarea
                 value={form.kegiatan}
                 onChange={e => setForm({ ...form, kegiatan: e.target.value })}
                 required
                 rows={4}
                 placeholder="Deskripsikan tugas atau pekerjaan yang Anda lakukan hari ini..."
-                className="w-full bg-zinc-950 text-white rounded-xl px-4 py-3 text-sm border border-zinc-800 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 resize-none transition-colors"
+                className="w-full bg-white text-[#202124] rounded-lg px-4 py-3 text-sm border border-gray-300 focus:outline-none focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] resize-none transition-colors"
               />
             </div>
             
-            <div className="flex justify-end gap-3 pt-4 border-t border-zinc-800/50">
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-5 py-2.5 rounded-xl text-sm font-medium text-zinc-400 hover:text-white hover:bg-zinc-800/50 transition-colors"
+                className="px-5 py-2.5 rounded-full text-sm font-medium text-[#5F6368] hover:bg-gray-100 transition-colors"
               >
                 Batal
               </button>
               <button
                 type="submit"
                 disabled={submitting}
-                className={`text-white text-sm font-medium px-8 py-2.5 rounded-xl transition-all shadow-lg active:scale-95 flex items-center gap-2 ${
+                className={`text-white text-sm font-medium px-8 py-2.5 rounded-full transition-all shadow-sm active:scale-95 flex items-center gap-2 ${
                   editingId
-                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 shadow-amber-500/20 hover:shadow-amber-500/40'
-                    : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 shadow-purple-500/20 hover:shadow-purple-500/40'
+                    ? 'bg-[#FBBC04] hover:bg-[#F2A500]'
+                    : 'bg-[#1A73E8] hover:bg-[#1967D2]'
                 } disabled:opacity-50`}
               >
                 {submitting ? 'Menyimpan...' : (
@@ -255,26 +254,26 @@ export default function KegiatanPage() {
       )}
 
       {/* List Section */}
-      <div className="bg-zinc-900/50 backdrop-blur-sm border border-zinc-800/50 rounded-2xl overflow-hidden hover:border-zinc-700/50 transition-colors relative">
-        <div className="p-6 border-b border-zinc-800/50 flex items-center gap-2">
-          <Activity className="w-5 h-5 text-zinc-400" />
-          <h2 className="text-white text-lg font-semibold">Daftar Log Kegiatan</h2>
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-sm transition-shadow relative">
+        <div className="p-5 border-b border-gray-200 flex items-center gap-2">
+          <Activity className="w-5 h-5 text-[#34A853]" />
+          <h2 className="text-[#202124] text-lg font-medium">Daftar Log Kegiatan</h2>
         </div>
         
         <div className="p-0 overflow-x-auto">
           {kegiatan.length === 0 ? (
             <div className="p-16 flex flex-col items-center justify-center text-center">
-              <div className="w-20 h-20 bg-zinc-800/30 rounded-full flex items-center justify-center mb-5 border border-zinc-700/50">
-                <List className="w-10 h-10 text-zinc-500" />
+              <div className="w-20 h-20 bg-[#F8F9FA] rounded-full flex items-center justify-center mb-5 border border-gray-200">
+                <List className="w-10 h-10 text-[#9AA0A6]" />
               </div>
-              <p className="text-zinc-300 font-semibold text-xl">Belum ada jurnal kegiatan</p>
-              <p className="text-zinc-500 text-sm mt-2 max-w-sm">
+              <p className="text-[#202124] font-medium text-xl">Belum ada jurnal kegiatan</p>
+              <p className="text-[#5F6368] text-sm mt-2 max-w-sm">
                 Rekam jejak magang Anda kosong. Mulai catat apa yang Anda pelajari dan kerjakan hari ini.
               </p>
               {!showForm && (
                 <button
                   onClick={() => setShowForm(true)}
-                  className="mt-6 text-purple-400 hover:text-purple-300 text-sm font-medium flex items-center gap-1 transition-colors"
+                  className="mt-6 text-[#1A73E8] hover:text-[#1967D2] text-sm font-medium flex items-center gap-1 transition-colors"
                 >
                   <Plus className="w-4 h-4" /> Tambah Jurnal Pertama
                 </button>
@@ -282,29 +281,29 @@ export default function KegiatanPage() {
             </div>
           ) : (
             <table className="w-full text-sm text-left">
-              <thead className="bg-zinc-950/50 text-zinc-400 text-xs uppercase tracking-wider">
+              <thead className="bg-[#F8F9FA] text-[#5F6368] text-xs font-medium border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-4 font-medium">Tanggal</th>
-                  <th className="px-6 py-4 font-medium">Deskripsi Kegiatan</th>
-                  <th className="px-6 py-4 font-medium">Status</th>
-                  <th className="px-6 py-4 font-medium text-right">Aksi</th>
+                  <th className="px-6 py-4">Tanggal</th>
+                  <th className="px-6 py-4">Deskripsi Kegiatan</th>
+                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4 text-right">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-800/50">
+              <tbody className="divide-y divide-gray-200">
                 {kegiatan.map(k => (
-                  <tr key={k.id} className="hover:bg-zinc-800/20 transition-colors group">
-                    <td className="px-6 py-5 text-zinc-400 whitespace-nowrap font-medium flex items-center gap-2 align-top">
-                      <Calendar className="w-4 h-4 text-zinc-600 group-hover:text-purple-400/50 transition-colors" />
+                  <tr key={k.id} className="hover:bg-[#F8F9FA] transition-colors group">
+                    <td className="px-6 py-5 text-[#5F6368] whitespace-nowrap font-medium flex items-center gap-2 align-top">
+                      <Calendar className="w-4 h-4 text-[#9AA0A6] group-hover:text-[#1A73E8] transition-colors" />
                       {k.tanggal}
                     </td>
-                    <td className="px-6 py-5 text-zinc-200">
+                    <td className="px-6 py-5 text-[#202124]">
                       <p className="whitespace-pre-wrap">{k.kegiatan}</p>
                     </td>
                     <td className="px-6 py-5 whitespace-nowrap align-top">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${
-                        k.status === 'Selesai' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                        k.status === 'Proses' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
-                        'bg-zinc-800 text-zinc-400 border-zinc-700'
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
+                        k.status === 'Selesai' ? 'bg-[#E6F4EA] text-[#137333]' :
+                        k.status === 'Proses' ? 'bg-[#FEF7E0] text-[#E37400]' :
+                        'bg-[#F1F3F4] text-[#3C4043]'
                       }`}>
                         {k.status === 'Selesai' && <CheckCircle2 className="w-3 h-3" />}
                         {k.status === 'Proses' && <Activity className="w-3 h-3" />}
@@ -315,14 +314,14 @@ export default function KegiatanPage() {
                     <td className="px-6 py-5 whitespace-nowrap text-right align-top flex justify-end gap-1">
                       <button
                         onClick={() => handleEditClick(k)}
-                        className="text-zinc-500 hover:text-amber-400 p-2 rounded-lg hover:bg-amber-400/10 transition-colors"
+                        className="text-[#5F6368] hover:text-[#FBBC04] p-2 rounded-full hover:bg-[#FEF7E0] transition-colors"
                         title="Edit Kegiatan"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(k.id)}
-                        className="text-zinc-500 hover:text-rose-400 p-2 rounded-lg hover:bg-rose-400/10 transition-colors"
+                        className="text-[#5F6368] hover:text-[#EA4335] p-2 rounded-full hover:bg-[#FCE8E6] transition-colors"
                         title="Hapus Kegiatan"
                       >
                         <Trash2 className="w-4 h-4" />

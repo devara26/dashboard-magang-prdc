@@ -85,8 +85,8 @@ export default function DashboardPage() {
   if (loading) return (
     <div className="flex h-[80vh] items-center justify-center">
       <div className="flex flex-col items-center gap-4">
-        <div className="w-10 h-10 border-4 border-zinc-800 border-t-cyan-500 rounded-full animate-spin"></div>
-        <p className="text-zinc-500 text-sm font-medium animate-pulse">Memuat data dashboard...</p>
+        <div className="w-10 h-10 border-4 border-gray-200 border-t-[#1A73E8] rounded-full animate-spin"></div>
+        <p className="text-[#5F6368] text-sm font-medium animate-pulse">Memuat data dashboard...</p>
       </div>
     </div>
   )
@@ -115,10 +115,10 @@ export default function DashboardPage() {
   const progressPersen = totalHariTarget > 0 ? Math.min(Math.round((stats.hadir / totalHariTarget) * 100), 100) : 0
 
   const statCards = [
-    { label: 'Target Hari Magang', value: String(totalHariTarget), sub: 'hari kerja efektif', icon: Calendar, color: 'text-blue-400', bg: 'bg-blue-400/10', border: 'group-hover:border-blue-500/50' },
-    { label: 'Total Kehadiran', value: String(stats.hadir), sub: `${progressPersen}% dari target`, icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-emerald-400/10', border: 'group-hover:border-emerald-500/50' },
-    { label: 'Tugas Selesai', value: String(stats.tugasSelesai), sub: 'kegiatan telah selesai', icon: Activity, color: 'text-purple-400', bg: 'bg-purple-400/10', border: 'group-hover:border-purple-500/50' },
-    { label: 'Total Kegiatan', value: String(stats.totalKegiatan), sub: 'tercatat di sistem', icon: TrendingUp, color: 'text-cyan-400', bg: 'bg-cyan-400/10', border: 'group-hover:border-cyan-500/50' },
+    { label: 'Target Hari Magang', value: String(totalHariTarget), sub: 'hari kerja efektif', icon: Calendar, color: 'text-[#4285F4]', bg: 'bg-[#E8F0FE]', border: 'group-hover:border-[#4285F4]' },
+    { label: 'Total Kehadiran', value: String(stats.hadir), sub: `${progressPersen}% dari target`, icon: CheckCircle2, color: 'text-[#34A853]', bg: 'bg-[#E6F4EA]', border: 'group-hover:border-[#34A853]' },
+    { label: 'Tugas Selesai', value: String(stats.tugasSelesai), sub: 'kegiatan telah selesai', icon: Activity, color: 'text-[#FBBC04]', bg: 'bg-[#FEF7E0]', border: 'group-hover:border-[#FBBC04]' },
+    { label: 'Total Kegiatan', value: String(stats.totalKegiatan), sub: 'tercatat di sistem', icon: TrendingUp, color: 'text-[#EA4335]', bg: 'bg-[#FCE8E6]', border: 'group-hover:border-[#EA4335]' },
   ]
 
   return (
@@ -126,12 +126,11 @@ export default function DashboardPage() {
       
       {/* Header Section */}
       <div className="mb-10 relative">
-        <div className="absolute -top-10 -left-10 w-64 h-64 bg-cyan-500/10 blur-[80px] rounded-full pointer-events-none" />
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white mb-2 relative z-10">
-          Selamat datang, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">{profile?.nama_lengkap || 'Mahasiswa'}</span> 👋
+        <h1 className="text-3xl font-medium tracking-tight text-[#202124] mb-2 relative z-10">
+          Selamat datang, <span className="text-[#1A73E8]">{profile?.nama_lengkap || 'Mahasiswa'}</span>
         </h1>
-        <p className="text-zinc-400 text-base flex items-center gap-2 relative z-10">
-          <span className="bg-zinc-900 px-3 py-1 rounded-full text-sm border border-zinc-800">{profile?.unit_magang || 'Divisi IT'}</span>
+        <p className="text-[#5F6368] text-base flex items-center gap-2 relative z-10">
+          <span className="bg-white px-3 py-1 rounded-full text-sm border border-gray-200 shadow-sm">{profile?.unit_magang || 'Divisi IT'}</span>
           <span>·</span>
           <span>{profile?.instansi_magang || 'PT Contoh Instansi'}</span>
         </p>
@@ -140,54 +139,51 @@ export default function DashboardPage() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
         {statCards.map(s => (
-          <div key={s.label} className={`group bg-zinc-900/50 backdrop-blur-sm border border-zinc-800/50 rounded-2xl p-6 transition-all duration-300 hover:bg-zinc-900 ${s.border} hover:shadow-lg hover:-translate-y-1`}>
+          <div key={s.label} className={`group bg-white border border-gray-200 rounded-xl p-6 transition-all duration-300 hover:shadow-md ${s.border} hover:-translate-y-1`}>
             <div className="flex justify-between items-start mb-4">
-              <p className="text-zinc-400 text-sm font-medium">{s.label}</p>
-              <div className={`p-2 rounded-xl ${s.bg}`}>
+              <p className="text-[#5F6368] text-sm font-medium">{s.label}</p>
+              <div className={`p-2 rounded-full ${s.bg}`}>
                 <s.icon className={`w-5 h-5 ${s.color}`} />
               </div>
             </div>
-            <p className="text-white text-4xl font-bold mb-1 tracking-tight">{s.value}</p>
-            <p className="text-zinc-500 text-xs font-medium">{s.sub}</p>
+            <p className="text-[#202124] text-4xl font-normal mb-1 tracking-tight">{s.value}</p>
+            <p className="text-[#5F6368] text-xs font-medium">{s.sub}</p>
           </div>
         ))}
       </div>
 
       {/* Progress Section */}
-      <div className="bg-zinc-900/50 backdrop-blur-sm border border-zinc-800/50 rounded-2xl p-6 mb-8 hover:border-zinc-700/50 transition-colors">
+      <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8 hover:shadow-sm transition-shadow">
         <div className="flex justify-between items-end mb-4">
           <div>
-            <h2 className="text-white text-lg font-semibold flex items-center gap-2">
-              <Clock className="w-5 h-5 text-blue-400" />
+            <h2 className="text-[#202124] text-lg font-medium flex items-center gap-2">
+              <Clock className="w-5 h-5 text-[#4285F4]" />
               Progress Kehadiran Magang
             </h2>
-            <p className="text-zinc-500 text-sm mt-1">Berdasarkan total target kehadiran {totalHariTarget} hari</p>
+            <p className="text-[#5F6368] text-sm mt-1">Berdasarkan total target kehadiran {totalHariTarget} hari</p>
           </div>
           <div className="text-right">
-            <p className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">{progressPersen}%</p>
+            <p className="text-3xl font-normal text-[#1A73E8]">{progressPersen}%</p>
           </div>
         </div>
-        <div className="w-full bg-zinc-950 rounded-full h-3 border border-zinc-800 p-0.5 overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-600 via-blue-400 to-cyan-300 h-full rounded-full relative transition-all duration-1000 ease-out" style={{ width: `${progressPersen}%` }}>
-            {/* Shimmer effect inside progress bar */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shimmer_2s_infinite]"></div>
-          </div>
+        <div className="w-full bg-[#F1F3F4] rounded-full h-2.5 overflow-hidden">
+          <div className="bg-[#1A73E8] h-full rounded-full relative transition-all duration-1000 ease-out" style={{ width: `${progressPersen}%` }}></div>
         </div>
       </div>
 
       {/* Activities Table */}
-      <div className="bg-zinc-900/50 backdrop-blur-sm border border-zinc-800/50 rounded-2xl overflow-hidden hover:border-zinc-700/50 transition-colors">
-        <div className="p-6 border-b border-zinc-800/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-sm transition-shadow">
+        <div className="p-5 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h2 className="text-white text-lg font-semibold flex items-center gap-2">
-              <Activity className="w-5 h-5 text-cyan-400" />
+            <h2 className="text-[#202124] text-lg font-medium flex items-center gap-2">
+              <Activity className="w-5 h-5 text-[#34A853]" />
               Kegiatan Terbaru
             </h2>
-            <p className="text-zinc-500 text-sm mt-1">5 log kegiatan terakhir yang Anda laporkan</p>
+            <p className="text-[#5F6368] text-sm mt-1">5 log kegiatan terakhir yang Anda laporkan</p>
           </div>
           <button
             onClick={handleTambahClick}
-            className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white text-sm font-medium px-4 py-2 rounded-xl transition-all shadow-lg shadow-blue-500/20 hover:shadow-cyan-500/30 active:scale-95"
+            className="flex items-center gap-2 bg-[#1A73E8] hover:bg-[#1967D2] text-white text-sm font-medium px-5 py-2.5 rounded-full transition-all shadow-sm active:scale-95"
           >
             <Plus className="w-4 h-4" />
             Tambah Log
@@ -197,37 +193,37 @@ export default function DashboardPage() {
         <div className="p-0 overflow-x-auto">
           {kegiatan.length === 0 ? (
             <div className="p-12 flex flex-col items-center justify-center text-center">
-              <div className="w-16 h-16 bg-zinc-800/50 rounded-full flex items-center justify-center mb-4 border border-zinc-700/50">
-                <List className="w-8 h-8 text-zinc-500" />
+              <div className="w-16 h-16 bg-[#F8F9FA] rounded-full flex items-center justify-center mb-4 border border-gray-200">
+                <List className="w-8 h-8 text-[#9AA0A6]" />
               </div>
-              <p className="text-zinc-300 font-medium text-lg">Belum ada kegiatan</p>
-              <p className="text-zinc-500 text-sm mt-1 max-w-sm">Anda belum menambahkan log kegiatan apa pun. Klik tombol tambah untuk mulai mencatat.</p>
+              <p className="text-[#202124] font-medium text-lg">Belum ada kegiatan</p>
+              <p className="text-[#5F6368] text-sm mt-1 max-w-sm">Anda belum menambahkan log kegiatan apa pun. Klik tombol tambah untuk mulai mencatat.</p>
             </div>
           ) : (
             <table className="w-full text-sm text-left">
-              <thead className="bg-zinc-950/50 text-zinc-400 text-xs uppercase tracking-wider">
+              <thead className="bg-[#F8F9FA] text-[#5F6368] text-xs font-medium border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-4 font-medium">Tanggal</th>
-                  <th className="px-6 py-4 font-medium">Kegiatan</th>
-                  <th className="px-6 py-4 font-medium">Status</th>
-                  <th className="px-6 py-4 font-medium text-right">Aksi</th>
+                  <th className="px-6 py-3 font-medium">Tanggal</th>
+                  <th className="px-6 py-3 font-medium">Kegiatan</th>
+                  <th className="px-6 py-3 font-medium">Status</th>
+                  <th className="px-6 py-3 font-medium text-right">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-800/50">
+              <tbody className="divide-y divide-gray-200">
                 {kegiatan.map((k) => (
-                  <tr key={k.id} className="hover:bg-zinc-800/20 transition-colors group">
-                    <td className="px-6 py-4 text-zinc-400 whitespace-nowrap font-medium flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-zinc-600 group-hover:text-cyan-500/50 transition-colors" />
+                  <tr key={k.id} className="hover:bg-[#F8F9FA] transition-colors group">
+                    <td className="px-6 py-4 text-[#5F6368] whitespace-nowrap font-medium flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-[#9AA0A6] group-hover:text-[#1A73E8] transition-colors" />
                       {k.tanggal}
                     </td>
-                    <td className="px-6 py-4 text-zinc-200">
+                    <td className="px-6 py-4 text-[#202124]">
                       <span className="line-clamp-2">{k.kegiatan}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${
-                        k.status === 'Selesai' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                        k.status === 'Proses' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
-                        'bg-zinc-800 text-zinc-400 border-zinc-700'
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
+                        k.status === 'Selesai' ? 'bg-[#E6F4EA] text-[#137333]' :
+                        k.status === 'Proses' ? 'bg-[#FEF7E0] text-[#E37400]' :
+                        'bg-[#F1F3F4] text-[#3C4043]'
                       }`}>
                         {k.status === 'Selesai' && <CheckCircle2 className="w-3 h-3" />}
                         {k.status === 'Proses' && <Activity className="w-3 h-3" />}
@@ -235,7 +231,7 @@ export default function DashboardPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <button onClick={() => router.push('/dashboard/kegiatan')} className="text-zinc-500 hover:text-cyan-400 p-2 rounded-lg hover:bg-cyan-400/10 transition-colors">
+                      <button onClick={() => router.push('/dashboard/kegiatan')} className="text-[#5F6368] hover:text-[#1A73E8] p-2 rounded-full hover:bg-[#E8F0FE] transition-colors">
                         <ChevronRight className="w-4 h-4" />
                       </button>
                     </td>

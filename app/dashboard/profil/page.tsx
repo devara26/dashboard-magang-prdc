@@ -98,8 +98,8 @@ export default function ProfilPage() {
   if (loading) return (
     <div className="flex h-[80vh] items-center justify-center">
       <div className="flex flex-col items-center gap-4">
-        <div className="w-10 h-10 border-4 border-zinc-800 border-t-amber-500 rounded-full animate-spin"></div>
-        <p className="text-zinc-500 text-sm font-medium animate-pulse">Memuat profil pengguna...</p>
+        <div className="w-10 h-10 border-4 border-gray-200 border-t-[#FBBC04] rounded-full animate-spin"></div>
+        <p className="text-[#5F6368] text-sm font-medium animate-pulse">Memuat profil pengguna...</p>
       </div>
     </div>
   )
@@ -109,16 +109,15 @@ export default function ProfilPage() {
       {/* Header Section */}
       <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <Link href="/dashboard" className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-sm font-medium mb-6">
+          <Link href="/dashboard" className="inline-flex items-center gap-2 text-[#5F6368] hover:text-[#1A73E8] transition-colors text-sm font-medium mb-6">
             <ChevronLeft className="w-4 h-4" /> Kembali ke Beranda
           </Link>
           <div className="relative">
-            <div className="absolute -top-10 -left-10 w-64 h-64 bg-amber-500/10 blur-[80px] rounded-full pointer-events-none" />
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white mb-2 relative z-10 flex items-center gap-3">
-              <User className="w-8 h-8 text-amber-400" />
-              Profil <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400">Pengguna</span>
+            <h1 className="text-3xl font-medium tracking-tight text-[#202124] mb-2 relative z-10 flex items-center gap-3">
+              <User className="w-8 h-8 text-[#FBBC04]" />
+              Profil Pengguna
             </h1>
-            <p className="text-zinc-400 text-base relative z-10">
+            <p className="text-[#5F6368] text-base relative z-10">
               Informasi detail mengenai data diri magang Anda
             </p>
           </div>
@@ -126,7 +125,7 @@ export default function ProfilPage() {
         {!isEditing && (
           <button
             onClick={() => setIsEditing(true)}
-            className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-medium px-5 py-2.5 rounded-xl transition-all border border-zinc-700 hover:border-zinc-600 shadow-lg active:scale-95"
+            className="flex items-center gap-2 bg-white hover:bg-gray-50 text-[#5F6368] text-sm font-medium px-5 py-2.5 rounded-full transition-all border border-gray-300 shadow-sm active:scale-95"
           >
             <Edit2 className="w-4 h-4" /> Edit Profil
           </button>
@@ -134,95 +133,93 @@ export default function ProfilPage() {
       </div>
 
       {isEditing ? (
-        <form onSubmit={handleSave} className="bg-zinc-900/50 backdrop-blur-sm border border-amber-500/30 rounded-3xl p-8 mb-8 relative animate-[fade-in_0.3s_ease-out]">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 blur-[100px] rounded-full pointer-events-none" />
-          
+        <form onSubmit={handleSave} className="bg-white border border-gray-200 rounded-2xl p-8 mb-8 relative animate-[fade-in_0.3s_ease-out] shadow-sm">
           <div className="relative z-10 space-y-8">
-            <h2 className="text-xl font-semibold text-white border-b border-zinc-800 pb-4 flex items-center gap-2">
-              <Edit2 className="w-5 h-5 text-amber-400" /> Mode Edit Profil
+            <h2 className="text-xl font-medium text-[#202124] border-b border-gray-200 pb-4 flex items-center gap-2">
+              <Edit2 className="w-5 h-5 text-[#FBBC04]" /> Mode Edit Profil
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Data Diri */}
               <div className="space-y-4">
-                <h3 className="text-sm font-medium text-amber-400 uppercase tracking-wider mb-2">Data Pribadi</h3>
+                <h3 className="text-sm font-medium text-[#1A73E8] uppercase tracking-wider mb-2">Data Pribadi</h3>
                 <div>
-                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">Nama Lengkap</label>
+                  <label className="block text-sm font-medium text-[#5F6368] mb-2">Nama Lengkap</label>
                   <input
                     type="text"
                     value={form.nama_lengkap || ''}
                     onChange={e => setForm({ ...form, nama_lengkap: e.target.value })}
                     required
-                    className="w-full bg-zinc-950 text-white rounded-xl px-4 py-3 text-sm border border-zinc-800 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
+                    className="w-full bg-white text-[#202124] rounded-lg px-4 py-3 text-sm border border-gray-300 focus:outline-none focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">NIM / NIK</label>
+                  <label className="block text-sm font-medium text-[#5F6368] mb-2">NIM / NIK</label>
                   <input
                     type="text"
                     value={form.nim || ''}
                     onChange={e => setForm({ ...form, nim: e.target.value })}
-                    className="w-full bg-zinc-950 text-white rounded-xl px-4 py-3 text-sm border border-zinc-800 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
+                    className="w-full bg-white text-[#202124] rounded-lg px-4 py-3 text-sm border border-gray-300 focus:outline-none focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">Universitas / Asal Instansi</label>
+                  <label className="block text-sm font-medium text-[#5F6368] mb-2">Universitas / Asal Instansi</label>
                   <input
                     type="text"
                     value={form.universitas || ''}
                     onChange={e => setForm({ ...form, universitas: e.target.value })}
-                    className="w-full bg-zinc-950 text-white rounded-xl px-4 py-3 text-sm border border-zinc-800 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
+                    className="w-full bg-white text-[#202124] rounded-lg px-4 py-3 text-sm border border-gray-300 focus:outline-none focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">Program Studi / Jurusan</label>
+                  <label className="block text-sm font-medium text-[#5F6368] mb-2">Program Studi / Jurusan</label>
                   <input
                     type="text"
                     value={form.prodi || ''}
                     onChange={e => setForm({ ...form, prodi: e.target.value })}
-                    className="w-full bg-zinc-950 text-white rounded-xl px-4 py-3 text-sm border border-zinc-800 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
+                    className="w-full bg-white text-[#202124] rounded-lg px-4 py-3 text-sm border border-gray-300 focus:outline-none focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] transition-colors"
                   />
                 </div>
               </div>
 
               {/* Data Magang */}
               <div className="space-y-4">
-                <h3 className="text-sm font-medium text-amber-400 uppercase tracking-wider mb-2">Data Magang</h3>
+                <h3 className="text-sm font-medium text-[#1A73E8] uppercase tracking-wider mb-2">Data Magang</h3>
                 <div>
-                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">Instansi Tempat Magang</label>
+                  <label className="block text-sm font-medium text-[#5F6368] mb-2">Instansi Tempat Magang</label>
                   <input
                     type="text"
                     value={form.instansi_magang || ''}
                     onChange={e => setForm({ ...form, instansi_magang: e.target.value })}
-                    className="w-full bg-zinc-950 text-white rounded-xl px-4 py-3 text-sm border border-zinc-800 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
+                    className="w-full bg-white text-[#202124] rounded-lg px-4 py-3 text-sm border border-gray-300 focus:outline-none focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">Unit / Divisi Magang (Posisi)</label>
+                  <label className="block text-sm font-medium text-[#5F6368] mb-2">Unit / Divisi Magang (Posisi)</label>
                   <input
                     type="text"
                     value={form.unit_magang || ''}
                     onChange={e => setForm({ ...form, unit_magang: e.target.value })}
-                    className="w-full bg-zinc-950 text-white rounded-xl px-4 py-3 text-sm border border-zinc-800 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
+                    className="w-full bg-white text-[#202124] rounded-lg px-4 py-3 text-sm border border-gray-300 focus:outline-none focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] transition-colors"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-medium text-zinc-400 mb-1.5">Tanggal Mulai</label>
+                    <label className="block text-sm font-medium text-[#5F6368] mb-2">Tanggal Mulai</label>
                     <input
                       type="date"
                       value={form.tanggal_mulai || ''}
                       onChange={e => setForm({ ...form, tanggal_mulai: e.target.value })}
-                      className="w-full bg-zinc-950 text-white rounded-xl px-4 py-3 text-sm border border-zinc-800 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
+                      className="w-full bg-white text-[#202124] rounded-lg px-4 py-3 text-sm border border-gray-300 focus:outline-none focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] transition-colors"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-zinc-400 mb-1.5">Tanggal Selesai</label>
+                    <label className="block text-sm font-medium text-[#5F6368] mb-2">Tanggal Selesai</label>
                     <input
                       type="date"
                       value={form.tanggal_selesai || ''}
                       onChange={e => setForm({ ...form, tanggal_selesai: e.target.value })}
-                      className="w-full bg-zinc-950 text-white rounded-xl px-4 py-3 text-sm border border-zinc-800 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
+                      className="w-full bg-white text-[#202124] rounded-lg px-4 py-3 text-sm border border-gray-300 focus:outline-none focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] transition-colors"
                     />
                   </div>
                 </div>
@@ -231,34 +228,34 @@ export default function ProfilPage() {
             
             {/* Keterangan Lain */}
             <div>
-              <h3 className="text-sm font-medium text-amber-400 uppercase tracking-wider mb-4">Informasi Tambahan</h3>
+              <h3 className="text-sm font-medium text-[#1A73E8] uppercase tracking-wider mb-4">Informasi Tambahan</h3>
               <div>
-                <label className="block text-xs font-medium text-zinc-400 mb-1.5">Keterangan Lain / Bio Ringkas</label>
+                <label className="block text-sm font-medium text-[#5F6368] mb-2">Keterangan Lain / Bio Ringkas</label>
                 <textarea
                   value={form.bio || ''}
                   onChange={e => setForm({ ...form, bio: e.target.value })}
                   rows={3}
                   placeholder="Tambahkan catatan khusus, keahlian, atau keterangan magang lainnya..."
-                  className="w-full bg-zinc-950 text-white rounded-xl px-4 py-3 text-sm border border-zinc-800 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 resize-none transition-colors"
+                  className="w-full bg-white text-[#202124] rounded-lg px-4 py-3 text-sm border border-gray-300 focus:outline-none focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] resize-none transition-colors"
                 />
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 pt-6 border-t border-zinc-800/50">
+            <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
               <button
                 type="button"
                 onClick={() => {
                   setIsEditing(false)
                   setForm(profile || {})
                 }}
-                className="px-5 py-2.5 rounded-xl text-sm font-medium text-zinc-400 hover:text-white hover:bg-zinc-800/50 transition-colors flex items-center gap-2"
+                className="px-5 py-2.5 rounded-full text-sm font-medium text-[#5F6368] hover:bg-gray-100 transition-colors flex items-center gap-2"
               >
                 <X className="w-4 h-4" /> Batal
               </button>
               <button
                 type="submit"
                 disabled={saving}
-                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 disabled:opacity-50 text-white text-sm font-medium px-8 py-2.5 rounded-xl transition-all shadow-lg shadow-amber-500/20 active:scale-95 flex items-center gap-2"
+                className="bg-[#1A73E8] hover:bg-[#1967D2] disabled:opacity-50 text-white text-sm font-medium px-8 py-2.5 rounded-full transition-all shadow-sm active:scale-95 flex items-center gap-2"
               >
                 {saving ? 'Menyimpan...' : (
                   <>
@@ -271,25 +268,21 @@ export default function ProfilPage() {
         </form>
       ) : (
         /* Profile View Section */
-        <div className="bg-zinc-900/50 backdrop-blur-sm border border-zinc-800/50 rounded-3xl p-1 overflow-hidden hover:border-zinc-700/50 transition-all mb-8 relative">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 blur-[100px] rounded-full pointer-events-none" />
-          
-          <div className="bg-zinc-950/50 rounded-[22px] p-8 md:p-10 relative z-10">
-            <div className="flex flex-col md:flex-row gap-8 items-start md:items-center mb-10 pb-10 border-b border-zinc-800/50">
-              <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 p-1 shadow-xl shadow-amber-500/20 flex-shrink-0">
-                <div className="w-full h-full bg-zinc-950 rounded-xl flex items-center justify-center">
-                  <span className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-amber-400 to-orange-500">
+        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-sm transition-shadow mb-8 relative">
+          <div className="p-8 md:p-10 relative z-10">
+            <div className="flex flex-col md:flex-row gap-8 items-start md:items-center mb-10 pb-10 border-b border-gray-200">
+              <div className="w-24 h-24 rounded-full bg-[#FBBC04] flex-shrink-0 flex items-center justify-center shadow-sm">
+                  <span className="text-4xl font-normal text-white">
                     {profile?.nama_lengkap?.charAt(0).toUpperCase() || 'U'}
                   </span>
-                </div>
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-white mb-2">{profile?.nama_lengkap || 'User Magang'}</h2>
+                <h2 className="text-2xl font-medium text-[#202124] mb-2">{profile?.nama_lengkap || 'User Magang'}</h2>
                 <div className="flex items-center gap-3 flex-wrap">
-                  <span className="px-3 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-full text-sm font-medium flex items-center gap-1.5">
+                  <span className="px-3 py-1 bg-[#FEF7E0] text-[#E37400] border border-[#FEF7E0] rounded-full text-sm font-medium flex items-center gap-1.5">
                     <ShieldCheck className="w-4 h-4" /> Magang {profile?.instansi_magang ? `di ${profile.instansi_magang}` : ''}
                   </span>
-                  <span className="px-3 py-1 bg-zinc-800/80 text-zinc-300 border border-zinc-700 rounded-full text-sm font-medium flex items-center gap-1.5">
+                  <span className="px-3 py-1 bg-[#F8F9FA] text-[#5F6368] border border-gray-200 rounded-full text-sm font-medium flex items-center gap-1.5">
                     <Building2 className="w-4 h-4" /> {profile?.unit_magang || 'Belum ada unit'}
                   </span>
                 </div>
@@ -299,58 +292,58 @@ export default function ProfilPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
               <div className="space-y-6">
                 <div>
-                  <p className="text-xs text-zinc-500 font-medium uppercase tracking-wider mb-2 flex items-center gap-2">
+                  <p className="text-xs text-[#5F6368] font-medium uppercase tracking-wider mb-2 flex items-center gap-2">
                     <User className="w-4 h-4" /> Nama Lengkap
                   </p>
-                  <p className="text-lg font-medium text-white">{profile?.nama_lengkap || '-'}</p>
+                  <p className="text-base font-medium text-[#202124]">{profile?.nama_lengkap || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-zinc-500 font-medium uppercase tracking-wider mb-2 flex items-center gap-2">
+                  <p className="text-xs text-[#5F6368] font-medium uppercase tracking-wider mb-2 flex items-center gap-2">
                     <CreditCard className="w-4 h-4" /> NIM / NIK
                   </p>
-                  <p className="text-lg font-medium text-white">{profile?.nim || '-'}</p>
+                  <p className="text-base font-medium text-[#202124]">{profile?.nim || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-zinc-500 font-medium uppercase tracking-wider mb-2 flex items-center gap-2">
+                  <p className="text-xs text-[#5F6368] font-medium uppercase tracking-wider mb-2 flex items-center gap-2">
                     <Mail className="w-4 h-4" /> Email Pengguna
                   </p>
-                  <p className="text-lg font-medium text-white">{email || '-'}</p>
+                  <p className="text-base font-medium text-[#202124]">{email || '-'}</p>
                 </div>
               </div>
 
               <div className="space-y-6">
                 <div>
-                  <p className="text-xs text-zinc-500 font-medium uppercase tracking-wider mb-2 flex items-center gap-2">
+                  <p className="text-xs text-[#5F6368] font-medium uppercase tracking-wider mb-2 flex items-center gap-2">
                     <GraduationCap className="w-4 h-4" /> Universitas / Asal Instansi
                   </p>
-                  <p className="text-lg font-medium text-white">
+                  <p className="text-base font-medium text-[#202124]">
                     {profile?.universitas || '-'} {profile?.prodi ? `(${profile.prodi})` : ''}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-zinc-500 font-medium uppercase tracking-wider mb-2 flex items-center gap-2">
+                  <p className="text-xs text-[#5F6368] font-medium uppercase tracking-wider mb-2 flex items-center gap-2">
                     <Building className="w-4 h-4" /> Tempat Magang
                   </p>
-                  <p className="text-lg font-medium text-white">{profile?.instansi_magang || '-'}</p>
+                  <p className="text-base font-medium text-[#202124]">{profile?.instansi_magang || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-zinc-500 font-medium uppercase tracking-wider mb-2 flex items-center gap-2">
+                  <p className="text-xs text-[#5F6368] font-medium uppercase tracking-wider mb-2 flex items-center gap-2">
                     <Calendar className="w-4 h-4" /> Periode Magang
                   </p>
-                  <p className="text-lg font-medium text-white">
-                    {profile?.tanggal_mulai || '?'} <span className="text-zinc-500 text-sm mx-1">s/d</span> {profile?.tanggal_selesai || '?'}
+                  <p className="text-base font-medium text-[#202124]">
+                    {profile?.tanggal_mulai || '?'} <span className="text-[#5F6368] text-sm mx-1">s/d</span> {profile?.tanggal_selesai || '?'}
                   </p>
                 </div>
               </div>
             </div>
 
             {profile?.bio && (
-              <div className="pt-6 border-t border-zinc-800/50">
-                <p className="text-xs text-zinc-500 font-medium uppercase tracking-wider mb-3 flex items-center gap-2">
+              <div className="pt-6 border-t border-gray-200">
+                <p className="text-xs text-[#5F6368] font-medium uppercase tracking-wider mb-3 flex items-center gap-2">
                   <Info className="w-4 h-4" /> Keterangan Tambahan
                 </p>
-                <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800/50">
-                  <p className="text-zinc-300 whitespace-pre-wrap text-sm leading-relaxed">{profile.bio}</p>
+                <div className="bg-[#F8F9FA] p-4 rounded-xl border border-gray-200">
+                  <p className="text-[#202124] whitespace-pre-wrap text-sm leading-relaxed">{profile.bio}</p>
                 </div>
               </div>
             )}
@@ -359,14 +352,14 @@ export default function ProfilPage() {
       )}
 
       {/* Actions Section */}
-      <div className="bg-rose-500/5 border border-rose-500/10 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="bg-[#FCE8E6] border border-[#FAD2CF] rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
-          <h3 className="text-rose-400 font-semibold mb-1">Keluar Aplikasi</h3>
-          <p className="text-zinc-500 text-sm">Sesi Anda akan diakhiri dan Anda harus login kembali.</p>
+          <h3 className="text-[#C5221F] font-medium mb-1">Keluar Aplikasi</h3>
+          <p className="text-[#5F6368] text-sm">Sesi Anda akan diakhiri dan Anda harus login kembali.</p>
         </div>
         <button
           onClick={handleLogout}
-          className="w-full sm:w-auto bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-400 border border-rose-500/20 font-medium px-6 py-2.5 rounded-xl transition-all shadow-lg hover:shadow-rose-500/20 active:scale-95 flex items-center justify-center gap-2"
+          className="w-full sm:w-auto bg-white hover:bg-gray-50 text-[#C5221F] border border-gray-300 font-medium px-6 py-2.5 rounded-full transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2"
         >
           <LogOut className="w-4 h-4" />
           Logout Sekarang
