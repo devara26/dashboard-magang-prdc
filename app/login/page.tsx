@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import Link from 'next/link'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -28,53 +29,56 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-semibold text-white">Platform Magang</h1>
-          <p className="text-gray-400 text-sm mt-1">BPPMHKP · KKP RI</p>
+        <div className="mb-8 text-center flex flex-col items-center">
+          <div className="w-12 h-12 rounded bg-[#1A73E8] flex items-center justify-center shadow-sm mb-4">
+            <span className="text-white text-xl font-bold">M</span>
+          </div>
+          <h1 className="text-2xl font-medium text-[#202124]">Platform Magang</h1>
+          <p className="text-[#5F6368] text-sm mt-1">BPPMHKP · KKP RI</p>
         </div>
-        <form onSubmit={handleLogin} className="bg-gray-900 rounded-2xl p-8 space-y-5 border border-gray-800">
+        <form onSubmit={handleLogin} className="bg-white rounded-2xl p-8 space-y-5 border border-gray-200 shadow-sm">
           {error && (
-            <div className="bg-red-900/50 border border-red-800 text-red-400 text-sm px-4 py-3 rounded-lg">
+            <div className="bg-[#FCE8E6] border border-[#FAD2CF] text-[#C5221F] text-sm px-4 py-3 rounded-lg">
               {error}
             </div>
           )}
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Email</label>
+            <label className="block text-sm font-medium text-[#5F6368] mb-1.5">Email</label>
             <input
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
               placeholder="nama@email.com"
               required
-              className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 text-sm border border-gray-700 focus:outline-none focus:border-blue-500"
+              className="w-full bg-white text-[#202124] rounded-lg px-4 py-3 text-sm border border-gray-300 focus:outline-none focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] transition-colors"
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Password</label>
+            <label className="block text-sm font-medium text-[#5F6368] mb-1.5">Password</label>
             <input
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
               placeholder="••••••••"
               required
-              className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 text-sm border border-gray-700 focus:outline-none focus:border-blue-500"
+              className="w-full bg-white text-[#202124] rounded-lg px-4 py-3 text-sm border border-gray-300 focus:outline-none focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] transition-colors"
             />
           </div>
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg py-3 text-sm font-medium transition-colors"
+            className="w-full bg-[#1A73E8] hover:bg-[#1967D2] disabled:opacity-50 text-white rounded-lg py-3 text-sm font-medium transition-colors active:scale-95"
           >
             {loading ? 'Memproses...' : 'Masuk'}
           </button>
-          <p className="text-center text-gray-500 text-sm">
+          <p className="text-center text-[#5F6368] text-sm pt-2">
             Belum punya akun?{' '}
-            <a href="/register" className="text-blue-400 hover:text-blue-300">Daftar di sini</a>
+            <Link href="/register" className="text-[#1A73E8] hover:text-[#1967D2] font-medium">Daftar di sini</Link>
           </p>
         </form>
-        <p className="text-center text-gray-600 text-xs mt-6">
+        <p className="text-center text-[#9AA0A6] text-xs mt-8">
           Devara Alfarizi Wiraka · NIM 1414423027
         </p>
       </div>
