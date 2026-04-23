@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Platform Magang",
-  description: "Platform untuk mencatat aktivitas dan absensi magang",
+  title: "Orbit",
+  description: "Online Record Base for Internship Tracking",
 };
 
 export default function RootLayout({

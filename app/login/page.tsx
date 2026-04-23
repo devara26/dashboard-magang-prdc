@@ -32,10 +32,10 @@ export default function LoginPage() {
     <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center flex flex-col items-center">
-          <div className="w-12 h-12 rounded bg-[#1A73E8] flex items-center justify-center shadow-sm mb-4">
-            <span className="text-white text-xl font-bold">M</span>
+          <div className="mb-4">
+            <img src="/orbit-logo.png" alt="Orbit Logo" className="h-12 w-auto object-contain" />
           </div>
-          <h1 className="text-2xl font-medium text-[#202124]">Platform Magang</h1>
+          <h1 className="text-xl font-medium text-[#202124]">Online Record Base for Internship Tracking</h1>
           <p className="text-[#5F6368] text-sm mt-1">BPPMHKP · KKP RI</p>
         </div>
         <form onSubmit={handleLogin} className="bg-white rounded-2xl p-8 space-y-5 border border-gray-200 shadow-sm">
@@ -79,7 +79,7 @@ export default function LoginPage() {
           </p>
         </form>
         <p className="text-center text-[#9AA0A6] text-xs mt-8">
-          Devara Alfarizi Wiraka · NIM 1414423027
+          &copy; {new Date().getFullYear()} orbitprdc26 · Devara Alfarizi Wiraka
         </p>
       </div>
     </div>

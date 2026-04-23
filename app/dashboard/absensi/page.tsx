@@ -183,7 +183,7 @@ export default function AbsensiPage() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
         {[
           { label: 'Total Hadir', value: totalHadir, icon: UserCheck, color: 'text-[#34A853]', bg: 'bg-[#E6F4EA]', border: 'group-hover:border-[#34A853]' },
           { label: 'Total Izin', value: totalIzin, icon: UserX, color: 'text-[#FBBC04]', bg: 'bg-[#FEF7E0]', border: 'group-hover:border-[#FBBC04]' },
@@ -216,7 +216,7 @@ export default function AbsensiPage() {
 
         {todayRecord ? (
           <div className="space-y-6 relative z-10">
-            <div className="grid grid-cols-3 gap-6 bg-[#F8F9FA] p-6 rounded-xl border border-gray-200">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 bg-[#F8F9FA] p-6 rounded-xl border border-gray-200">
               <div className="flex flex-col gap-1">
                 <p className="text-xs text-[#5F6368] font-medium uppercase tracking-wider flex items-center gap-1.5"><LogIn className="w-3.5 h-3.5" /> Check-in</p>
                 <p className="text-2xl font-medium text-[#202124]">{todayRecord.check_in || '-'}</p>
