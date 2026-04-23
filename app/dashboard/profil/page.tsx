@@ -67,7 +67,7 @@ export default function ProfilPage() {
     try {
       if (!profile?.id) throw new Error('Profil tidak ditemukan')
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .update({
           nama_lengkap: form.nama_lengkap,
@@ -81,8 +81,12 @@ export default function ProfilPage() {
           bio: form.bio,
         })
         .eq('id', profile.id)
+        .select()
 
       if (error) throw error
+      if (!data || data.length === 0) {
+        throw new Error('Akses ditolak: RLS (Row Level Security) Supabase memblokir Anda untuk menyimpan profil. Anda harus menambahkan Policy UPDATE di tabel profiles.')
+      }
 
       setProfile({ ...profile, ...form } as Profile)
       setIsEditing(false)
