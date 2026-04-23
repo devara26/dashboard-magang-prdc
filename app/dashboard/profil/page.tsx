@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
-import { User, Mail, CreditCard, Building, Building2, LogOut, ShieldCheck, ChevronLeft, Edit2, Save, X, Calendar, GraduationCap, Info } from 'lucide-react'
+import { User, Mail, CreditCard, Building, Building2, LogOut, ShieldCheck, ChevronLeft, Edit2, Save, X, Calendar, GraduationCap, Info, Camera } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 
@@ -28,6 +28,7 @@ export default function ProfilPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<Partial<Profile>>({})
+  const [avatarBase64, setAvatarBase64] = useState<string | null>(null)
 
   useEffect(() => {
     fetchUser()
@@ -50,6 +51,8 @@ export default function ProfilPage() {
     if (data) {
       setProfile(data)
       setForm(data)
+      const savedAvatar = localStorage.getItem(`orbit_avatar_${data.id}`)
+      if (savedAvatar) setAvatarBase64(savedAvatar)
     }
     setLoading(false)
   }
@@ -126,6 +129,44 @@ export default function ProfilPage() {
             <h2 className="text-xl font-medium text-[#202124] border-b border-gray-200 pb-4 flex items-center gap-2">
               <Edit2 className="w-5 h-5 text-[#FBBC04]" /> Mode Edit Profil
             </h2>
+
+            {/* Avatar Edit */}
+            <div className="flex flex-col items-center">
+              <div className="relative">
+                <div className="w-24 h-24 rounded-full bg-[#FBBC04] flex-shrink-0 flex items-center justify-center shadow-md border-4 border-white overflow-hidden">
+                  {avatarBase64 ? (
+                    <img src={avatarBase64} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-4xl font-normal text-white">
+                      {profile?.nama_lengkap?.charAt(0).toUpperCase() || 'U'}
+                    </span>
+                  )}
+                </div>
+                <label className="absolute bottom-0 right-0 bg-white p-2 rounded-full shadow-sm border border-gray-100 text-[#1A73E8] hover:bg-gray-50 transition-colors cursor-pointer">
+                  <Camera className="w-4 h-4" />
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    className="hidden" 
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) {
+                        const reader = new FileReader()
+                        reader.onloadend = () => {
+                          const base64String = reader.result as string
+                          setAvatarBase64(base64String)
+                          if (profile?.id) {
+                            localStorage.setItem(`orbit_avatar_${profile.id}`, base64String)
+                          }
+                        }
+                        reader.readAsDataURL(file)
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+              <p className="text-xs text-[#5F6368] mt-2">Ketuk ikon kamera untuk mengubah foto</p>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Data Diri */}
@@ -260,10 +301,14 @@ export default function ProfilPage() {
           {/* Centered Avatar and Name */}
           <div className="relative z-10 flex flex-col items-center mb-10 text-center">
             <div className="relative mb-4">
-              <div className="w-28 h-28 rounded-full bg-[#FBBC04] flex-shrink-0 flex items-center justify-center shadow-md border-4 border-white">
-                <span className="text-5xl font-normal text-white">
-                  {profile?.nama_lengkap?.charAt(0).toUpperCase() || 'U'}
-                </span>
+              <div className="w-28 h-28 rounded-full bg-[#FBBC04] flex-shrink-0 flex items-center justify-center shadow-md border-4 border-white overflow-hidden">
+                {avatarBase64 ? (
+                  <img src={avatarBase64} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-5xl font-normal text-white">
+                    {profile?.nama_lengkap?.charAt(0).toUpperCase() || 'U'}
+                  </span>
+                )}
               </div>
               <button 
                 onClick={() => setIsEditing(true)} 
