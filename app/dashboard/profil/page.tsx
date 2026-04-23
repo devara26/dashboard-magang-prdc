@@ -111,29 +111,13 @@ export default function ProfilPage() {
   return (
     <div className="pb-12 animate-[fade-in_0.7s_ease-out] max-w-5xl mx-auto">
       {/* Header Section */}
-      <div className="mb-8 flex flex-col items-center text-center md:flex-row md:items-end md:justify-between md:text-left gap-4">
-        <div>
-          <Link href="/dashboard" className="inline-flex items-center gap-2 text-[#5F6368] hover:text-[#1A73E8] transition-colors text-sm font-medium mb-6">
-            <ChevronLeft className="w-4 h-4" /> <span className="hidden md:inline">Kembali ke Beranda</span>
+      <div className="mb-6">
+        <div className="flex items-center gap-3">
+          <Link href="/dashboard" className="p-2 bg-white rounded-full border border-gray-200 text-[#5F6368] hover:text-[#1A73E8] hover:bg-gray-50 transition-colors shadow-sm">
+            <ChevronLeft className="w-5 h-5" />
           </Link>
-          <div className="relative">
-            <h1 className="text-3xl font-medium tracking-tight text-[#202124] mb-2 relative z-10 flex flex-col md:flex-row items-center gap-3">
-              <User className="w-8 h-8 text-[#FBBC04]" />
-              Profil Pengguna
-            </h1>
-            <p className="text-[#5F6368] text-base relative z-10">
-              Informasi detail mengenai data diri magang Anda
-            </p>
-          </div>
+          <h1 className="text-2xl font-bold text-[#202124]">Profile</h1>
         </div>
-        {!isEditing && (
-          <button
-            onClick={() => setIsEditing(true)}
-            className="flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-[#5F6368] text-sm font-medium px-5 py-2.5 rounded-full transition-all border border-gray-300 shadow-sm active:scale-95 w-full md:w-auto mt-4 md:mt-0"
-          >
-            <Edit2 className="w-4 h-4" /> Edit Profil
-          </button>
-        )}
       </div>
 
       {isEditing ? (
@@ -272,82 +256,90 @@ export default function ProfilPage() {
         </form>
       ) : (
         /* Profile View Section */
-        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-sm transition-shadow mb-8 relative">
-          <div className="p-8 md:p-10 relative z-10">
-            <div className="flex flex-col md:flex-row gap-8 items-start md:items-center mb-10 pb-10 border-b border-gray-200">
-              <div className="w-24 h-24 rounded-full bg-[#FBBC04] flex-shrink-0 flex items-center justify-center shadow-sm">
-                  <span className="text-4xl font-normal text-white">
-                    {profile?.nama_lengkap?.charAt(0).toUpperCase() || 'U'}
-                  </span>
+        <div className="mb-8 relative max-w-2xl mx-auto">
+          {/* Centered Avatar and Name */}
+          <div className="relative z-10 flex flex-col items-center mb-10 text-center">
+            <div className="relative mb-4">
+              <div className="w-28 h-28 rounded-full bg-[#FBBC04] flex-shrink-0 flex items-center justify-center shadow-md border-4 border-white">
+                <span className="text-5xl font-normal text-white">
+                  {profile?.nama_lengkap?.charAt(0).toUpperCase() || 'U'}
+                </span>
               </div>
-              <div>
-                <h2 className="text-2xl font-medium text-[#202124] mb-2">{profile?.nama_lengkap || 'User Magang'}</h2>
-                <div className="flex items-center gap-3 flex-wrap">
-                  <span className="px-3 py-1 bg-[#FEF7E0] text-[#E37400] border border-[#FEF7E0] rounded-full text-sm font-medium flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4" /> Magang {profile?.instansi_magang ? `di ${profile.instansi_magang}` : ''}
-                  </span>
-                  <span className="px-3 py-1 bg-[#F8F9FA] text-[#5F6368] border border-gray-200 rounded-full text-sm font-medium flex items-center gap-1.5">
-                    <Building2 className="w-4 h-4" /> {profile?.unit_magang || 'Belum ada unit'}
-                  </span>
+              <button 
+                onClick={() => setIsEditing(true)} 
+                className="absolute bottom-0 right-0 bg-white p-2 rounded-full shadow-sm border border-gray-100 text-[#1A73E8] hover:bg-gray-50 transition-colors"
+                title="Edit Profil"
+              >
+                <Edit2 className="w-4 h-4" />
+              </button>
+            </div>
+            <h2 className="text-2xl font-bold text-[#202124] mb-2">{profile?.nama_lengkap || 'User Magang'}</h2>
+            <span className="px-4 py-1.5 bg-[#FEF7E0] text-[#E37400] rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm">
+              <ShieldCheck className="w-4 h-4" /> Magang {profile?.instansi_magang ? `di ${profile.instansi_magang}` : ''}
+            </span>
+          </div>
+
+          {/* Settings-like List Menu */}
+          <div className="space-y-6">
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+              <h3 className="px-6 py-4 text-sm font-bold text-[#202124] bg-gray-50/50 border-b border-gray-100">Informasi Pribadi</h3>
+              <div className="divide-y divide-gray-100">
+                <div className="px-6 py-4 flex items-center gap-4 hover:bg-gray-50 transition-colors">
+                  <div className="p-2.5 bg-[#F8F9FA] rounded-full text-[#5F6368]"><CreditCard className="w-5 h-5" /></div>
+                  <div className="flex-1">
+                    <p className="text-xs text-[#5F6368] font-medium mb-0.5">NIM / NIK</p>
+                    <p className="text-sm font-medium text-[#202124]">{profile?.nim || '-'}</p>
+                  </div>
+                </div>
+                <div className="px-6 py-4 flex items-center gap-4 hover:bg-gray-50 transition-colors">
+                  <div className="p-2.5 bg-[#F8F9FA] rounded-full text-[#5F6368]"><Mail className="w-5 h-5" /></div>
+                  <div className="flex-1">
+                    <p className="text-xs text-[#5F6368] font-medium mb-0.5">Email Pengguna</p>
+                    <p className="text-sm font-medium text-[#202124]">{email || '-'}</p>
+                  </div>
+                </div>
+                <div className="px-6 py-4 flex items-center gap-4 hover:bg-gray-50 transition-colors">
+                  <div className="p-2.5 bg-[#F8F9FA] rounded-full text-[#5F6368]"><GraduationCap className="w-5 h-5" /></div>
+                  <div className="flex-1">
+                    <p className="text-xs text-[#5F6368] font-medium mb-0.5">Universitas / Prodi</p>
+                    <p className="text-sm font-medium text-[#202124]">{profile?.universitas || '-'} {profile?.prodi ? `(${profile.prodi})` : ''}</p>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-              <div className="space-y-6">
-                <div>
-                  <p className="text-xs text-[#5F6368] font-medium uppercase tracking-wider mb-2 flex items-center gap-2">
-                    <User className="w-4 h-4" /> Nama Lengkap
-                  </p>
-                  <p className="text-base font-medium text-[#202124]">{profile?.nama_lengkap || '-'}</p>
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+              <h3 className="px-6 py-4 text-sm font-bold text-[#202124] bg-gray-50/50 border-b border-gray-100">Detail Magang</h3>
+              <div className="divide-y divide-gray-100">
+                <div className="px-6 py-4 flex items-center gap-4 hover:bg-gray-50 transition-colors">
+                  <div className="p-2.5 bg-[#E8F0FE] rounded-full text-[#1A73E8]"><Building className="w-5 h-5" /></div>
+                  <div className="flex-1">
+                    <p className="text-xs text-[#5F6368] font-medium mb-0.5">Tempat Magang</p>
+                    <p className="text-sm font-medium text-[#202124]">{profile?.instansi_magang || '-'}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs text-[#5F6368] font-medium uppercase tracking-wider mb-2 flex items-center gap-2">
-                    <CreditCard className="w-4 h-4" /> NIM / NIK
-                  </p>
-                  <p className="text-base font-medium text-[#202124]">{profile?.nim || '-'}</p>
+                <div className="px-6 py-4 flex items-center gap-4 hover:bg-gray-50 transition-colors">
+                  <div className="p-2.5 bg-[#E8F0FE] rounded-full text-[#1A73E8]"><Building2 className="w-5 h-5" /></div>
+                  <div className="flex-1">
+                    <p className="text-xs text-[#5F6368] font-medium mb-0.5">Unit / Divisi</p>
+                    <p className="text-sm font-medium text-[#202124]">{profile?.unit_magang || 'Belum ada unit'}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs text-[#5F6368] font-medium uppercase tracking-wider mb-2 flex items-center gap-2">
-                    <Mail className="w-4 h-4" /> Email Pengguna
-                  </p>
-                  <p className="text-base font-medium text-[#202124]">{email || '-'}</p>
-                </div>
-              </div>
-
-              <div className="space-y-6">
-                <div>
-                  <p className="text-xs text-[#5F6368] font-medium uppercase tracking-wider mb-2 flex items-center gap-2">
-                    <GraduationCap className="w-4 h-4" /> Universitas / Asal Instansi
-                  </p>
-                  <p className="text-base font-medium text-[#202124]">
-                    {profile?.universitas || '-'} {profile?.prodi ? `(${profile.prodi})` : ''}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-[#5F6368] font-medium uppercase tracking-wider mb-2 flex items-center gap-2">
-                    <Building className="w-4 h-4" /> Tempat Magang
-                  </p>
-                  <p className="text-base font-medium text-[#202124]">{profile?.instansi_magang || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-[#5F6368] font-medium uppercase tracking-wider mb-2 flex items-center gap-2">
-                    <Calendar className="w-4 h-4" /> Periode Magang
-                  </p>
-                  <p className="text-base font-medium text-[#202124]">
-                    {profile?.tanggal_mulai || '?'} <span className="text-[#5F6368] text-sm mx-1">s/d</span> {profile?.tanggal_selesai || '?'}
-                  </p>
+                <div className="px-6 py-4 flex items-center gap-4 hover:bg-gray-50 transition-colors">
+                  <div className="p-2.5 bg-[#E8F0FE] rounded-full text-[#1A73E8]"><Calendar className="w-5 h-5" /></div>
+                  <div className="flex-1">
+                    <p className="text-xs text-[#5F6368] font-medium mb-0.5">Periode Magang</p>
+                    <p className="text-sm font-medium text-[#202124]">{profile?.tanggal_mulai || '?'} s/d {profile?.tanggal_selesai || '?'}</p>
+                  </div>
                 </div>
               </div>
             </div>
 
             {profile?.bio && (
-              <div className="pt-6 border-t border-gray-200">
-                <p className="text-xs text-[#5F6368] font-medium uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <Info className="w-4 h-4" /> Keterangan Tambahan
-                </p>
-                <div className="bg-[#F8F9FA] p-4 rounded-xl border border-gray-200">
-                  <p className="text-[#202124] whitespace-pre-wrap text-sm leading-relaxed">{profile.bio}</p>
+              <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+                <h3 className="px-6 py-4 text-sm font-bold text-[#202124] bg-gray-50/50 border-b border-gray-100">Bio & Keterangan</h3>
+                <div className="px-6 py-5">
+                  <p className="text-sm text-[#202124] leading-relaxed whitespace-pre-wrap">{profile.bio}</p>
                 </div>
               </div>
             )}
@@ -356,17 +348,13 @@ export default function ProfilPage() {
       )}
 
       {/* Actions Section */}
-      <div className="bg-[#FCE8E6] border border-[#FAD2CF] rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div>
-          <h3 className="text-[#C5221F] font-medium mb-1">Keluar Aplikasi</h3>
-          <p className="text-[#5F6368] text-sm">Sesi Anda akan diakhiri dan Anda harus login kembali.</p>
-        </div>
+      <div className="mt-8 max-w-2xl mx-auto">
         <button
           onClick={handleLogout}
-          className="w-full sm:w-auto bg-white hover:bg-gray-50 text-[#C5221F] border border-gray-300 font-medium px-6 py-2.5 rounded-full transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2"
+          className="w-full bg-white hover:bg-gray-50 text-[#C5221F] border border-gray-200 font-bold px-6 py-4 rounded-full transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2"
         >
-          <LogOut className="w-4 h-4" />
-          Logout Sekarang
+          <LogOut className="w-5 h-5" />
+          Logout
         </button>
       </div>
     </div>

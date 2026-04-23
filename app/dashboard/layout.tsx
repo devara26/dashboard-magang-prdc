@@ -63,7 +63,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Mobile Top Header (Centered Logo) */}
       <div className="md:hidden flex items-center justify-center bg-white border-b border-gray-200 px-4 py-4 z-20 shadow-sm relative">
-        <img src="/orbit-logo.svg" alt="Orbit Logo" className="h-8 w-auto object-contain" />
+        <img src="/orbit-logo.svg" alt="Orbit Logo" className="h-10 w-auto object-contain" />
       </div>
 
       {/* Sidebar: Desktop Only */}
