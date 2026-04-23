@@ -144,9 +144,9 @@ export default function KegiatanPage() {
     <div className="pb-12 animate-[fade-in_0.7s_ease-out]">
       {/* Header Section */}
       <div className="mb-10 relative">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 relative z-10">
+        <div className="flex flex-col items-center text-center md:flex-row md:justify-between md:items-end md:text-left gap-6 relative z-10">
           <div>
-            <h1 className="text-3xl font-medium tracking-tight text-[#202124] mb-2 flex items-center gap-3">
+            <h1 className="text-3xl font-medium tracking-tight text-[#202124] mb-2 flex flex-col md:flex-row items-center gap-3">
               <List className="w-8 h-8 text-[#1A73E8]" />
               Jurnal Kegiatan
             </h1>

@@ -172,8 +172,8 @@ export default function AbsensiPage() {
   return (
     <div className="pb-12 animate-[fade-in_0.7s_ease-out]">
       {/* Header Section */}
-      <div className="mb-10 relative">
-        <h1 className="text-3xl font-medium tracking-tight text-[#202124] mb-2 relative z-10 flex items-center gap-3">
+      <div className="mb-10 relative flex flex-col items-center text-center md:items-start md:text-left">
+        <h1 className="text-3xl font-medium tracking-tight text-[#202124] mb-2 relative z-10 flex flex-col md:flex-row items-center gap-3">
           <Calendar className="w-8 h-8 text-[#34A853]" />
           Absensi Harian
         </h1>
@@ -216,16 +216,16 @@ export default function AbsensiPage() {
 
         {todayRecord ? (
           <div className="space-y-6 relative z-10">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 bg-[#F8F9FA] p-6 rounded-xl border border-gray-200">
-              <div className="flex flex-col gap-1">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 bg-[#F8F9FA] p-6 rounded-xl border border-gray-200 text-center sm:text-left">
+              <div className="flex flex-col items-center sm:items-start gap-1">
                 <p className="text-xs text-[#5F6368] font-medium uppercase tracking-wider flex items-center gap-1.5"><LogIn className="w-3.5 h-3.5" /> Check-in</p>
                 <p className="text-2xl font-medium text-[#202124]">{todayRecord.check_in || '-'}</p>
               </div>
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col items-center sm:items-start gap-1">
                 <p className="text-xs text-[#5F6368] font-medium uppercase tracking-wider flex items-center gap-1.5"><LogOut className="w-3.5 h-3.5" /> Check-out</p>
                 <p className="text-2xl font-medium text-[#202124]">{todayRecord.check_out || '-'}</p>
               </div>
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col items-center sm:items-start gap-1">
                 <p className="text-xs text-[#5F6368] font-medium uppercase tracking-wider">Status</p>
                 <div>
                   <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${

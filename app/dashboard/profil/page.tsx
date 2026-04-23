@@ -111,13 +111,13 @@ export default function ProfilPage() {
   return (
     <div className="pb-12 animate-[fade-in_0.7s_ease-out] max-w-5xl mx-auto">
       {/* Header Section */}
-      <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <div className="mb-8 flex flex-col items-center text-center md:flex-row md:items-end md:justify-between md:text-left gap-4">
         <div>
           <Link href="/dashboard" className="inline-flex items-center gap-2 text-[#5F6368] hover:text-[#1A73E8] transition-colors text-sm font-medium mb-6">
-            <ChevronLeft className="w-4 h-4" /> Kembali ke Beranda
+            <ChevronLeft className="w-4 h-4" /> <span className="hidden md:inline">Kembali ke Beranda</span>
           </Link>
           <div className="relative">
-            <h1 className="text-3xl font-medium tracking-tight text-[#202124] mb-2 relative z-10 flex items-center gap-3">
+            <h1 className="text-3xl font-medium tracking-tight text-[#202124] mb-2 relative z-10 flex flex-col md:flex-row items-center gap-3">
               <User className="w-8 h-8 text-[#FBBC04]" />
               Profil Pengguna
             </h1>
@@ -129,7 +129,7 @@ export default function ProfilPage() {
         {!isEditing && (
           <button
             onClick={() => setIsEditing(true)}
-            className="flex items-center gap-2 bg-white hover:bg-gray-50 text-[#5F6368] text-sm font-medium px-5 py-2.5 rounded-full transition-all border border-gray-300 shadow-sm active:scale-95"
+            className="flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-[#5F6368] text-sm font-medium px-5 py-2.5 rounded-full transition-all border border-gray-300 shadow-sm active:scale-95 w-full md:w-auto mt-4 md:mt-0"
           >
             <Edit2 className="w-4 h-4" /> Edit Profil
           </button>

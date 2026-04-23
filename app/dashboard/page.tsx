@@ -125,13 +125,13 @@ export default function DashboardPage() {
     <div className="pb-12 animate-[fade-in_0.7s_ease-out]">
       
       {/* Header Section */}
-      <div className="mb-10 relative">
+      <div className="mb-10 relative flex flex-col items-center text-center md:items-start md:text-left">
         <h1 className="text-3xl font-medium tracking-tight text-[#202124] mb-2 relative z-10">
-          Selamat datang, <span className="text-[#1A73E8]">{profile?.nama_lengkap || 'Mahasiswa'}</span>
+          Selamat datang, <span className="text-[#1A73E8] block sm:inline">{profile?.nama_lengkap || 'Mahasiswa'}</span>
         </h1>
-        <p className="text-[#5F6368] text-base flex items-center gap-2 relative z-10">
+        <p className="text-[#5F6368] text-base flex flex-col sm:flex-row items-center gap-2 relative z-10">
           <span className="bg-white px-3 py-1 rounded-full text-sm border border-gray-200 shadow-sm">{profile?.unit_magang || 'Divisi IT'}</span>
-          <span>·</span>
+          <span className="hidden sm:inline">·</span>
           <span>{profile?.instansi_magang || 'PT Contoh Instansi'}</span>
         </p>
       </div>
