@@ -11,6 +11,7 @@ type Profile = {
   id: string
   nama_lengkap: string
   nim: string
+  prodi?: string
   instansi_magang: string
   unit_magang: string
   tanggal_mulai?: string
