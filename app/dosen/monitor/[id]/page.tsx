@@ -210,9 +210,9 @@ export default function MahasiswaDetailPage({ params }: { params: Promise<{ id: 
       
       {/* Header */}
       <div className="mb-6">
-        <Link href="/dosen" className="inline-flex items-center text-sm font-medium text-[#5F6368] hover:text-[#1A73E8] mb-4 transition-colors">
+        <Link href="/dosen/mahasiswa" className="inline-flex items-center text-sm font-medium text-[#5F6368] hover:text-[#1A73E8] mb-4 transition-colors">
           <ArrowLeft className="w-4 h-4 mr-1" />
-          Kembali ke Daftar
+          Kembali ke Daftar Monitoring
         </Link>
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-full bg-[#1A73E8] flex-shrink-0 flex items-center justify-center shadow-sm border-4 border-white">
