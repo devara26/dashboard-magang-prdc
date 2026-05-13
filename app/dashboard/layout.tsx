@@ -44,24 +44,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }
 
-  async function handleRoleChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const newRole = e.target.value;
-    if (newRole === 'dosen') {
-      const code = prompt('Masukkan kode akses Dosen:')
-      if (code === '123') {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          await supabase.from('profiles').update({ role: 'dosen' }).eq('id', user.id)
-          router.push('/dosen')
-          router.refresh()
-        }
-      } else {
-        if (code !== null) alert('Kode salah!')
-        e.target.value = 'mahasiswa' // revert
-      }
-    }
-  }
-
   const navItems = [
     { name: 'Beranda', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Absensi Harian', href: '/dashboard/absensi', icon: CalendarCheck },
@@ -147,7 +129,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <div className="p-3 border-t border-gray-200 bg-white">
           <div className="flex flex-col gap-2">
-            <div className={`flex items-center ${!isSidebarOpen ? 'justify-center' : 'gap-3'} px-2 py-2 group`}>
+            <Link href="/dashboard/profil" className={`flex items-center ${!isSidebarOpen ? 'justify-center' : 'gap-3'} px-2 py-2 rounded-xl hover:bg-[#F1F3F4] transition-colors group cursor-pointer`}>
               <div className="w-8 h-8 flex-shrink-0 rounded-full bg-[#34A853] text-white flex items-center justify-center font-medium text-sm">
                 {initial}
               </div>
@@ -162,19 +144,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <LogOut className="w-4 h-4 text-[#5F6368] hover:text-[#EA4335] transition-colors" />
                 </button>
               )}
-            </div>
-            {isSidebarOpen && (
-              <div className="px-2">
-                <select
-                  value="mahasiswa"
-                  onChange={handleRoleChange}
-                  className="w-full text-xs font-medium bg-gray-50 border border-gray-200 rounded-md px-2 py-1.5 text-[#5F6368] focus:outline-none focus:border-[#1A73E8]"
-                >
-                  <option value="mahasiswa">Role: Mahasiswa</option>
-                  <option value="dosen">Ganti ke Dosen</option>
-                </select>
-              </div>
-            )}
+            </Link>
             {!isSidebarOpen && (
               <button onClick={handleLogout} className="p-2 mx-auto rounded-full hover:bg-[#FCE8E6] transition-colors" title="Keluar">
                 <LogOut className="w-4 h-4 text-[#5F6368] hover:text-[#EA4335] transition-colors" />

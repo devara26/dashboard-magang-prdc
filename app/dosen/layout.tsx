@@ -44,22 +44,6 @@ export default function DosenLayout({ children }: { children: React.ReactNode })
     }
   }
 
-  async function handleRoleChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const newRole = e.target.value;
-    if (newRole === 'mahasiswa') {
-      if (confirm('Beralih ke tampilan Mahasiswa?')) {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          await supabase.from('profiles').update({ role: 'mahasiswa' }).eq('id', user.id)
-          router.push('/dashboard')
-          router.refresh()
-        }
-      } else {
-        e.target.value = 'dosen' // revert
-      }
-    }
-  }
-
   const navItems = [
     { name: 'Daftar Mahasiswa', href: '/dosen', icon: Users },
   ]
@@ -115,7 +99,7 @@ export default function DosenLayout({ children }: { children: React.ReactNode })
 
         <div className="p-3 border-t border-gray-200 bg-white">
           <div className="flex flex-col gap-2">
-            <div className={`flex items-center ${!isSidebarOpen ? 'justify-center' : 'gap-3'} px-2 py-2 group`}>
+            <Link href="/dosen/profil" className={`flex items-center ${!isSidebarOpen ? 'justify-center' : 'gap-3'} px-2 py-2 rounded-xl hover:bg-[#F1F3F4] transition-colors group cursor-pointer`}>
               <div className="w-8 h-8 flex-shrink-0 rounded-full bg-[#1A73E8] text-white flex items-center justify-center font-medium text-sm">
                 {initial}
               </div>
@@ -130,19 +114,7 @@ export default function DosenLayout({ children }: { children: React.ReactNode })
                   <LogOut className="w-4 h-4 text-[#5F6368] hover:text-[#EA4335] transition-colors" />
                 </button>
               )}
-            </div>
-            {isSidebarOpen && (
-              <div className="px-2">
-                <select
-                  value="dosen"
-                  onChange={handleRoleChange}
-                  className="w-full text-xs font-medium bg-gray-50 border border-gray-200 rounded-md px-2 py-1.5 text-[#5F6368] focus:outline-none focus:border-[#1A73E8]"
-                >
-                  <option value="dosen">Role: Dosen</option>
-                  <option value="mahasiswa">Ganti ke Mahasiswa</option>
-                </select>
-              </div>
-            )}
+            </Link>
             {!isSidebarOpen && (
               <button onClick={handleLogout} className="p-2 mx-auto rounded-full hover:bg-[#FCE8E6] transition-colors" title="Keluar">
                 <LogOut className="w-4 h-4 text-[#5F6368] hover:text-[#EA4335] transition-colors" />
