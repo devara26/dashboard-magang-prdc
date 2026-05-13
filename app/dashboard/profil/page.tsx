@@ -331,9 +331,14 @@ export default function ProfilPage() {
                     if (code === '123') {
                       const { data: { user } } = await supabase.auth.getUser()
                       if (user) {
-                        await supabase.from('profiles').update({ role: 'dosen' }).eq('id', user.id)
-                        router.push('/dosen/mahasiswa')
-                        router.refresh()
+                        const { error } = await supabase.from('profiles').update({ role: 'dosen' }).eq('id', user.id)
+                        if (error) {
+                          alert('Gagal ganti role. Pastikan RLS Supabase mengizinkan UPDATE pada tabel profiles.')
+                          e.target.value = 'mahasiswa'
+                        } else {
+                          router.push('/dosen/mahasiswa')
+                          router.refresh()
+                        }
                       }
                     } else {
                       if (code !== null) alert('Kode salah!')
