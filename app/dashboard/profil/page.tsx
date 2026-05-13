@@ -332,7 +332,7 @@ export default function ProfilPage() {
                       const { data: { user } } = await supabase.auth.getUser()
                       if (user) {
                         await supabase.from('profiles').update({ role: 'dosen' }).eq('id', user.id)
-                        router.push('/dosen')
+                        router.push('/dosen/mahasiswa')
                         router.refresh()
                       }
                     } else {
