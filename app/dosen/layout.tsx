@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Users, LogOut, User, Menu } from 'lucide-react'
+import { Home, Users, CheckSquare, FileText, LogOut, User, Menu } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
@@ -45,11 +45,16 @@ export default function DosenLayout({ children }: { children: React.ReactNode })
   }
 
   const navItems = [
-    { name: 'Daftar Mahasiswa', href: '/dosen', icon: Users },
+    { name: 'Beranda', href: '/dosen', icon: Home },
+    { name: 'Daftar Mahasiswa', href: '/dosen/mahasiswa', icon: Users },
+    { name: 'Persetujuan Jurnal', href: '/dosen/persetujuan', icon: CheckSquare },
+    { name: 'Laporan', href: '/dosen/laporan', icon: FileText },
   ]
 
   const bottomNavItems = [
-    { name: 'Mahasiswa', href: '/dosen', icon: Users },
+    { name: 'Beranda', href: '/dosen', icon: Home },
+    { name: 'Mahasiswa', href: '/dosen/mahasiswa', icon: Users },
+    { name: 'Persetujuan', href: '/dosen/persetujuan', icon: CheckSquare },
     { name: 'Profil', href: '/dosen/profil', icon: User },
   ]
 
