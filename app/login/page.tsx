@@ -17,13 +17,20 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data: authData, error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
       setError('Email atau password salah. Silakan coba lagi.')
       setLoading(false)
-    } else {
-      router.push('/dashboard')
+    } else if (authData.user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', authData.user.id)
+        .single()
+
+      const userRole = profile?.role || 'mahasiswa'
+      router.push(userRole === 'dosen' ? '/dosen' : '/dashboard')
       router.refresh()
     }
   }

@@ -2,16 +2,16 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, CalendarCheck, List, LogOut, User } from 'lucide-react'
+import { Users, LogOut, User } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function DosenLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const [profileName, setProfileName] = useState('Memuat...')
-  const [role, setRole] = useState('Mahasiswa')
-  const [initial, setInitial] = useState('U')
+  const [role, setRole] = useState('Dosen')
+  const [initial, setInitial] = useState('D')
 
   useEffect(() => {
     async function fetchUser() {
@@ -20,15 +20,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       const { data } = await supabase
         .from('profiles')
-        .select('nama_lengkap')
+        .select('nama_lengkap, role')
         .eq('id', user.id)
         .single()
 
       if (data && data.nama_lengkap) {
         setProfileName(data.nama_lengkap)
         setInitial(data.nama_lengkap.charAt(0).toUpperCase())
+        setRole(data.role || 'Dosen')
       } else {
-        setProfileName('User Magang')
+        setProfileName('Dosen')
       }
     }
     fetchUser()
@@ -43,33 +44,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   async function handleSwitchRole() {
-    const code = prompt('Masukkan kode akses Dosen:')
-    if (code === '123') {
+    if (confirm('Beralih ke tampilan Mahasiswa?')) {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        await supabase.from('profiles').update({ role: 'dosen' }).eq('id', user.id)
-        router.push('/dosen')
+        await supabase.from('profiles').update({ role: 'mahasiswa' }).eq('id', user.id)
+        router.push('/dashboard')
         router.refresh()
       }
-    } else if (code !== null) {
-      alert('Kode salah!')
     }
   }
 
   const navItems = [
-    { name: 'Beranda', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Absensi Harian', href: '/dashboard/absensi', icon: CalendarCheck },
-  ]
-
-  const actionItems = [
-    { name: 'Jurnal Kegiatan', href: '/dashboard/kegiatan', icon: List },
+    { name: 'Daftar Mahasiswa', href: '/dosen', icon: Users },
   ]
 
   const bottomNavItems = [
-    { name: 'Beranda', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Absensi', href: '/dashboard/absensi', icon: CalendarCheck },
-    { name: 'Jurnal', href: '/dashboard/kegiatan', icon: List },
-    { name: 'Profil', href: '/dashboard/profil', icon: User },
+    { name: 'Mahasiswa', href: '/dosen', icon: Users },
+    { name: 'Profil', href: '/dosen/profil', icon: User },
   ]
 
   return (
@@ -110,34 +101,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               })}
             </div>
           </div>
-
-          <div>
-            <p className="px-3 text-xs font-medium text-[#5F6368] uppercase tracking-wider mb-2">Kegiatan</p>
-            <div className="space-y-0.5">
-              {actionItems.map((item) => {
-                const active = pathname === item.href
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-full transition-colors ${active
-                        ? 'bg-[#E8F0FE] text-[#1A73E8]'
-                        : 'text-[#3C4043] hover:bg-[#F1F3F4]'
-                      }`}
-                  >
-                    <item.icon className={`w-5 h-5 flex-shrink-0 ${active ? 'text-[#1A73E8]' : 'text-[#5F6368]'}`} />
-                    <span className="text-sm font-medium truncate">{item.name}</span>
-                  </Link>
-                )
-              })}
-            </div>
-          </div>
         </nav>
 
         <div className="p-3 border-t border-gray-200 bg-white">
           <div className="flex flex-col gap-1">
-            <Link href="/dashboard/profil" className="flex items-center gap-3 px-3 py-2 rounded-full hover:bg-[#F1F3F4] transition-colors cursor-pointer group">
-              <div className="w-8 h-8 flex-shrink-0 rounded-full bg-[#34A853] text-white flex items-center justify-center font-medium text-sm">
+            <Link href="/dosen/profil" className="flex items-center gap-3 px-3 py-2 rounded-full hover:bg-[#F1F3F4] transition-colors cursor-pointer group">
+              <div className="w-8 h-8 flex-shrink-0 rounded-full bg-[#1A73E8] text-white flex items-center justify-center font-medium text-sm">
                 {initial}
               </div>
               <div className="flex-1 overflow-hidden">
@@ -149,7 +118,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </button>
             </Link>
             <button onClick={handleSwitchRole} className="text-xs text-center text-[#1A73E8] hover:bg-[#E8F0FE] py-1.5 rounded-full font-medium transition-colors">
-              Ganti ke Dosen
+              Ganti ke Mahasiswa
             </button>
           </div>
         </div>
