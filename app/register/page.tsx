@@ -20,6 +20,7 @@ export default function RegisterPage() {
     unit_magang: '', // mahasiswa
     fakultas: '', // dosen
     mata_kuliah: '', // dosen
+    kode_akses: '', // dosen access code
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -30,6 +31,13 @@ export default function RegisterPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
+
+    // Validate Kode Akses Dosen
+    if (role === 'dosen' && form.kode_akses !== '123') {
+      setError('Kode akses dosen tidak valid.')
+      setLoading(false)
+      return
+    }
 
     const { data, error: signUpError } = await supabase.auth.signUp({
       email: form.email,
@@ -151,6 +159,22 @@ export default function RegisterPage() {
               />
             </div>
           ))}
+
+          {role === 'dosen' && (
+            <div>
+              <label className="block text-sm font-medium text-[#5F6368] mb-1.5">Kode Akses Dosen</label>
+              <input
+                type="text"
+                name="kode_akses"
+                value={form.kode_akses}
+                onChange={handleChange}
+                placeholder="Masukkan kode rahasia dosen"
+                required
+                className="w-full bg-white text-[#202124] rounded-lg px-4 py-3 text-sm border border-gray-300 focus:outline-none focus:border-[#137333] focus:ring-1 focus:ring-[#137333] transition-colors"
+              />
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={loading}

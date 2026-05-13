@@ -29,6 +29,9 @@ export default function ProfilPage() {
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<Partial<Profile>>({})
   const [avatarBase64, setAvatarBase64] = useState<string | null>(null)
+  
+  const [showMhsModal, setShowMhsModal] = useState(false)
+  const [modalLoading, setModalLoading] = useState(false)
 
   useEffect(() => {
     fetchUser()
@@ -99,6 +102,17 @@ export default function ProfilPage() {
       toast.error('Gagal memperbarui profil')
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleSwitchToMahasiswa() {
+    setModalLoading(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      await supabase.from('profiles').update({ role: 'mahasiswa' }).eq('id', user.id)
+      window.location.href = '/dashboard'
+    } else {
+      setModalLoading(false)
     }
   }
 
@@ -325,18 +339,10 @@ export default function ProfilPage() {
               </span>
               <select
                 value="dosen"
-                onChange={async (e) => {
+                onChange={(e) => {
                   if (e.target.value === 'mahasiswa') {
-                    if (confirm('Beralih ke tampilan Mahasiswa?')) {
-                      const { data: { user } } = await supabase.auth.getUser()
-                      if (user) {
-                        await supabase.from('profiles').update({ role: 'mahasiswa' }).eq('id', user.id)
-                        router.push('/dashboard')
-                        router.refresh()
-                      }
-                    } else {
-                      e.target.value = 'dosen'
-                    }
+                    setShowMhsModal(true)
+                    e.target.value = 'dosen' // reset visual state
                   }
                 }}
                 className="px-3 py-1.5 bg-white border border-gray-200 rounded-full text-xs font-medium text-[#5F6368] focus:outline-none focus:border-[#1A73E8] shadow-sm cursor-pointer"
@@ -425,6 +431,40 @@ export default function ProfilPage() {
           Logout
         </button>
       </div>
+
+      {/* Switch to Mahasiswa Modal */}
+      {showMhsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-[fade-in_0.2s_ease-out]">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-[scale-in_0.2s_ease-out]">
+            <div className="px-6 py-5 border-b border-gray-100 bg-[#F8F9FA]">
+              <h3 className="text-lg font-bold text-[#202124] flex items-center gap-2">
+                Beralih ke Mahasiswa
+              </h3>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-[#5F6368] mb-6">
+                Apakah Anda yakin ingin beralih kembali ke tampilan dan hak akses Mahasiswa?
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowMhsModal(false)}
+                  className="px-4 py-2 rounded-xl text-sm font-medium text-[#5F6368] hover:bg-gray-100 transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleSwitchToMahasiswa}
+                  disabled={modalLoading}
+                  className="bg-[#1A73E8] hover:bg-[#1967D2] disabled:opacity-50 text-white text-sm font-bold px-6 py-2 rounded-xl transition-all shadow-sm active:scale-95"
+                >
+                  {modalLoading ? 'Memproses...' : 'Ya, Beralih'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
