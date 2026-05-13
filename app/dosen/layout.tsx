@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Users, LogOut, User } from 'lucide-react'
+import { Users, LogOut, User, Menu } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
@@ -12,6 +12,7 @@ export default function DosenLayout({ children }: { children: React.ReactNode })
   const [profileName, setProfileName] = useState('Memuat...')
   const [role, setRole] = useState('Dosen')
   const [initial, setInitial] = useState('D')
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 
   useEffect(() => {
     async function fetchUser() {
@@ -43,13 +44,18 @@ export default function DosenLayout({ children }: { children: React.ReactNode })
     }
   }
 
-  async function handleSwitchRole() {
-    if (confirm('Beralih ke tampilan Mahasiswa?')) {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        await supabase.from('profiles').update({ role: 'mahasiswa' }).eq('id', user.id)
-        router.push('/dashboard')
-        router.refresh()
+  async function handleRoleChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const newRole = e.target.value;
+    if (newRole === 'mahasiswa') {
+      if (confirm('Beralih ke tampilan Mahasiswa?')) {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          await supabase.from('profiles').update({ role: 'mahasiswa' }).eq('id', user.id)
+          router.push('/dashboard')
+          router.refresh()
+        }
+      } else {
+        e.target.value = 'dosen' // revert
       }
     }
   }
@@ -66,22 +72,25 @@ export default function DosenLayout({ children }: { children: React.ReactNode })
   return (
     <div className="flex flex-col md:flex-row h-screen w-full bg-[#F8F9FA] text-[#202124] overflow-hidden font-sans selection:bg-blue-200">
 
-      {/* Mobile Top Header (Centered Logo) */}
+      {/* Mobile Top Header */}
       <div className="md:hidden flex items-center justify-center bg-white border-b border-gray-100 px-4 h-14 z-20 shadow-sm relative">
         <img src="/orbit-logo.svg" alt="Orbit Logo" className="h-10 w-auto object-contain scale-150 origin-center" />
       </div>
 
       {/* Sidebar: Desktop Only */}
-      <aside className="hidden md:flex inset-y-0 left-0 z-40 w-64 flex-shrink-0 border-r border-gray-200 bg-white flex-col shadow-sm">
+      <aside className={`hidden md:flex inset-y-0 left-0 z-40 flex-shrink-0 border-r border-gray-200 bg-white flex-col shadow-sm transition-all duration-300 ${isSidebarOpen ? 'w-64' : 'w-20'}`}>
         <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200">
-          <div className="flex items-center">
-            <img src="/orbit-logo.svg" alt="Orbit Logo" className="h-8 w-auto object-contain" />
+          <div className="flex items-center gap-3 overflow-hidden">
+            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-[#5F6368] hover:text-[#202124] transition-colors flex-shrink-0">
+              <Menu className="w-6 h-6" />
+            </button>
+            {isSidebarOpen && <img src="/orbit-logo.svg" alt="Orbit Logo" className="h-8 w-auto object-contain flex-shrink-0" />}
           </div>
         </div>
 
-        <nav className="flex-1 px-3 py-4 space-y-6 overflow-y-auto">
+        <nav className="flex-1 px-3 py-4 space-y-6 overflow-y-auto overflow-x-hidden">
           <div>
-            <p className="px-3 text-xs font-medium text-[#5F6368] uppercase tracking-wider mb-2">Menu Utama</p>
+            {isSidebarOpen && <p className="px-3 text-xs font-medium text-[#5F6368] uppercase tracking-wider mb-2">Menu Utama</p>}
             <div className="space-y-0.5">
               {navItems.map((item) => {
                 const active = pathname === item.href
@@ -89,13 +98,14 @@ export default function DosenLayout({ children }: { children: React.ReactNode })
                   <Link
                     key={item.href}
                     href={item.href}
+                    title={!isSidebarOpen ? item.name : undefined}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-full transition-colors ${active
                         ? 'bg-[#E8F0FE] text-[#1A73E8]'
                         : 'text-[#3C4043] hover:bg-[#F1F3F4]'
-                      }`}
+                      } ${!isSidebarOpen ? 'justify-center' : ''}`}
                   >
                     <item.icon className={`w-5 h-5 flex-shrink-0 ${active ? 'text-[#1A73E8]' : 'text-[#5F6368]'}`} />
-                    <span className="text-sm font-medium truncate">{item.name}</span>
+                    {isSidebarOpen && <span className="text-sm font-medium truncate">{item.name}</span>}
                   </Link>
                 )
               })}
@@ -104,22 +114,40 @@ export default function DosenLayout({ children }: { children: React.ReactNode })
         </nav>
 
         <div className="p-3 border-t border-gray-200 bg-white">
-          <div className="flex flex-col gap-1">
-            <Link href="/dosen/profil" className="flex items-center gap-3 px-3 py-2 rounded-full hover:bg-[#F1F3F4] transition-colors cursor-pointer group">
+          <div className="flex flex-col gap-2">
+            <div className={`flex items-center ${!isSidebarOpen ? 'justify-center' : 'gap-3'} px-2 py-2 group`}>
               <div className="w-8 h-8 flex-shrink-0 rounded-full bg-[#1A73E8] text-white flex items-center justify-center font-medium text-sm">
                 {initial}
               </div>
-              <div className="flex-1 overflow-hidden">
-                <p className="text-sm font-medium text-[#202124] truncate">{profileName}</p>
-                <p className="text-xs text-[#5F6368] truncate capitalize">{role}</p>
+              {isSidebarOpen && (
+                <div className="flex-1 overflow-hidden">
+                  <p className="text-sm font-medium text-[#202124] truncate">{profileName}</p>
+                  <p className="text-xs text-[#5F6368] truncate capitalize">{role}</p>
+                </div>
+              )}
+              {isSidebarOpen && (
+                <button onClick={handleLogout} className="p-1.5 flex-shrink-0 rounded-full hover:bg-[#FCE8E6] transition-colors z-20" title="Keluar">
+                  <LogOut className="w-4 h-4 text-[#5F6368] hover:text-[#EA4335] transition-colors" />
+                </button>
+              )}
+            </div>
+            {isSidebarOpen && (
+              <div className="px-2">
+                <select
+                  value="dosen"
+                  onChange={handleRoleChange}
+                  className="w-full text-xs font-medium bg-gray-50 border border-gray-200 rounded-md px-2 py-1.5 text-[#5F6368] focus:outline-none focus:border-[#1A73E8]"
+                >
+                  <option value="dosen">Role: Dosen</option>
+                  <option value="mahasiswa">Ganti ke Mahasiswa</option>
+                </select>
               </div>
-              <button onClick={handleLogout} className="p-1.5 flex-shrink-0 rounded-full hover:bg-[#FCE8E6] transition-colors group/btn z-20" title="Keluar">
-                <LogOut className="w-4 h-4 text-[#5F6368] group-hover/btn:text-[#EA4335] transition-colors" />
+            )}
+            {!isSidebarOpen && (
+              <button onClick={handleLogout} className="p-2 mx-auto rounded-full hover:bg-[#FCE8E6] transition-colors" title="Keluar">
+                <LogOut className="w-4 h-4 text-[#5F6368] hover:text-[#EA4335] transition-colors" />
               </button>
-            </Link>
-            <button onClick={handleSwitchRole} className="text-xs text-center text-[#1A73E8] hover:bg-[#E8F0FE] py-1.5 rounded-full font-medium transition-colors">
-              Ganti ke Mahasiswa
-            </button>
+            )}
           </div>
         </div>
       </aside>

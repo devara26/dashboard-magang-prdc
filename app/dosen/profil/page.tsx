@@ -318,33 +318,31 @@ export default function ProfilPage() {
                 <Edit2 className="w-4 h-4" />
               </button>
             </div>
-            <h2 className="text-2xl font-bold text-[#202124] mb-2">{profile?.nama_lengkap || 'User Magang'}</h2>
+            <h2 className="text-2xl font-bold text-[#202124] mb-2">{profile?.nama_lengkap || 'Dosen'}</h2>
             <div className="flex items-center gap-2">
-              <span className="px-4 py-1.5 bg-[#FEF7E0] text-[#E37400] rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm">
-                <ShieldCheck className="w-4 h-4" /> Magang {profile?.instansi_magang ? `di ${profile.instansi_magang}` : ''}
+              <span className="px-4 py-1.5 bg-[#E8F0FE] text-[#1A73E8] rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm">
+                <ShieldCheck className="w-4 h-4" /> Dosen {profile?.universitas ? `di ${profile.universitas}` : ''}
               </span>
               <select
-                value="mahasiswa"
+                value="dosen"
                 onChange={async (e) => {
-                  if (e.target.value === 'dosen') {
-                    const code = prompt('Masukkan kode akses Dosen:')
-                    if (code === '123') {
+                  if (e.target.value === 'mahasiswa') {
+                    if (confirm('Beralih ke tampilan Mahasiswa?')) {
                       const { data: { user } } = await supabase.auth.getUser()
                       if (user) {
-                        await supabase.from('profiles').update({ role: 'dosen' }).eq('id', user.id)
-                        router.push('/dosen')
+                        await supabase.from('profiles').update({ role: 'mahasiswa' }).eq('id', user.id)
+                        router.push('/dashboard')
                         router.refresh()
                       }
                     } else {
-                      if (code !== null) alert('Kode salah!')
-                      e.target.value = 'mahasiswa'
+                      e.target.value = 'dosen'
                     }
                   }
                 }}
                 className="px-3 py-1.5 bg-white border border-gray-200 rounded-full text-xs font-medium text-[#5F6368] focus:outline-none focus:border-[#1A73E8] shadow-sm cursor-pointer"
               >
-                <option value="mahasiswa">Role: Mahasiswa</option>
-                <option value="dosen">Ganti ke Dosen</option>
+                <option value="dosen">Role: Dosen</option>
+                <option value="mahasiswa">Ganti ke Mahasiswa</option>
               </select>
             </div>
           </div>
