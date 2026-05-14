@@ -24,14 +24,17 @@ export default function LoginPage() {
       setError('Email atau password salah. Silakan coba lagi.')
       setLoading(false)
     } else if (authData.user) {
-      // Perbarui role pengguna sesuai dengan pilihan radio button
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ role: selectedRole })
-        .eq('id', authData.user.id)
-      
-      if (updateError) {
-        console.error('Gagal memperbarui role:', updateError)
+      try {
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ role: selectedRole })
+          .eq('id', authData.user.id)
+        
+        if (updateError) {
+          console.error('Gagal memperbarui role:', updateError)
+        }
+      } catch (err: any) {
+        console.error('Exception saat memperbarui role:', err.message)
       }
       
       // Berhasil login, langsung redirect sesuai role pilihan terlepas dari error update DB

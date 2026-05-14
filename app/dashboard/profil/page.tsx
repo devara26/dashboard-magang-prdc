@@ -115,9 +115,13 @@ export default function ProfilPage() {
     if (dosenCode === '123') {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        const { error } = await supabase.from('profiles').update({ role: 'dosen' }).eq('id', user.id)
-        if (error) {
-          console.error('Gagal ganti role di DB:', error.message)
+        try {
+          const { error } = await supabase.from('profiles').update({ role: 'dosen' }).eq('id', user.id)
+          if (error) {
+            console.error('Gagal ganti role di DB:', error.message)
+          }
+        } catch (err: any) {
+          console.error('Exception saat ganti role di DB:', err.message)
         }
         window.location.href = '/dosen'
       } else {
