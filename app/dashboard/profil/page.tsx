@@ -29,11 +29,6 @@ export default function ProfilPage() {
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<Partial<Profile>>({})
   const [avatarBase64, setAvatarBase64] = useState<string | null>(null)
-  
-  const [showDosenModal, setShowDosenModal] = useState(false)
-  const [dosenCode, setDosenCode] = useState('')
-  const [modalError, setModalError] = useState('')
-  const [modalLoading, setModalLoading] = useState(false)
 
   useEffect(() => {
     fetchUser()
@@ -104,31 +99,6 @@ export default function ProfilPage() {
       toast.error('Gagal memperbarui profil')
     } finally {
       setSaving(false)
-    }
-  }
-
-  async function handleDosenCodeSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setModalError('')
-    setModalLoading(true)
-
-    if (dosenCode === '123') {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const { error } = await supabase.from('profiles').update({ role: 'dosen' }).eq('id', user.id)
-        if (error) {
-          setModalError('Gagal ganti role. Pastikan RLS Supabase mengizinkan UPDATE pada tabel profiles.')
-          setModalLoading(false)
-        } else {
-          window.location.href = '/dosen'
-        }
-      } else {
-        setModalError('Sesi tidak ditemukan.')
-        setModalLoading(false)
-      }
-    } else {
-      setModalError('Kode akses salah!')
-      setModalLoading(false)
     }
   }
 
@@ -357,8 +327,23 @@ export default function ProfilPage() {
                 value="mahasiswa"
                 onChange={async (e) => {
                   if (e.target.value === 'dosen') {
-                    setShowDosenModal(true)
-                    e.target.value = 'mahasiswa' // reset visual state
+                    const code = prompt('Masukkan kode akses Dosen:')
+                    if (code === '123') {
+                      const { data: { user } } = await supabase.auth.getUser()
+                      if (user) {
+                        const { error } = await supabase.from('profiles').update({ role: 'dosen' }).eq('id', user.id)
+                        if (error) {
+                          alert('Gagal ganti role. Pastikan RLS Supabase mengizinkan UPDATE pada tabel profiles.')
+                          e.target.value = 'mahasiswa'
+                        } else {
+                          router.push('/dosen/mahasiswa')
+                          router.refresh()
+                        }
+                      }
+                    } else {
+                      if (code !== null) alert('Kode salah!')
+                      e.target.value = 'mahasiswa'
+                    }
                   }
                 }}
                 className="px-3 py-1.5 bg-white border border-gray-200 rounded-full text-xs font-medium text-[#5F6368] focus:outline-none focus:border-[#1A73E8] shadow-sm cursor-pointer"
@@ -447,60 +432,6 @@ export default function ProfilPage() {
           Logout
         </button>
       </div>
-
-      {/* Dosen Access Modal */}
-      {showDosenModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-[fade-in_0.2s_ease-out]">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-[scale-in_0.2s_ease-out]">
-            <div className="px-6 py-5 border-b border-gray-100 bg-[#F8F9FA]">
-              <h3 className="text-lg font-bold text-[#202124] flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-[#137333]" />
-                Verifikasi Dosen
-              </h3>
-            </div>
-            <form onSubmit={handleDosenCodeSubmit} className="p-6">
-              <p className="text-sm text-[#5F6368] mb-4">
-                Masukkan kode akses rahasia untuk beralih ke tampilan dan hak akses Dosen.
-              </p>
-              {modalError && (
-                <div className="mb-4 p-3 bg-[#FCE8E6] border border-[#FAD2CF] text-[#C5221F] text-xs font-medium rounded-lg">
-                  {modalError}
-                </div>
-              )}
-              <div className="mb-6">
-                <input
-                  type="password"
-                  value={dosenCode}
-                  onChange={e => setDosenCode(e.target.value)}
-                  placeholder="Kode Akses Dosen"
-                  className="w-full bg-white text-[#202124] rounded-xl px-4 py-3 text-sm border border-gray-300 focus:outline-none focus:border-[#137333] focus:ring-2 focus:ring-[#137333]/20 transition-all font-mono tracking-widest text-center"
-                  autoFocus
-                />
-              </div>
-              <div className="flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowDosenModal(false)
-                    setDosenCode('')
-                    setModalError('')
-                  }}
-                  className="px-4 py-2 rounded-xl text-sm font-medium text-[#5F6368] hover:bg-gray-100 transition-colors"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={modalLoading || !dosenCode}
-                  className="bg-[#137333] hover:bg-[#0D652D] disabled:opacity-50 text-white text-sm font-bold px-6 py-2 rounded-xl transition-all shadow-sm active:scale-95"
-                >
-                  {modalLoading ? 'Memproses...' : 'Verifikasi'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
