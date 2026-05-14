@@ -31,20 +31,11 @@ export default function LoginPage() {
         .eq('id', authData.user.id)
       
       if (updateError) {
-        // Jika gagal update (mungkin karena RLS), gunakan role lama dari database
         console.error('Gagal memperbarui role:', updateError)
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', authData.user.id)
-          .single()
-        const userRole = profile?.role || 'mahasiswa'
-        router.push(userRole === 'dosen' ? '/dosen' : '/dashboard')
-      } else {
-        // Berhasil update, langsung redirect sesuai role pilihan
-        router.push(selectedRole === 'dosen' ? '/dosen' : '/dashboard')
       }
-      router.refresh()
+      
+      // Berhasil login, langsung redirect sesuai role pilihan terlepas dari error update DB
+      window.location.href = selectedRole === 'dosen' ? '/dosen' : '/dashboard'
     }
   }
 
