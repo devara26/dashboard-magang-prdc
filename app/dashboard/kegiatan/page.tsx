@@ -475,7 +475,7 @@ export default function KegiatanPage() {
                       
                       {/* Comment Thread */}
                       <div className="mt-2 space-y-2 max-w-lg">
-                        {comments.filter(c => c.kegiatan_id === k.id).map(comment => (
+                        {comments.filter(c => String(c.kegiatan_id) === k.id).map(comment => (
                           <div key={comment.id} className="flex gap-2">
                             <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-[8px] font-bold text-white ${comment.profiles?.role === 'dosen' ? 'bg-[#137333]' : 'bg-[#1A73E8]'}`}>
                               {comment.profiles?.nama_lengkap?.charAt(0) || '?'}
