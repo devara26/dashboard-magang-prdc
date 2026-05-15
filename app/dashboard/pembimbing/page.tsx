@@ -49,15 +49,27 @@ export default function PembimbingPage() {
       setProfile(studentData)
 
       if (studentData?.dosen_id) {
-        // Fetch current dosen
-        const { data: dosenData, error: dosenError } = await supabase
-          .from('profiles')
-          .select('id, nama_lengkap, nip, department, faculty, max_mahasiswa')
-          .eq('id', studentData.dosen_id)
-          .single()
+        // Fetch current dosen and their enrolled count
+        const [dosenRes, countRes] = await Promise.all([
+          supabase
+            .from('profiles')
+            .select('id, nama_lengkap, nip, department, faculty, max_mahasiswa')
+            .eq('id', studentData.dosen_id)
+            .single(),
+          supabase
+            .from('profiles')
+            .select('id', { count: 'exact', head: true })
+            .eq('dosen_id', studentData.dosen_id)
+            .eq('role', 'mahasiswa')
+        ])
         
-        if (dosenError && dosenError.code !== 'PGRST116') throw dosenError
-        if (dosenData) setCurrentDosen({ ...dosenData, enrolled_count: 0 })
+        if (dosenRes.error && dosenRes.error.code !== 'PGRST116') throw dosenRes.error
+        if (dosenRes.data) {
+          setCurrentDosen({ 
+            ...dosenRes.data, 
+            enrolled_count: countRes.count || 0 
+          })
+        }
       } else {
         // Fetch all dosen and their enrolled count
         const { data: allDosen, error: allDosenError } = await supabase

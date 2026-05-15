@@ -20,7 +20,7 @@ type Mahasiswa = {
 
 export default function DaftarMahasiswaPage() {
   const router = useRouter()
-  const [mahasiswa, setMahasiswa] = useState<Mahasiswa[]>([])
+  const [mahasiswa, setMahasiswa] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
 

@@ -156,28 +156,109 @@ export default function AbsensiPage() {
     }
   }
 
-  // Menghitung hari dalam seminggu untuk Tracker
+  // Menghitung hari dalam seminggu untuk Tracker menggunakan data asli
   const getDaysOfWeek = () => {
     const days = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']
     const curr = new Date()
-    const dayIndex = curr.getDay() === 0 ? 6 : curr.getDay() - 1 // 0 = Sen, 6 = Min
     
-    return days.map((day, idx) => {
-      // Dummy check for visual
-      let isDone = false
-      if (idx < dayIndex) isDone = true
-      if (idx === dayIndex && todayRecord?.status === 'Hadir') isDone = true
+    // Cari awal minggu (Senin)
+    const monday = new Date(curr)
+    const diff = curr.getDay() === 0 ? 6 : curr.getDay() - 1
+    monday.setDate(curr.getDate() - diff)
+    monday.setHours(0, 0, 0, 0)
 
-      return { name: day, active: isDone, isToday: idx === dayIndex }
+    return days.map((day, idx) => {
+      const targetDate = new Date(monday)
+      targetDate.setDate(monday.getDate() + idx)
+      const dateStr = targetDate.toISOString().split('T')[0]
+      
+      const record = absensi.find(a => a.tanggal === dateStr)
+      const isHadir = record?.status === 'Hadir'
+      const isToday = dateStr === today
+
+      return { name: day, active: isHadir, isToday }
     })
   }
 
   const weekDays = getDaysOfWeek()
   
-  let streak = 0
-  for(let a of absensi) {
-    if(a.status === 'Hadir') streak++
+  // Hitung streak asli (hari berturut-turut)
+  const calculateStreak = () => {
+    if (absensi.length === 0) return 0
+    
+    let currentStreak = 0
+    const sortedAbsensi = [...absensi].sort((a, b) => b.tanggal.localeCompare(a.tanggal))
+    
+    // Ambil tanggal hari ini dan kemarin
+    const todayDate = new Date(today)
+    const yesterdayDate = new Date(todayDate)
+    yesterdayDate.setDate(todayDate.getDate() - 1)
+    const yesterdayStr = yesterdayDate.toISOString().split('T')[0]
+
+    // Jika hari ini tidak hadir DAN kemarin tidak hadir, streak putus (0)
+    // Kecuali hari ini baru saja mulai (belum absen)
+    const hasToday = sortedAbsensi.find(a => a.tanggal === today && a.status === 'Hadir')
+    const hasYesterday = sortedAbsensi.find(a => a.tanggal === yesterdayStr && a.status === 'Hadir')
+    
+    if (!hasToday && !hasYesterday) {
+      // Cek apakah hari ini weekend? Jika weekend, streak mungkin masih bertahan dari Jumat
+      const day = todayDate.getDay()
+      if (day === 0 || day === 6) { // Minggu atau Sabtu
+        // Cari hari kerja terakhir (Jumat)
+        const friday = new Date(todayDate)
+        friday.setDate(todayDate.getDate() - (day === 0 ? 2 : 1))
+        const fridayStr = friday.toISOString().split('T')[0]
+        if (!sortedAbsensi.find(a => a.tanggal === fridayStr && a.status === 'Hadir')) return 0
+      } else {
+        return 0
+      }
+    }
+
+    let lastDate = hasToday ? new Date(today) : new Date(yesterdayStr)
+    
+    for (const record of sortedAbsensi) {
+      if (record.status !== 'Hadir') continue
+      
+      const recordDate = new Date(record.tanggal)
+      
+      // Jika ini record pertama yang valid
+      if (currentStreak === 0) {
+        currentStreak = 1
+        lastDate = recordDate
+        continue
+      }
+
+      // Cek apakah record ini tepat sehari sebelum lastDate (abaikan weekend)
+      const diffTime = lastDate.getTime() - recordDate.getTime()
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+      if (diffDays === 1) {
+        currentStreak++
+        lastDate = recordDate
+      } else if (diffDays > 1) {
+        // Cek apakah selisihnya hanya weekend?
+        let isOnlyWeekend = true
+        for (let d = 1; d < diffDays; d++) {
+          const checkDate = new Date(recordDate)
+          checkDate.setDate(recordDate.getDate() + d)
+          if (checkDate.getDay() !== 0 && checkDate.getDay() !== 6) {
+            isOnlyWeekend = false
+            break
+          }
+        }
+        
+        if (isOnlyWeekend) {
+          currentStreak++
+          lastDate = recordDate
+        } else {
+          break // Streak terputus
+        }
+      }
+    }
+    return currentStreak
   }
+
+  const streak = calculateStreak()
 
   if (loading) return (
     <div className="flex h-[80vh] items-center justify-center">
@@ -248,8 +329,8 @@ export default function AbsensiPage() {
           </div>
         </div>
         <div>
-          <h2 className="text-[#0D652D] font-bold text-lg mb-1 leading-tight">You've been keeping track</h2>
-          <p className="text-[#137333] text-xs font-medium mb-3">You've added an entry every day for the past week.</p>
+          <h2 className="text-[#0D652D] font-bold text-lg mb-1 leading-tight">You&apos;ve been keeping track</h2>
+          <p className="text-[#137333] text-xs font-medium mb-3">You&apos;ve added an entry every day for the past week.</p>
           <span className="px-3 py-1 bg-[#A1D6B2]/40 text-[#0D652D] rounded-full text-[10px] font-bold uppercase tracking-wider">
             Longest streak: {streak} days
           </span>
@@ -258,7 +339,7 @@ export default function AbsensiPage() {
 
       {/* Entries Section */}
       <div className="flex justify-between items-center mb-4 px-2">
-        <h2 className="text-[#202124] font-bold text-lg">Today's entries</h2>
+        <h2 className="text-[#202124] font-bold text-lg">Today&apos;s entries</h2>
         <button className="text-[#9AA0A6] text-sm font-semibold flex items-center gap-1 hover:text-[#5F6368]">
           All entries <ChevronRight className="w-4 h-4" />
         </button>

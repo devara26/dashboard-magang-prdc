@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx-js-style'
 import { supabase } from '@/lib/supabase'
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function exportLaporanExcel(user: any) {
   // Fetch Profile
   const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
@@ -10,6 +11,7 @@ export async function exportLaporanExcel(user: any) {
   const { data: absensi } = await supabase.from('absensi').select('*').eq('mahasiswa_id', user.id).order('tanggal', { ascending: true })
   
   // Fetch Kegiatan
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let kegiatan: any[] = []
   if (profile.nim) {
     const { data: k } = await supabase.from('Kegiatan').select('*').eq('nim', profile.nim).order('tanggal', { ascending: true })
@@ -28,6 +30,7 @@ export async function exportLaporanExcel(user: any) {
     alignment: { horizontal: "center", vertical: "center" }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   function applyHeaderStyle(ws: XLSX.WorkSheet, headerCount: number) {
     const range = XLSX.utils.decode_range(ws['!ref'] || 'A1')
     for (let C = range.s.c; C <= range.e.c; ++C) {
@@ -60,7 +63,7 @@ export async function exportLaporanExcel(user: any) {
     const end = new Date(profile.tanggal_selesai)
     if (!isNaN(start.getTime()) && !isNaN(end.getTime()) && start <= end) {
       let count = 0
-      let current = new Date(start)
+      const current = new Date(start)
       while (current <= end) {
         const day = current.getDay()
         if (day !== 0 && day !== 6) count++
@@ -117,10 +120,10 @@ export async function exportLaporanExcel(user: any) {
     return {
       "Tanggal": formatDate(a.tanggal),
       "Hari": isNaN(d.getTime()) ? '-' : days[d.getDay()],
-      "Jam Masuk": a.jam_masuk || '-',
-      "Jam Keluar": a.jam_keluar || '-',
+      "Jam Masuk": a.check_in || '-',
+      "Jam Keluar": a.check_out || '-',
       "Status": a.status,
-      "Catatan": a.catatan || '-'
+      "Catatan": a.keterangan || '-'
     }
   })
   
