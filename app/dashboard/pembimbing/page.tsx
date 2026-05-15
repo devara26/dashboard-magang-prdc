@@ -28,67 +28,32 @@ export default function PembimbingPage() {
   const [enrolling, setEnrolling] = useState<string | null>(null)
   const [unloading, setUnloading] = useState(false)
 
-  useEffect(() => {
-    fetchData()
-  }, [])
+  useEffect(() => { fetchData() }, [])
 
   async function fetchData() {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const { data: studentData, error: studentError } = await supabase
-        .from('profiles')
-        .select('id, dosen_id, enrollment_date')
-        .eq('id', user.id)
-        .single()
-
-      if (studentError) throw studentError
+      const { data: studentData } = await supabase.from('profiles').select('id, dosen_id, enrollment_date').eq('id', user.id).single()
       setProfile(studentData)
 
       if (studentData?.dosen_id) {
         const [dosenRes, countRes] = await Promise.all([
-          supabase
-            .from('profiles')
-            .select('id, nama_lengkap, nip, department, faculty, max_mahasiswa')
-            .eq('id', studentData.dosen_id)
-            .single(),
-          supabase
-            .from('profiles')
-            .select('id', { count: 'exact', head: true })
-            .eq('dosen_id', studentData.dosen_id)
-            .eq('role', 'mahasiswa')
+          supabase.from('profiles').select('id, nama_lengkap, nip, department, faculty, max_mahasiswa').eq('id', studentData.dosen_id).single(),
+          supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('dosen_id', studentData.dosen_id).eq('role', 'mahasiswa')
         ])
-        
         if (dosenRes.data) {
-          setCurrentDosen({ 
-            ...dosenRes.data, 
-            enrolled_count: countRes.count || 0 
-          })
+          setCurrentDosen({ ...dosenRes.data, enrolled_count: countRes.count || 0 })
         }
       } else {
-        const { data: allDosen } = await supabase
-          .from('profiles')
-          .select('id, nama_lengkap, nip, department, faculty, max_mahasiswa')
-          .eq('role', 'dosen')
-        
-        const { data: allStudents } = await supabase
-          .from('profiles')
-          .select('dosen_id')
-          .eq('role', 'mahasiswa')
-          .not('dosen_id', 'is', null)
-
+        const { data: allDosen } = await supabase.from('profiles').select('id, nama_lengkap, nip, department, faculty, max_mahasiswa').eq('role', 'dosen')
+        const { data: allStudents } = await supabase.from('profiles').select('dosen_id').eq('role', 'mahasiswa').not('dosen_id', 'is', null)
         const dosenCounts = (allStudents || []).reduce((acc, curr) => {
           if (curr.dosen_id) acc[curr.dosen_id] = (acc[curr.dosen_id] || 0) + 1
           return acc
         }, {} as Record<string, number>)
-
-        const dosenList = (allDosen || []).map(d => ({
-          ...d,
-          max_mahasiswa: d.max_mahasiswa || 10,
-          enrolled_count: dosenCounts[d.id] || 0
-        }))
-
+        const dosenList = (allDosen || []).map(d => ({ ...d, max_mahasiswa: d.max_mahasiswa || 10, enrolled_count: dosenCounts[d.id] || 0 }))
         setAvailableDosen(dosenList)
       }
     } catch (error: any) {
@@ -101,15 +66,10 @@ export default function PembimbingPage() {
   async function handleEnroll(dosenId: string, availableSlots: number) {
     if (availableSlots <= 0) return toast.error('Kapasitas penuh')
     if (!confirm('Daftar ke dosen ini?')) return
-
     setEnrolling(dosenId)
     try {
       const now = new Date().toISOString()
-      const { error } = await supabase
-        .from('profiles')
-        .update({ dosen_id: dosenId, enrollment_date: now })
-        .eq('id', profile?.id)
-
+      const { error } = await supabase.from('profiles').update({ dosen_id: dosenId, enrollment_date: now }).eq('id', profile?.id)
       if (error) throw error
       toast.success('Berhasil mendaftar')
       fetchData()
@@ -124,11 +84,7 @@ export default function PembimbingPage() {
     if (!confirm('Batalkan pendaftaran pembimbing?')) return
     setUnloading(true)
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ dosen_id: null, enrollment_date: null })
-        .eq('id', profile?.id)
-
+      const { error } = await supabase.from('profiles').update({ dosen_id: null, enrollment_date: null }).eq('id', profile?.id)
       if (error) throw error
       toast.success('Pendaftaran dibatalkan')
       setCurrentDosen(null)
@@ -143,126 +99,120 @@ export default function PembimbingPage() {
   if (loading) return null
 
   return (
-    <div className="animate-fade-in space-y-10">
-      {/* Header */}
-      <header>
-        <h1 className="text-[32px] leading-[40px] font-bold tracking-tight text-[var(--on-surface)]">Dosen Pembimbing</h1>
-        <p className="text-[14px] font-bold text-[var(--on-surface-variant)] uppercase tracking-widest mt-1">Pembimbing Akademik Magang</p>
-      </header>
+    <div className="space-y-10 pb-20">
+      {/* Header Area */}
+      <div>
+         <h1 className="text-[28px] font-black tracking-tight text-[var(--text-main)]">Internship Supervisor</h1>
+         <p className="text-[14px] font-medium text-[var(--text-muted)]">Connect and manage your academic mentorship</p>
+      </div>
 
       {currentDosen ? (
-        <section className="bg-[var(--surface-container-lowest)] rounded-[48px] border border-[var(--outline-variant)] p-12 relative overflow-hidden shadow-sm">
-          <div className="absolute top-0 right-0 px-8 py-3 bg-[#e6f4ea] text-[#137333] rounded-bl-[32px] border-b border-l border-[#CEEAD6] text-[11px] font-black uppercase tracking-widest flex items-center gap-2">
-            <span className="material-symbols-outlined text-[16px] fill-icon">verified</span>
-            Terdaftar
+        <section className="bento-card relative overflow-hidden flex flex-col md:flex-row items-center md:items-start gap-12 py-12">
+          <div className="absolute top-0 right-0 px-6 py-2 bg-emerald-50 text-emerald-600 rounded-bl-[var(--radius-lg)] border-b border-l border-emerald-100 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+             <span className="material-symbols-outlined text-[16px] fill-icon">verified</span>
+             Assigned
           </div>
 
-          <div className="flex flex-col md:flex-row items-center md:items-start gap-12">
-            <div className="w-40 h-40 rounded-[40px] bg-[var(--primary)] flex-shrink-0 flex items-center justify-center shadow-xl shadow-blue-100 border-4 border-white overflow-hidden relative group">
-              <span className="text-6xl font-black text-white group-hover:scale-110 transition-transform">
+          <div className="w-40 h-40 rounded-[var(--radius-xl)] bg-[var(--accent)] flex-shrink-0 flex items-center justify-center shadow-xl shadow-blue-100 border-4 border-white overflow-hidden relative group">
+             {/* Initials fallback */}
+             <span className="text-6xl font-black text-white group-hover:scale-110 transition-transform">
                 {currentDosen.nama_lengkap.charAt(0).toUpperCase()}
-              </span>
-            </div>
+             </span>
+          </div>
 
-            <div className="flex-1 text-center md:text-left space-y-8">
-              <div>
-                <h2 className="text-[32px] font-black text-[var(--on-surface)] leading-tight">{currentDosen.nama_lengkap}</h2>
+          <div className="flex-1 text-center md:text-left space-y-8">
+             <div>
+                <h2 className="text-[32px] font-black text-[var(--text-main)] leading-tight tracking-tight">{currentDosen.nama_lengkap}</h2>
                 <div className="flex flex-wrap gap-3 justify-center md:justify-start mt-3">
-                  <span className="px-4 py-1.5 bg-[var(--surface-container-high)] text-[var(--on-surface-variant)] rounded-full text-[11px] font-black uppercase tracking-widest flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[16px]">badge</span>
-                    NIP: {currentDosen.nip || '-'}
-                  </span>
+                   <span className="px-4 py-1.5 bg-[var(--bg-app)] text-[var(--text-muted)] rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border border-[var(--border)]">
+                      <span className="material-symbols-outlined text-[16px]">badge</span>
+                      NIP: {currentDosen.nip || '-'}
+                   </span>
                 </div>
-              </div>
+             </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black text-[var(--on-surface-variant)] uppercase tracking-widest">Fakultas</p>
-                  <p className="text-[16px] font-bold text-[var(--on-surface)]">{currentDosen.faculty || '-'}</p>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-[var(--border-light)] pt-8">
+                <div>
+                   <p className="text-[10px] font-black text-[var(--text-light)] uppercase tracking-widest mb-1">Faculty</p>
+                   <p className="text-[16px] font-bold text-[var(--text-main)]">{currentDosen.faculty || '-'}</p>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black text-[var(--on-surface-variant)] uppercase tracking-widest">Departemen</p>
-                  <p className="text-[16px] font-bold text-[var(--on-surface)]">{currentDosen.department || '-'}</p>
+                <div>
+                   <p className="text-[10px] font-black text-[var(--text-light)] uppercase tracking-widest mb-1">Department</p>
+                   <p className="text-[16px] font-bold text-[var(--text-main)]">{currentDosen.department || '-'}</p>
                 </div>
-                {profile?.enrollment_date && (
-                  <div className="md:col-span-2 space-y-1">
-                    <p className="text-[10px] font-black text-[var(--on-surface-variant)] uppercase tracking-widest">Waktu Pendaftaran</p>
-                    <p className="text-[16px] font-bold text-[var(--on-surface)]">
-                      {new Date(profile.enrollment_date).toLocaleDateString('id-ID', {
-                        day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
-                      })}
-                    </p>
-                  </div>
-                )}
-              </div>
+             </div>
 
-              <div className="pt-6 border-t border-[var(--outline-variant)]/30">
+             <div className="flex flex-col md:flex-row items-center gap-4 pt-6">
                 <button
                   onClick={handleUnenroll}
                   disabled={unloading}
-                  className="px-8 py-4 bg-[var(--error-container)] text-[var(--error)] rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-[var(--error)] hover:text-white transition-all flex items-center gap-3 disabled:opacity-50"
+                  className="px-8 py-3.5 bg-[var(--bg-app)] text-red-600 border border-red-100 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-50 transition-all flex items-center gap-3 disabled:opacity-50"
                 >
                   <span className="material-symbols-outlined text-[18px]">person_remove</span>
-                  {unloading ? 'MEMBATALKAN...' : 'BATALKAN PENDAFTARAN'}
+                  {unloading ? 'PROCESSING...' : 'REQUEST CHANGE'}
                 </button>
-              </div>
-            </div>
+             </div>
           </div>
         </section>
       ) : (
         <div className="space-y-10">
-          <section className="bg-[var(--primary-container)] p-8 rounded-[32px] flex items-start gap-6 border border-[var(--primary)]/10">
-            <span className="material-symbols-outlined text-[36px] text-[var(--on-primary-container)]">info</span>
-            <div>
-              <h4 className="text-[18px] font-black text-[var(--on-primary-container)] mb-1">Pilih Pembimbing</h4>
-              <p className="text-[14px] font-medium text-[var(--on-primary-container)] opacity-80 leading-relaxed">
-                Anda belum terdaftar pada dosen pembimbing manapun. Silakan pilih dari daftar dosen yang tersedia di bawah ini untuk memulai pemantauan progres magang.
-              </p>
-            </div>
-          </section>
+           {/* Info Banner */}
+           <section className="bg-[var(--accent)] p-8 rounded-[var(--radius-lg)] flex items-start gap-6 text-white overflow-hidden relative shadow-xl shadow-blue-100">
+              <div className="absolute right-0 top-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+              <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center shrink-0">
+                 <span className="material-symbols-outlined text-[32px]">group_add</span>
+              </div>
+              <div className="relative z-10">
+                 <h4 className="text-[18px] font-black">Choose Your Mentor</h4>
+                 <p className="text-[14px] font-medium opacity-80 mt-1 max-w-xl leading-relaxed">
+                    You currently don't have an assigned supervisor. Please review the list below and select a lecturer who matches your department and expertise.
+                 </p>
+              </div>
+           </section>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {availableDosen.map(dosen => {
-              const remaining = dosen.max_mahasiswa - dosen.enrolled_count
-              const isFull = remaining <= 0
+           {/* Mentors Grid */}
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {availableDosen.map(dosen => {
+                const remaining = dosen.max_mahasiswa - dosen.enrolled_count
+                const isFull = remaining <= 0
 
-              return (
-                <div key={dosen.id} className="bg-[var(--surface-container-lowest)] border border-[var(--outline-variant)] rounded-[40px] p-8 hover:border-[var(--primary)] hover:shadow-xl transition-all group flex flex-col justify-between">
-                  <div>
-                    <div className="flex justify-between items-start mb-6">
-                      <div className="w-16 h-16 rounded-[24px] bg-[var(--surface-container-low)] flex items-center justify-center group-hover:bg-[var(--primary-container)] transition-all">
-                        <span className="material-symbols-outlined text-[32px] text-[var(--outline)] group-hover:text-[var(--primary)]">person</span>
-                      </div>
-                      <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${isFull ? 'bg-[var(--error-container)] text-[var(--error)]' : 'bg-[var(--secondary-container)] text-[var(--on-secondary-container)]'}`}>
-                        {isFull ? 'Penuh' : `${remaining} Slot`}
-                      </div>
-                    </div>
-                    <h3 className="text-[20px] font-black text-[var(--on-surface)] mb-1 group-hover:text-[var(--primary)] transition-colors">{dosen.nama_lengkap}</h3>
-                    <p className="text-[12px] font-bold text-[var(--on-surface-variant)] uppercase tracking-widest mb-6">NIP: {dosen.nip || '-'}</p>
-                    
-                    <div className="space-y-4 mb-8">
-                      <div>
-                        <p className="text-[9px] font-black text-[var(--on-surface-variant)] uppercase tracking-widest">Fakultas</p>
-                        <p className="text-[14px] font-bold text-[var(--on-surface)]">{dosen.faculty || '-'}</p>
-                      </div>
-                      <div>
-                        <p className="text-[9px] font-black text-[var(--on-surface-variant)] uppercase tracking-widest">Prodi</p>
-                        <p className="text-[14px] font-bold text-[var(--on-surface)]">{dosen.department || '-'}</p>
-                      </div>
-                    </div>
+                return (
+                  <div key={dosen.id} className="bento-card group flex flex-col justify-between">
+                     <div>
+                        <div className="flex justify-between items-start mb-6">
+                           <div className="w-14 h-14 rounded-2xl bg-[var(--bg-app)] flex items-center justify-center text-[var(--text-light)] group-hover:bg-[var(--accent)] group-hover:text-white group-hover:shadow-lg group-hover:shadow-blue-100 transition-all">
+                              <span className="material-symbols-outlined text-[32px]">school</span>
+                           </div>
+                           <div className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${isFull ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>
+                              {isFull ? 'Full' : `${remaining} Slot`}
+                           </div>
+                        </div>
+                        <h3 className="text-[18px] font-black text-[var(--text-main)] mb-1 group-hover:text-[var(--accent)] transition-colors">{dosen.nama_lengkap}</h3>
+                        <p className="text-[11px] font-bold text-[var(--text-light)] uppercase tracking-widest mb-6">NIP: {dosen.nip || '-'}</p>
+                        
+                        <div className="space-y-4 mb-8">
+                           <div className="flex justify-between items-center py-2 border-b border-[var(--border-light)]">
+                              <span className="text-[10px] font-black text-[var(--text-light)] uppercase tracking-widest">Faculty</span>
+                              <span className="text-[12px] font-bold text-[var(--text-main)] truncate max-w-[120px]">{dosen.faculty || '-'}</span>
+                           </div>
+                           <div className="flex justify-between items-center py-2 border-b border-[var(--border-light)]">
+                              <span className="text-[10px] font-black text-[var(--text-light)] uppercase tracking-widest">Prodi</span>
+                              <span className="text-[12px] font-bold text-[var(--text-main)] truncate max-w-[120px]">{dosen.department || '-'}</span>
+                           </div>
+                        </div>
+                     </div>
+                     
+                     <button
+                       onClick={() => handleEnroll(dosen.id, remaining)}
+                       disabled={isFull || enrolling === dosen.id}
+                       className="w-full py-4 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all disabled:opacity-50 bg-[var(--text-main)] text-white hover:bg-[var(--accent)] shadow-lg shadow-slate-100"
+                     >
+                       {enrolling === dosen.id ? 'PENDING...' : isFull ? 'CAPACITY FULL' : 'CHOOSE AS MENTOR'}
+                     </button>
                   </div>
-                  
-                  <button
-                    onClick={() => handleEnroll(dosen.id, remaining)}
-                    disabled={isFull || enrolling === dosen.id}
-                    className="w-full py-5 rounded-[24px] text-[12px] font-black uppercase tracking-widest transition-all disabled:opacity-50 bg-[var(--surface-container-high)] hover:bg-[var(--primary)] hover:text-white text-[var(--on-surface)]"
-                  >
-                    {enrolling === dosen.id ? 'MENDAFTAR...' : isFull ? 'KAPASITAS PENUH' : 'DAFTAR PEMBIMBING'}
-                  </button>
-                </div>
-              )
-            })}
-          </div>
+                )
+              })}
+           </div>
         </div>
       )}
     </div>

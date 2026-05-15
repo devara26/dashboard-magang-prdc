@@ -14,32 +14,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     async function checkUser() {
       try {
-        const { data: { user }, error: userError } = await supabase.auth.getUser()
-        if (userError || !user) {
-          router.push('/login')
-          return
-        }
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return router.push('/login')
 
-        const { data, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single()
-
-        if (profileError || !data) {
-          console.error('Profile Error:', profileError)
-          router.push('/login')
-          return
-        }
-
-        if (data.role !== 'mahasiswa') {
-          router.push('/login')
-          return
-        }
+        const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+        if (!data || data.role !== 'mahasiswa') return router.push('/login')
 
         setProfile(data)
       } catch (err) {
-        console.error('Auth Check Error:', err)
         router.push('/login')
       } finally {
         setLoading(false)
@@ -49,145 +31,133 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [router])
 
   if (loading) return (
-    <div className="flex h-screen items-center justify-center bg-[var(--background)]">
-      <div className="w-12 h-12 border-4 border-[var(--surface-container-high)] border-t-[var(--primary)] rounded-full animate-spin" />
+    <div className="flex h-screen items-center justify-center bg-[var(--bg-app)]">
+      <div className="w-8 h-8 border-2 border-[var(--border)] border-t-[var(--accent)] rounded-full animate-spin" />
     </div>
   )
 
   const menuItems = [
-    { name: 'Dashboard', icon: 'dashboard', href: '/dashboard' },
-    { name: 'Presence', icon: 'calendar_today', href: '/dashboard/absensi' },
-    { name: 'Mentor', icon: 'groups', href: '/dashboard/pembimbing' },
-    { name: 'Journal', icon: 'menu_book', href: '/dashboard/kegiatan' },
+    { name: 'Dashboard', icon: 'grid_view', href: '/dashboard' },
+    { name: 'Presence', icon: 'schedule', href: '/dashboard/absensi' },
+    { name: 'Mentor', icon: 'person_search', href: '/dashboard/pembimbing' },
+    { name: 'Journal', icon: 'auto_stories', href: '/dashboard/kegiatan' },
     { name: 'Documents', icon: 'folder_open', href: '/dashboard/berkas' },
-    { name: 'Profile', icon: 'person', href: '/dashboard/profil' },
+    { name: 'Profile', icon: 'person_outline', href: '/dashboard/profil' },
   ]
 
   return (
-    <div className="flex min-h-screen bg-[var(--background)] selection:bg-[var(--primary-container)] selection:text-[var(--on-primary-container)]">
-      {/* Sidebar Navigation (Desktop) */}
-      <aside className="hidden md:flex flex-col h-screen fixed left-0 top-0 w-[280px] bg-[var(--surface)] border-r border-[var(--outline-variant)] py-8 px-4 z-50">
-        <div className="flex items-center gap-4 px-3 mb-12">
-          <div className="w-10 h-10 bg-[var(--primary)] rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
-             <img alt="Logo" className="w-6 h-6 object-contain brightness-0 invert" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-lj9NJ-_cWVcQUmdvNr69F-tbJGVE3Q0NWDbyArku3-5TDLWEF8OixM-dkAUw-U6roZH596Rfl-_d5Dj0qoqpZzaf3-wq0iNstPmaTR0g_YFaXy-exQBwMRm398AJSyh-QfM2Zn36csPwxhaDUGWbGpG5yDF8Ax7j1RjGXKgpQxRyn2W55SieA7iKzPvz4COQcA3xIJYxaUJW4pIBOYKBf_CvyyU80x6M-kDiPKAmuDqpIVkXMjKuuE8RBzMhDHi81_b2nEHvvA"/>
+    <div className="flex min-h-screen bg-[var(--bg-app)] text-[var(--text-main)]">
+      {/* Sidebar - SaaS Slim Style */}
+      <aside className="hidden lg:flex flex-col w-[280px] h-screen sticky top-0 bg-white border-r border-[var(--border)] px-6 py-8">
+        <div className="flex items-center gap-3 px-2 mb-10">
+          <div className="w-9 h-9 bg-[var(--accent)] rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+             <span className="material-symbols-outlined fill-icon text-[20px]">bolt</span>
           </div>
+          <span className="text-[20px] font-black tracking-tighter">Boltshift</span>
+        </div>
+
+        <div className="flex-1 space-y-8">
           <div>
-            <h2 className="text-[18px] font-black text-[var(--on-surface)] leading-none tracking-tighter">ORBIT</h2>
-            <p className="text-[10px] font-bold text-[var(--primary)] uppercase tracking-widest mt-1">Magang Platform</p>
+            <p className="text-[10px] font-bold text-[var(--text-light)] uppercase tracking-[2px] mb-4 px-2">Main Menu</p>
+            <nav className="space-y-1">
+              {menuItems.map((item) => {
+                const isActive = pathname === item.href
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-[var(--radius-md)] transition-all duration-200 group ${
+                      isActive 
+                        ? 'bg-[var(--text-main)] text-white shadow-md' 
+                        : 'text-[var(--text-muted)] hover:bg-[var(--bg-app)] hover:text-[var(--text-main)]'
+                    }`}
+                  >
+                    <span className={`material-symbols-outlined text-[20px] ${isActive ? 'fill-icon' : 'group-hover:text-[var(--accent)]'}`}>
+                      {item.icon}
+                    </span>
+                    <span className="text-[14px] font-semibold">{item.name}</span>
+                  </Link>
+                )
+              })}
+            </nav>
           </div>
         </div>
-        
-        <nav className="flex-1 space-y-1">
-          {menuItems.map((item) => {
-            const isActive = pathname === item.href
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 group ${
-                  isActive 
-                    ? 'bg-[var(--primary-container)] text-[var(--on-primary-container)] shadow-sm' 
-                    : 'text-[var(--on-surface-variant)] hover:bg-[var(--surface-container-low)]'
-                }`}
-              >
-                <span className={`material-symbols-outlined transition-all ${isActive ? 'fill-icon scale-110' : 'group-hover:text-[var(--primary)]'}`} style={{ fontVariationSettings: isActive ? "'FILL' 1" : "" }}>
-                  {item.icon}
-                </span>
-                <span className={`text-[14px] ${isActive ? 'font-black' : 'font-semibold'}`}>{item.name}</span>
-              </Link>
-            )
-          })}
-        </nav>
 
-        <div className="mt-auto border-t border-[var(--outline-variant)] pt-6">
-          <div className="bg-[var(--surface-container-low)] rounded-3xl p-4 mb-4 flex items-center gap-3 border border-[var(--outline-variant)]/30">
-             <div className="w-10 h-10 rounded-full overflow-hidden bg-[var(--primary-container)] border-2 border-white shadow-sm">
-                {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center font-black text-[var(--primary)]">
-                    {profile?.nama_lengkap?.charAt(0)}
-                  </div>
-                )}
-             </div>
-             <div className="min-w-0">
-                <p className="text-xs font-black text-[var(--on-surface)] truncate">{profile?.nama_lengkap}</p>
-                <p className="text-[10px] font-bold text-[var(--on-surface-variant)] uppercase tracking-wider">{profile?.nim || 'Mahasiswa'}</p>
-             </div>
-          </div>
-          <button 
-            onClick={async () => {
-              await supabase.auth.signOut()
-              router.push('/login')
-            }}
-            className="flex w-full items-center gap-4 px-4 py-3.5 text-[var(--error)] hover:bg-[var(--error-container)] hover:text-[var(--on-error-container)] rounded-2xl transition-all font-bold"
-          >
-            <span className="material-symbols-outlined">logout</span>
-            <span className="text-[14px]">Logout</span>
-          </button>
+        <div className="mt-auto space-y-4">
+           <Link href="/dashboard/profil" className="flex items-center gap-3 p-3 bg-[var(--bg-app)] rounded-2xl border border-[var(--border)] hover:border-[var(--accent)] transition-all group">
+              <div className="w-10 h-10 rounded-full overflow-hidden bg-white border border-[var(--border)]">
+                 {profile?.avatar_url ? (
+                   <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                 ) : (
+                   <div className="w-full h-full flex items-center justify-center font-bold text-[var(--accent)]">
+                     {profile?.nama_lengkap?.charAt(0)}
+                   </div>
+                 )}
+              </div>
+              <div className="min-w-0">
+                 <p className="text-[13px] font-bold text-[var(--text-main)] truncate">{profile?.nama_lengkap?.split(' ')[0]}</p>
+                 <p className="text-[11px] text-[var(--text-muted)] truncate">{profile?.nim || 'Student'}</p>
+              </div>
+           </Link>
+           
+           <button 
+             onClick={() => supabase.auth.signOut().then(() => router.push('/login'))}
+             className="flex w-full items-center gap-3 px-4 py-3 text-[var(--text-muted)] hover:text-[var(--error)] hover:bg-red-50 rounded-[var(--radius-md)] transition-all text-sm font-semibold"
+           >
+             <span className="material-symbols-outlined text-[20px]">logout</span>
+             Logout
+           </button>
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <main className="flex-1 md:ml-[280px] flex flex-col">
-        {/* Top App Bar */}
-        <header className="flex justify-between items-center w-full px-6 md:px-12 h-20 bg-[var(--surface)]/80 backdrop-blur-xl border-b border-[var(--outline-variant)] sticky top-0 z-40">
+      {/* Main Area */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Top Navbar */}
+        <header className="h-[72px] bg-white/80 backdrop-blur-md border-b border-[var(--border)] sticky top-0 z-30 px-6 lg:px-10 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button className="md:hidden p-2 text-[var(--on-surface)] hover:bg-[var(--surface-container-low)] rounded-full transition-colors">
+            <button className="lg:hidden w-10 h-10 flex items-center justify-center rounded-xl hover:bg-[var(--bg-app)]">
               <span className="material-symbols-outlined">menu</span>
             </button>
-            <div className="flex flex-col">
-               <span className="text-[12px] font-black text-[var(--primary)] uppercase tracking-widest leading-none mb-1">Student Portal</span>
-               <span className="text-[20px] font-black text-[var(--on-surface)] tracking-tight">Pusat Informasi</span>
+            <div className="flex items-center gap-2 text-[var(--text-muted)] text-[14px] font-medium">
+              <span>Orbit</span>
+              <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+              <span className="text-[var(--text-main)] font-bold">{pathname.split('/').pop() || 'Dashboard'}</span>
             </div>
           </div>
-          
-          <div className="flex items-center gap-5">
-            <button className="w-11 h-11 flex items-center justify-center text-[var(--on-surface-variant)] bg-[var(--surface-container-low)] hover:bg-[var(--surface-container-high)] border border-[var(--outline-variant)]/50 transition-all rounded-2xl relative group">
-              <span className="material-symbols-outlined transition-transform group-hover:rotate-12">notifications</span>
-              <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-[var(--error)] rounded-full border-2 border-[var(--surface-container-low)]"></span>
-            </button>
-            
-            <div className="h-10 w-px bg-[var(--outline-variant)] mx-1"></div>
-            
-            <Link href="/dashboard/profil" className="flex items-center gap-3 p-1 pr-4 rounded-full bg-[var(--surface-container-low)] border border-[var(--outline-variant)] hover:border-[var(--primary)] transition-all group">
-              <div className="w-9 h-9 rounded-full overflow-hidden bg-[var(--surface-container-highest)] border-2 border-white shadow-sm group-hover:scale-105 transition-transform">
-                {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-[var(--primary-container)] text-[var(--on-primary-container)] font-bold text-sm">
-                    {profile?.nama_lengkap?.charAt(0)}
-                  </div>
-                )}
-              </div>
-              <div className="hidden lg:block text-left">
-                <p className="text-[11px] font-black text-[var(--on-surface)] leading-none mb-1">{profile?.nama_lengkap?.split(' ')[0]}</p>
-                <p className="text-[9px] font-bold text-[var(--on-surface-variant)] uppercase tracking-widest">{profile?.role}</p>
-              </div>
-            </Link>
+
+          <div className="flex items-center gap-3">
+             <div className="hidden md:flex items-center gap-2 bg-[var(--bg-app)] border border-[var(--border)] rounded-xl px-4 py-2 w-64 group focus-within:border-[var(--accent)] transition-all">
+                <span className="material-symbols-outlined text-[18px] text-[var(--text-light)]">search</span>
+                <input placeholder="Search..." className="bg-transparent border-none outline-none text-xs font-medium w-full" />
+                <span className="text-[10px] text-[var(--text-light)] font-bold">⌘K</span>
+             </div>
+             
+             <button className="w-10 h-10 flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--bg-app)] rounded-xl relative">
+                <span className="material-symbols-outlined">notifications</span>
+                <span className="absolute top-3 right-3 w-2 h-2 bg-[var(--error)] rounded-full border-2 border-white"></span>
+             </button>
+             
+             <button className="lg:hidden w-9 h-9 rounded-full overflow-hidden bg-[var(--accent)] text-white font-bold text-xs">
+                {profile?.nama_lengkap?.charAt(0)}
+             </button>
           </div>
         </header>
 
-        {/* Page Content */}
-        <div className="p-6 md:p-12 max-w-[1440px] mx-auto w-full flex-1">
-          {children}
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6 lg:p-10 scroll-smooth">
+          <div className="max-w-[1440px] mx-auto animate-slide-up">
+            {children}
+          </div>
         </div>
 
-        {/* Bottom Navigation (Mobile) */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--surface)]/90 backdrop-blur-xl border-t border-[var(--outline-variant)] flex justify-around items-center h-20 pb-4 px-4 z-50">
-          {menuItems.slice(0, 5).map((item) => {
-            const isActive = pathname === item.href
-            return (
-              <Link key={item.href} href={item.href} className={`flex flex-col items-center justify-center gap-1.5 flex-1 ${isActive ? 'text-[var(--primary)]' : 'text-[var(--on-surface-variant)]'}`}>
-                <div className={`w-12 h-8 flex items-center justify-center rounded-full transition-all ${isActive ? 'bg-[var(--primary-container)] text-[var(--on-primary-container)]' : 'hover:bg-[var(--surface-container-low)]'}`}>
-                  <span className={`material-symbols-outlined ${isActive ? 'fill-1' : ''}`} style={{ fontVariationSettings: isActive ? "'FILL' 1" : "" }}>
-                    {item.icon}
-                  </span>
-                </div>
-                <span className={`text-[10px] font-black uppercase tracking-tighter transition-all ${isActive ? 'opacity-100' : 'opacity-60'}`}>{item.name}</span>
-              </Link>
-            )
-          })}
+        {/* Mobile Nav */}
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[var(--border)] h-16 flex justify-around items-center z-50">
+           {menuItems.slice(0, 4).map((item) => (
+             <Link key={item.href} href={item.href} className={`flex flex-col items-center gap-0.5 ${pathname === item.href ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]'}`}>
+                <span className={`material-symbols-outlined text-[22px] ${pathname === item.href ? 'fill-icon' : ''}`}>{item.icon}</span>
+                <span className="text-[9px] font-bold uppercase tracking-tight">{item.name}</span>
+             </Link>
+           ))}
         </nav>
       </main>
     </div>

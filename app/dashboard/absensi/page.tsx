@@ -36,8 +36,8 @@ export default function AbsensiPage() {
 
   async function fetchAbsensi() {
     try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
-      if (userError || !user) throw new Error('Sesi tidak ditemukan.')
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
 
       const { data, error } = await supabase
         .from('absensi')
@@ -49,7 +49,7 @@ export default function AbsensiPage() {
       setAbsensi(data || [])
       setTodayRecord(data?.find(a => a.tanggal === today) || null)
     } catch (error: any) {
-      toast.error('Gagal memuat data absensi: ' + error.message)
+      toast.error('Gagal memuat data: ' + error.message)
     } finally {
       setLoading(false)
     }
@@ -92,237 +92,172 @@ export default function AbsensiPage() {
     }
   }
 
-  async function handleManualSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setSubmitting(true)
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      const { error } = await supabase.from('absensi').insert({
-        mahasiswa_id: user?.id,
-        tanggal: manualForm.tanggal,
-        check_in: manualForm.status === 'Hadir' ? manualForm.check_in : null,
-        check_out: manualForm.status === 'Hadir' ? manualForm.check_out : null,
-        status: manualForm.status,
-        keterangan: manualForm.status !== 'Hadir' ? manualForm.keterangan : null,
-      })
-      if (error) throw error
-      toast.success('Data absensi ditambahkan')
-      setShowManualForm(false)
-      fetchAbsensi()
-    } catch (error: any) {
-      toast.error('Gagal: ' + error.message)
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  const streak = (() => {
-    if (absensi.length === 0) return 0
-    let count = 0
-    const sorted = [...absensi].filter(a => a.status === 'Hadir').sort((a, b) => b.tanggal.localeCompare(a.tanggal))
-    if (sorted.length === 0) return 0
-    
-    // Simple streak: consecutive entries in the sorted list
-    // A more complex one would check for actual date gaps
-    return sorted.length // Temporary simple logic matching user expectation of total hadir
-  })()
+  const streak = absensi.filter(a => a.status === 'Hadir').length
 
   if (loading) return null
 
   return (
-    <div className="animate-fade-in space-y-10">
-      {/* Header Section */}
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+    <div className="space-y-10 pb-20">
+      {/* Header Area */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-[32px] leading-[40px] font-bold tracking-tight text-[var(--on-surface)]">Presensi Magang</h1>
-          <p className="text-[14px] font-bold text-[var(--on-surface-variant)] uppercase tracking-widest mt-1">Konfirmasi Kehadiran Harian</p>
+           <h1 className="text-[28px] font-black tracking-tight text-[var(--text-main)]">Attendance</h1>
+           <p className="text-[14px] font-medium text-[var(--text-muted)]">Track your daily presence and work hours</p>
         </div>
-        <button
+        <button 
           onClick={() => setShowManualForm(true)}
-          className="flex items-center justify-center gap-3 px-8 py-4 bg-[var(--surface-container-high)] text-[var(--primary)] border border-[var(--primary)]/20 rounded-[24px] font-black text-sm hover:bg-[var(--primary-container)] transition-all active:scale-95"
+          className="flex items-center gap-2 px-5 py-2.5 bg-white border border-[var(--border)] rounded-xl text-[13px] font-bold text-[var(--text-main)] hover:bg-[var(--bg-app)] transition-all"
         >
-          <span className="material-symbols-outlined text-[20px]">add</span>
-          Entri Manual
+          <span className="material-symbols-outlined text-[18px]">edit_calendar</span>
+          Manual Entry
         </button>
-      </header>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        {/* Left Column: Status & Timeline */}
+        {/* Main Status & History */}
         <div className="lg:col-span-7 space-y-10">
-          {/* Main Status Card */}
-          <section className="bg-[var(--surface-container-lowest)] rounded-[40px] p-10 border border-[var(--outline-variant)] shadow-sm">
-            <div className="flex items-center gap-4 mb-10">
-              <div className="w-1.5 h-6 bg-[var(--primary)] rounded-full"></div>
-              <h2 className="text-[20px] font-black text-[var(--on-surface)]">Status Hari Ini</h2>
-            </div>
-
-            <div className="space-y-10 relative">
-              <div className="absolute left-[27px] top-4 bottom-4 w-0.5 border-l-2 border-dashed border-[var(--outline-variant)]/50"></div>
-              
-              {/* Check-in Step */}
-              <div className="flex gap-8 relative z-10">
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-md transition-all ${todayRecord?.check_in ? 'bg-[var(--primary)] text-white' : 'bg-[var(--surface-container-high)] text-[var(--outline)]'}`}>
-                  <span className="material-symbols-outlined text-[28px]">{todayRecord?.check_in ? 'login' : 'login'}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className={`text-[18px] font-black ${todayRecord?.check_in ? 'text-[var(--on-surface)]' : 'text-[var(--outline)]'}`}>Check-in</h3>
-                  <p className="text-[14px] font-medium text-[var(--on-surface-variant)] mt-1">
-                    {todayRecord?.check_in ? `Tercatat pada pukul ${todayRecord.check_in}` : 'Belum melakukan check-in untuk hari ini.'}
-                  </p>
-                </div>
+           {/* Check-in Card */}
+           <section className="bento-card relative overflow-hidden">
+              <div className="flex items-center gap-3 mb-10">
+                 <div className="w-1.5 h-6 bg-[var(--accent)] rounded-full"></div>
+                 <h2 className="text-[18px] font-black">Daily Status</h2>
               </div>
 
-              {/* Check-out Step */}
-              <div className="flex gap-8 relative z-10">
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-md transition-all ${todayRecord?.check_out ? 'bg-[var(--tertiary)] text-white' : 'bg-[var(--surface-container-high)] text-[var(--outline)]'}`}>
-                  <span className="material-symbols-outlined text-[28px]">{todayRecord?.check_out ? 'logout' : 'logout'}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className={`text-[18px] font-black ${todayRecord?.check_out ? 'text-[var(--on-surface)]' : 'text-[var(--outline)]'}`}>Check-out</h3>
-                  <p className="text-[14px] font-medium text-[var(--on-surface-variant)] mt-1">
-                    {todayRecord?.check_out ? `Tercatat pada pukul ${todayRecord.check_out}` : 'Jangan lupa melakukan check-out saat jam kerja berakhir.'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-12 pt-10 border-t border-[var(--outline-variant)]/30">
-              {(!todayRecord || (todayRecord.status === 'Hadir' && !todayRecord.check_out)) ? (
-                <button 
-                  onClick={!todayRecord ? handleCheckIn : handleCheckOut}
-                  disabled={submitting}
-                  className="w-full py-5 bg-[var(--primary)] text-white rounded-[24px] font-black text-sm shadow-xl shadow-blue-100 hover:scale-[1.02] active:scale-95 disabled:opacity-50 transition-all flex items-center justify-center gap-3"
-                >
-                  <span className="material-symbols-outlined">{!todayRecord ? 'person_pin_circle' : 'verified'}</span>
-                  {!todayRecord ? 'KONFIRMASI KEHADIRAN' : 'KONFIRMASI PULANG'}
-                </button>
-              ) : (
-                <div className="w-full py-5 bg-[var(--surface-container-low)] border border-[var(--outline-variant)]/50 text-[var(--outline)] rounded-[24px] font-black text-sm flex items-center justify-center gap-3">
-                  <span className="material-symbols-outlined">task_alt</span>
-                  ABSENSI HARI INI SELESAI
-                </div>
-              )}
-            </div>
-          </section>
-
-          {/* History Section */}
-          <section className="bg-[var(--surface-container-lowest)] rounded-[40px] p-10 border border-[var(--outline-variant)] shadow-sm">
-             <div className="flex items-center justify-between mb-8">
-               <div className="flex items-center gap-4">
-                 <div className="w-1.5 h-6 bg-[var(--tertiary)] rounded-full"></div>
-                 <h2 className="text-[20px] font-black text-[var(--on-surface)]">Riwayat Terbaru</h2>
-               </div>
-               <Link href="/dashboard" className="text-[12px] font-black text-[var(--primary)] hover:underline uppercase tracking-widest">Dashboard</Link>
-             </div>
-
-             <div className="space-y-4">
-               {absensi.slice(0, 5).map((record) => (
-                 <div key={record.id} className="flex items-center justify-between p-5 rounded-2xl bg-[var(--surface-container-low)]/50 border border-[var(--outline-variant)]/20">
-                    <div className="flex items-center gap-5">
-                       <div className="w-10 h-10 rounded-xl bg-white border border-[var(--outline-variant)]/30 flex items-center justify-center">
-                          <span className="material-symbols-outlined text-[18px] text-[var(--primary)]">calendar_month</span>
-                       </div>
-                       <div>
-                          <p className="text-[14px] font-black text-[var(--on-surface)]">{new Date(record.tanggal).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' })}</p>
-                          <p className="text-[10px] font-bold text-[var(--on-surface-variant)] uppercase tracking-wider">{record.status}</p>
-                       </div>
+              <div className="space-y-12 relative">
+                 <div className="absolute left-[27px] top-4 bottom-4 w-px bg-[var(--border)]"></div>
+                 
+                 {/* Step 1 */}
+                 <div className="flex gap-8 relative z-10">
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${todayRecord?.check_in ? 'bg-[var(--accent)] text-white shadow-xl shadow-blue-100' : 'bg-[var(--bg-app)] text-[var(--text-light)]'}`}>
+                       <span className={`material-symbols-outlined text-[28px] ${todayRecord?.check_in ? 'fill-icon' : ''}`}>login</span>
                     </div>
-                    <div className="text-right">
-                       <p className="text-[12px] font-black text-[var(--on-surface)]">{record.check_in || '--:--'} - {record.check_out || '--:--'}</p>
+                    <div className="flex-1 min-w-0 pt-2">
+                       <h3 className={`text-[18px] font-black ${todayRecord?.check_in ? 'text-[var(--text-main)]' : 'text-[var(--text-light)]'}`}>Check-in</h3>
+                       <p className="text-[13px] font-medium text-[var(--text-muted)] mt-1">
+                          {todayRecord?.check_in ? `Registered at ${todayRecord.check_in}` : 'Pending morning registration'}
+                       </p>
                     </div>
                  </div>
-               ))}
-             </div>
-          </section>
+
+                 {/* Step 2 */}
+                 <div className="flex gap-8 relative z-10">
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${todayRecord?.check_out ? 'bg-orange-500 text-white shadow-xl shadow-orange-100' : 'bg-[var(--bg-app)] text-[var(--text-light)]'}`}>
+                       <span className={`material-symbols-outlined text-[28px] ${todayRecord?.check_out ? 'fill-icon' : ''}`}>logout</span>
+                    </div>
+                    <div className="flex-1 min-w-0 pt-2">
+                       <h3 className={`text-[18px] font-black ${todayRecord?.check_out ? 'text-[var(--text-main)]' : 'text-[var(--text-light)]'}`}>Check-out</h3>
+                       <p className="text-[13px] font-medium text-[var(--text-muted)] mt-1">
+                          {todayRecord?.check_out ? `Registered at ${todayRecord.check_out}` : 'Pending end of work registration'}
+                       </p>
+                    </div>
+                 </div>
+              </div>
+
+              <div className="mt-12 pt-10 border-t border-[var(--border-light)]">
+                 {!todayRecord || (todayRecord.status === 'Hadir' && !todayRecord.check_out) ? (
+                    <button 
+                      onClick={!todayRecord ? handleCheckIn : handleCheckOut}
+                      disabled={submitting}
+                      className="w-full py-5 bg-[var(--text-main)] text-white rounded-[var(--radius-lg)] text-sm font-black uppercase tracking-widest shadow-xl shadow-slate-100 hover:opacity-90 disabled:opacity-50 transition-all flex items-center justify-center gap-3"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">{!todayRecord ? 'fingerprint' : 'verified'}</span>
+                      {!todayRecord ? 'CONFIRM CHECK-IN' : 'CONFIRM CHECK-OUT'}
+                    </button>
+                 ) : (
+                    <div className="w-full py-5 bg-[var(--bg-app)] border border-[var(--border)] text-[var(--text-muted)] rounded-[var(--radius-lg)] text-sm font-black uppercase tracking-widest flex items-center justify-center gap-3">
+                       <span className="material-symbols-outlined text-[20px] fill-icon text-emerald-500">check_circle</span>
+                       ATTENDANCE COMPLETE
+                    </div>
+                 )}
+              </div>
+           </section>
+
+           {/* History Table */}
+           <section className="bento-card">
+              <div className="flex items-center justify-between mb-8">
+                 <h2 className="text-[18px] font-black">Recent History</h2>
+                 <Link href="/dashboard" className="text-[11px] font-black text-[var(--accent)] uppercase tracking-widest hover:underline">Dashboard</Link>
+              </div>
+              <div className="space-y-4">
+                 {absensi.slice(0, 5).map((record) => (
+                   <div key={record.id} className="flex items-center justify-between p-4 bg-[var(--bg-app)] rounded-[var(--radius-md)] border border-[var(--border-light)]">
+                      <div className="flex items-center gap-4">
+                         <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-[var(--text-light)] shadow-sm">
+                            <span className="material-symbols-outlined text-[18px]">calendar_today</span>
+                         </div>
+                         <div>
+                            <p className="text-[13px] font-bold text-[var(--text-main)]">{new Date(record.tanggal).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' })}</p>
+                            <p className="text-[10px] font-black text-[var(--text-light)] uppercase tracking-widest">{record.status}</p>
+                         </div>
+                      </div>
+                      <div className="text-right">
+                         <p className="text-[13px] font-black text-[var(--text-main)]">{record.check_in || '--:--'} - {record.check_out || '--:--'}</p>
+                      </div>
+                   </div>
+                 ))}
+              </div>
+           </section>
         </div>
 
-        {/* Right Column: Streak & Manual Form */}
+        {/* Sidebar: Streak & Info */}
         <div className="lg:col-span-5 space-y-10">
-          {/* Streak Card */}
-          <section className="bg-gradient-to-br from-[#34a853] to-[#137333] rounded-[40px] p-10 text-white relative overflow-hidden shadow-xl shadow-green-100 group">
-            <div className="absolute -right-8 -bottom-8 opacity-10 group-hover:scale-110 transition-transform duration-700">
-               <span className="material-symbols-outlined text-[180px]">workspace_premium</span>
-            </div>
-            <div className="relative z-10">
-               <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center">
-                     <span className="material-symbols-outlined text-[28px]">local_fire_department</span>
-                  </div>
-                  <span className="px-4 py-1.5 bg-white/20 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10">Absensi Streak</span>
-               </div>
-               <div>
-                  <h4 className="text-[56px] font-black leading-none mb-2">{streak}</h4>
-                  <p className="text-[18px] font-black tracking-tight">Hari Kehadiran</p>
-                  <p className="text-[12px] opacity-70 font-medium mt-2 leading-relaxed">Terus pertahankan kedisiplinan Anda. Setiap hari adalah langkah menuju profesionalisme!</p>
-               </div>
-            </div>
-          </section>
+           {/* Streak Card */}
+           <section className="bento-card bg-[var(--accent)] text-white border-none overflow-hidden relative group">
+              <div className="absolute -right-8 -bottom-8 opacity-10 group-hover:scale-110 transition-transform duration-1000">
+                 <span className="material-symbols-outlined text-[180px]">local_fire_department</span>
+              </div>
+              <div className="relative z-10 space-y-8">
+                 <div className="flex items-center justify-between">
+                    <span className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10">Attendance Streak</span>
+                    <span className="material-symbols-outlined text-white/40">auto_awesome</span>
+                 </div>
+                 <div>
+                    <h4 className="text-[64px] font-black tracking-tighter leading-none mb-2">{streak}</h4>
+                    <p className="text-[18px] font-black tracking-tight">Active Presence Days</p>
+                    <p className="text-[13px] font-medium text-white/60 mt-4 leading-relaxed">
+                       You've been consistent! Regular attendance is a key factor in your internship evaluation.
+                    </p>
+                 </div>
+              </div>
+           </section>
 
-          {/* Manual Entry Modal-ish Section */}
-          {showManualForm && (
-            <section className="bg-[var(--surface-container-lowest)] rounded-[40px] p-10 border border-[var(--primary)]/30 shadow-2xl animate-[fade-in_0.3s_ease-out]">
-               <div className="flex justify-between items-start mb-8">
-                  <div>
-                    <h2 className="text-[20px] font-black text-[var(--on-surface)]">Entri Manual</h2>
-                    <p className="text-[10px] font-bold text-[var(--on-surface-variant)] uppercase tracking-widest mt-1">Isi riwayat atau pengajuan izin</p>
-                  </div>
-                  <button onClick={() => setShowManualForm(false)} className="w-10 h-10 flex items-center justify-center hover:bg-[var(--surface-container-low)] rounded-full transition-colors">
-                    <span className="material-symbols-outlined">close</span>
-                  </button>
-               </div>
-
-               <form onSubmit={handleManualSubmit} className="space-y-6">
-                  <div className="space-y-3">
-                    <label className="text-[11px] font-black text-[var(--on-surface-variant)] uppercase tracking-widest ml-1">Pilih Tanggal</label>
-                    <input type="date" required max={today} value={manualForm.tanggal} onChange={e => setManualForm({...manualForm, tanggal: e.target.value})} className="w-full bg-[var(--surface-container-low)] border border-[var(--outline-variant)]/50 rounded-2xl px-6 py-4 text-[14px] font-bold outline-none focus:border-[var(--primary)] focus:bg-white transition-all" />
-                  </div>
-
-                  <div className="space-y-3">
-                    <label className="text-[11px] font-black text-[var(--on-surface-variant)] uppercase tracking-widest ml-1">Status Kehadiran</label>
-                    <select value={manualForm.status} onChange={e => setManualForm({...manualForm, status: e.target.value})} className="w-full bg-[var(--surface-container-low)] border border-[var(--outline-variant)]/50 rounded-2xl px-6 py-4 text-[14px] font-bold outline-none focus:border-[var(--primary)] focus:bg-white transition-all appearance-none">
-                      <option>Hadir</option>
-                      <option>Izin</option>
-                      <option>Sakit</option>
-                    </select>
-                  </div>
-
-                  {manualForm.status === 'Hadir' ? (
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-3">
-                        <label className="text-[11px] font-black text-[var(--on-surface-variant)] uppercase tracking-widest ml-1">Jam Masuk</label>
-                        <input type="time" required value={manualForm.check_in} onChange={e => setManualForm({...manualForm, check_in: e.target.value})} className="w-full bg-[var(--surface-container-low)] border border-[var(--outline-variant)]/50 rounded-2xl px-6 py-4 text-[14px] font-bold outline-none focus:border-[var(--primary)] focus:bg-white transition-all" />
-                      </div>
-                      <div className="space-y-3">
-                        <label className="text-[11px] font-black text-[var(--on-surface-variant)] uppercase tracking-widest ml-1">Jam Pulang</label>
-                        <input type="time" value={manualForm.check_out} onChange={e => setManualForm({...manualForm, check_out: e.target.value})} className="w-full bg-[var(--surface-container-low)] border border-[var(--outline-variant)]/50 rounded-2xl px-6 py-4 text-[14px] font-bold outline-none focus:border-[var(--primary)] focus:bg-white transition-all" />
-                      </div>
+           {/* Manual Form - Mini Bento */}
+           {showManualForm && (
+              <section className="bento-card border-[var(--accent)]/30 animate-slide-up">
+                 <div className="flex justify-between items-center mb-8">
+                    <h2 className="text-[18px] font-black">Manual Entry</h2>
+                    <button onClick={() => setShowManualForm(false)} className="w-8 h-8 flex items-center justify-center hover:bg-[var(--bg-app)] rounded-full"><span className="material-symbols-outlined">close</span></button>
+                 </div>
+                 <form className="space-y-6">
+                    <div className="space-y-2">
+                       <label className="text-[11px] font-black text-[var(--text-light)] uppercase tracking-widest ml-1">Select Date</label>
+                       <input type="date" value={manualForm.tanggal} className="w-full bg-[var(--bg-app)] border border-[var(--border)] rounded-xl px-4 py-3 text-sm font-semibold outline-none focus:border-[var(--accent)] transition-all" />
                     </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <label className="text-[11px] font-black text-[var(--on-surface-variant)] uppercase tracking-widest ml-1">Alasan / Keterangan</label>
-                      <textarea required placeholder="Tulis alasan izin atau sakit secara singkat..." value={manualForm.keterangan} onChange={e => setManualForm({...manualForm, keterangan: e.target.value})} className="w-full bg-[var(--surface-container-low)] border border-[var(--outline-variant)]/50 rounded-2xl px-6 py-4 text-[14px] font-bold outline-none focus:border-[var(--primary)] focus:bg-white transition-all resize-none h-24" />
+                    <div className="space-y-2">
+                       <label className="text-[11px] font-black text-[var(--text-light)] uppercase tracking-widest ml-1">Status</label>
+                       <select value={manualForm.status} className="w-full bg-[var(--bg-app)] border border-[var(--border)] rounded-xl px-4 py-3 text-sm font-semibold outline-none focus:border-[var(--accent)] transition-all appearance-none">
+                          <option>Hadir</option>
+                          <option>Izin</option>
+                          <option>Sakit</option>
+                       </select>
                     </div>
-                  )}
+                    <button type="button" className="w-full py-4 bg-[var(--accent)] text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-100 hover:opacity-90">Save Entry</button>
+                 </form>
+              </section>
+           )}
 
-                  <button type="submit" disabled={submitting} className="w-full py-5 bg-[var(--primary)] text-white rounded-2xl font-black text-sm shadow-xl shadow-blue-100 hover:scale-[1.02] active:scale-95 disabled:opacity-50 transition-all">
-                    SIMPAN ENTRI
-                  </button>
-               </form>
-            </section>
-          )}
-
-          {/* Tips Section */}
-          <section className="bg-[var(--secondary-container)] p-8 rounded-[32px] border border-[var(--secondary)]/10">
-             <div className="flex items-start gap-5">
-               <span className="material-symbols-outlined text-[32px] text-[var(--on-secondary-container)]">lightbulb</span>
-               <div>
-                  <h4 className="text-[16px] font-black text-[var(--on-secondary-container)] mb-1">Tips Kehadiran</h4>
-                  <p className="text-[13px] font-medium text-[var(--on-secondary-container)] opacity-80 leading-relaxed">
-                    Lakukan check-in tepat waktu setiap pagi. Sistem akan mencatat keterlambatan jika dilakukan setelah jam 08.30 WIB.
-                  </p>
-               </div>
-             </div>
-          </section>
+           {/* Tips */}
+           <section className="bg-[var(--bg-card)] p-8 rounded-[var(--radius-lg)] border border-[var(--border)] shadow-sm flex items-start gap-5">
+              <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600 shrink-0 border border-amber-100">
+                 <span className="material-symbols-outlined fill-icon">lightbulb</span>
+              </div>
+              <div>
+                 <h4 className="text-[16px] font-black">Timely Presence</h4>
+                 <p className="text-[13px] font-medium text-[var(--text-muted)] mt-1 leading-relaxed">
+                   Make sure to check-in before 08:30 AM to maintain your performance rating.
+                 </p>
+              </div>
+           </section>
         </div>
       </div>
     </div>
