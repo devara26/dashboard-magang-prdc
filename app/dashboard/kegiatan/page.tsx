@@ -68,22 +68,36 @@ export default function KegiatanPage() {
       setDosenId(profile?.dosen_id)
 
       if (nim) {
-        const { data, error } = await supabase
+        // Try uppercase 'Kegiatan' first
+        let { data, error } = await supabase
           .from('Kegiatan')
           .select('*')
           .eq('nim', nim)
           .order('tanggal', { ascending: false })
         
-        if (error) throw error
+        // Fallback to lowercase 'kegiatan' if uppercase fails
+        if (error) {
+          const { data: dataLow, error: errorLow } = await supabase
+            .from('kegiatan')
+            .select('*')
+            .eq('nim', nim)
+            .order('tanggal', { ascending: false })
+          
+          if (errorLow) throw errorLow
+          data = dataLow
+        }
+
         setKegiatan(data || [])
 
-        const { data: commentsData } = await supabase
-          .from('comments')
-          .select('*, profiles(nama_lengkap, role)')
-          .in('kegiatan_id', data?.map(k => k.id) || [])
-          .order('created_at', { ascending: true })
-        
-        setComments(commentsData as any || [])
+        if (data && data.length > 0) {
+          const { data: commentsData } = await supabase
+            .from('comments')
+            .select('*, profiles(nama_lengkap, role)')
+            .in('kegiatan_id', data.map(k => k.id))
+            .order('created_at', { ascending: true })
+          
+          setComments(commentsData as any || [])
+        }
       } else {
         setKegiatan([])
       }
@@ -119,15 +133,27 @@ export default function KegiatanPage() {
       if (userError || !user) throw new Error('Sesi tidak ditemukan')
 
       if (editingId) {
-        const { data, error } = await supabase.from('Kegiatan').update({
+        // Try uppercase 'Kegiatan'
+        let { data, error } = await supabase.from('Kegiatan').update({
           tanggal: form.tanggal,
           kegiatan: form.kegiatan,
           status: form.status,
         }).eq('id', editingId).select()
         
-        if (error) throw error
+        // Fallback to lowercase 'kegiatan'
+        if (error) {
+          const { data: dataLow, error: errorLow } = await supabase.from('kegiatan').update({
+            tanggal: form.tanggal,
+            kegiatan: form.kegiatan,
+            status: form.status,
+          }).eq('id', editingId).select()
+          
+          if (errorLow) throw errorLow
+          data = dataLow
+        }
+
         if (!data || data.length === 0) {
-          throw new Error('Akses ditolak: Gagal mengupdate data. Pastikan RLS Supabase memperbolehkan operasi UPDATE pada tabel Kegiatan.')
+          throw new Error('Gagal memperbarui data. Pastikan Anda memiliki akses.')
         }
         await logAction('Update Jurnal', `Update jurnal untuk tanggal ${form.tanggal}`, String(editingId))
         toast.success('Jurnal kegiatan berhasil diperbarui')
@@ -145,14 +171,27 @@ export default function KegiatanPage() {
           throw new Error('Deskripsi kegiatan terlalu singkat. Minimal 50 karakter.')
         }
 
-        const { error } = await supabase.from('Kegiatan').insert({
+        // Try uppercase 'Kegiatan'
+        let { error } = await supabase.from('Kegiatan').insert({
           tanggal: form.tanggal,
           kegiatan: form.kegiatan,
           status: form.status,
           nama_mahasiswa: profile?.nama_lengkap || '',
           nim: nim,
         })
-        if (error) throw error
+
+        // Fallback to lowercase 'kegiatan'
+        if (error) {
+          const { error: errorLow } = await supabase.from('kegiatan').insert({
+            tanggal: form.tanggal,
+            kegiatan: form.kegiatan,
+            status: form.status,
+            nama_mahasiswa: profile?.nama_lengkap || '',
+            nim: nim,
+          })
+          if (errorLow) throw errorLow
+        }
+
         await logAction('Tambah Jurnal', `Tambah jurnal baru untuk tanggal ${form.tanggal}`)
         toast.success('Jurnal kegiatan berhasil disimpan')
       }
