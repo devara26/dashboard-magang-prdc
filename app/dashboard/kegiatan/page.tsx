@@ -498,7 +498,7 @@ export default function KegiatanPage() {
                             className="flex-1 bg-[#F8F9FA] border border-gray-200 rounded-full px-3 py-1 text-[11px] outline-none focus:border-[#1A73E8] transition-colors"
                           />
                           <button 
-                            onClick={() => handlePostComment(k.id)}
+                            onClick={() => handlePostComment(Number(k.id))}
                             disabled={isCommenting[k.id] || !newComment[k.id]?.trim()}
                             className="text-[#1A73E8] hover:text-[#1967D2] text-[11px] font-bold disabled:opacity-50"
                           >
