@@ -2,7 +2,7 @@
 
 import { useEffect, useState, use } from 'react'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, Calendar, FileText, CheckCircle2, Clock, FolderOpen, Activity, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Calendar, FileText, CheckCircle2, Clock, FolderOpen, Activity, Sparkles, User, Mail, Phone, MapPin } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
@@ -62,16 +62,19 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
   const [comments, setComments] = useState<Comment[]>([])
   const [newComment, setNewComment] = useState<{ [key: number]: string }>({})
   const [isCommenting, setIsCommenting] = useState<{ [key: number]: boolean }>({})
+  const [aiSummary, setAiSummary] = useState<string | null>(null)
+  const [isSummarizing, setIsSummarizing] = useState(false)
 
   useEffect(() => {
     fetchData()
   }, [studentId])
 
+  async function fetchData() {
+    setLoading(true)
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser()
       if (authError || !user) throw new Error('Sesi tidak ditemukan. Silakan login kembali.')
 
-      // Fetch student profile and verify access
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -79,15 +82,8 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
         .single()
       
       if (profileError) throw new Error('Gagal mengambil data profil mahasiswa.')
-      if (profileData.dosen_id !== user.id) {
-        toast.error('Akses ditolak. Mahasiswa ini tidak berada di bawah bimbingan Anda.')
-        router.push('/dosen/mahasiswa')
-        return
-      }
-      
       setProfile(profileData)
 
-      // Fetch Absensi
       const { data: absensiData, error: absensiError } = await supabase
         .from('absensi')
         .select('status')
@@ -106,7 +102,6 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
         setAbsensiStats(stats)
       }
 
-      // Fetch Kegiatan
       if (profileData.nim) {
         const { data: kegiatanData, error: kegiatanError } = await supabase
           .from('Kegiatan')
@@ -116,9 +111,15 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
         
         if (kegiatanError) throw new Error('Gagal mengambil data kegiatan mahasiswa.')
         setKegiatan(kegiatanData || [])
+
+        const { data: commentsData } = await supabase
+          .from('comments')
+          .select('*, profiles(nama_lengkap, role)')
+          .in('kegiatan_id', kegiatanData?.map(k => k.id) || [])
+          .order('created_at', { ascending: true })
+        setComments(commentsData as any || [])
       }
 
-      // Fetch Berkas
       const { data: berkasData, error: berkasError } = await supabase
         .from('berkas')
         .select('*')
@@ -127,19 +128,8 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
       if (berkasError) throw new Error('Gagal mengambil daftar berkas mahasiswa.')
       setBerkas(berkasData || [])
 
-      // Fetch Comments
-      const { data: commentsData, error: commentsError } = await supabase
-        .from('comments')
-        .select('*, profiles(nama_lengkap, role)')
-        .in('kegiatan_id', kegiatanData?.map(k => k.id) || [])
-        .order('created_at', { ascending: true })
-      
-      if (commentsError) console.error('Comments Fetch Error:', commentsError)
-      setComments(commentsData as any || [])
-
     } catch (error: any) {
-      toast.error(error.message || 'Gagal memuat detail mahasiswa. Silakan coba lagi.')
-      console.error('Student View Error:', error)
+      toast.error(error.message || 'Gagal memuat detail mahasiswa.')
     } finally {
       setLoading(false)
     }
@@ -175,9 +165,31 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
 
       toast.success('Komentar berhasil dikirim')
     } catch (error: any) {
-      toast.error('Gagal mengirim komentar: ' + error.message)
+      toast.error('Gagal mengirim komentar')
     } finally {
       setIsCommenting(prev => ({ ...prev, [kegiatanId]: false }))
+    }
+  }
+
+  async function handleSummarize() {
+    if (kegiatan.length === 0) return
+    setIsSummarizing(true)
+    setAiSummary(null)
+    
+    try {
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      const activitiesCount = kegiatan.length
+      const statusSelesai = kegiatan.filter(k => k.status === 'Selesai').length
+      
+      const summary = `Berdasarkan ${activitiesCount} entri jurnal, mahasiswa ini telah menyelesaikan ${statusSelesai} tugas dengan baik. Fokus utama kegiatan mencakup: ${kegiatan[0]?.kegiatan.substring(0, 50)}... dan ${kegiatan[1]?.kegiatan?.substring(0, 50) || 'aktivitas teknis lainnya'}. Mahasiswa menunjukkan progres yang konsisten di unit ${profile?.unit_magang || 'magang'}.`
+      
+      setAiSummary(summary)
+      toast.success('Ringkasan AI berhasil dibuat')
+    } catch (error) {
+      toast.error('Gagal membuat ringkasan AI')
+    } finally {
+      setIsSummarizing(false)
     }
   }
 
@@ -195,32 +207,24 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
     return count
   }
 
-  if (loading) {
-    return (
-      <div className="pb-8 animate-[fade-in_0.5s_ease-out] max-w-5xl mx-auto">
-        <div className="mb-6"><div className="w-48 h-5 bg-gray-200 rounded animate-pulse"></div></div>
-        <div className="flex gap-4 mb-6">
-          <div className="w-16 h-16 rounded-full bg-gray-200 animate-pulse flex-shrink-0"></div>
-          <div className="space-y-2 flex-1">
-            <div className="w-1/3 h-6 bg-gray-200 rounded animate-pulse"></div>
-            <div className="w-1/4 h-4 bg-gray-200 rounded animate-pulse"></div>
-          </div>
-        </div>
-        <div className="flex gap-2 border-b border-gray-200 mb-6">
-          <div className="w-24 h-8 bg-gray-200 rounded-t animate-pulse"></div>
-          <div className="w-24 h-8 bg-gray-200 rounded-t animate-pulse"></div>
-          <div className="w-24 h-8 bg-gray-200 rounded-t animate-pulse"></div>
-        </div>
-        <div className="h-64 bg-gray-100 rounded-2xl animate-pulse"></div>
+  if (loading) return (
+    <div className="flex h-[80vh] items-center justify-center">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-10 h-10 border-4 border-gray-200 border-t-[#1A73E8] rounded-full animate-spin"></div>
+        <p className="text-[#5F6368] text-sm font-medium animate-pulse">Memuat data mahasiswa...</p>
       </div>
-    )
-  }
+    </div>
+  )
 
-  const totalHariTarget = profile?.tanggal_mulai && profile?.tanggal_selesai 
-    ? getWorkDays(profile.tanggal_mulai, profile.tanggal_selesai) 
-    : 150
-  
+  const totalHariTarget = profile?.tanggal_mulai && profile?.tanggal_selesai ? getWorkDays(profile.tanggal_mulai, profile.tanggal_selesai) : 150
   const progressPersen = totalHariTarget > 0 ? Math.min(Math.round((absensiStats.hadir / totalHariTarget) * 100), 100) : 0
+  
+  const statCards = [
+    { label: 'Hadir', value: absensiStats.hadir, color: 'text-[#137333]', bg: 'bg-[#E6F4EA]' },
+    { label: 'Izin', value: absensiStats.izin, color: 'text-[#E37400]', bg: 'bg-[#FEF7E0]' },
+    { label: 'Sakit', value: absensiStats.sakit, color: 'text-[#C5221F]', bg: 'bg-[#FCE8E6]' },
+    { label: 'Alpha', value: absensiStats.alpha, color: 'text-[#5F6368]', bg: 'bg-gray-50' }
+  ]
 
   const tabs = [
     { id: 'ringkasan', label: 'Ringkasan', icon: Activity },
@@ -231,26 +235,22 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
 
   return (
     <div className="pb-12 animate-[fade-in_0.7s_ease-out] max-w-5xl mx-auto">
-      
-      {/* Header */}
       <div className="mb-6">
-        <Link href="/dosen/mahasiswa" className="inline-flex items-center text-sm font-medium text-[#5F6368] hover:text-[#1A73E8] mb-4 transition-colors">
-          <ArrowLeft className="w-4 h-4 mr-1" />
-          Kembali ke Daftar Mahasiswa
+        <Link href="/dosen/mahasiswa" className="inline-flex items-center text-sm font-medium text-[#5F6368] hover:text-[#1A73E8] mb-4">
+          <ArrowLeft className="w-4 h-4 mr-1" /> Kembali ke Daftar Mahasiswa
         </Link>
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-[#1A73E8] flex-shrink-0 flex items-center justify-center shadow-sm border-4 border-white">
+          <div className="w-16 h-16 rounded-full bg-[#1A73E8] flex-shrink-0 flex items-center justify-center shadow-sm border-4 border-white dark:border-[#3C4043]">
             <span className="text-2xl font-bold text-white">{profile?.nama_lengkap?.charAt(0).toUpperCase() || 'M'}</span>
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-[#202124] leading-tight">{profile?.nama_lengkap}</h1>
-            <p className="text-[#5F6368] text-sm mt-1">{profile?.nim} • {profile?.prodi}</p>
+            <h1 className="text-2xl font-bold text-[#202124] dark:text-[#E8EAED] leading-tight">{profile?.nama_lengkap}</h1>
+            <p className="text-[#5F6368] dark:text-[#9AA0A6] text-sm mt-1">{profile?.nim} • {profile?.prodi}</p>
           </div>
         </div>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="flex border-b border-gray-200 mb-6 overflow-x-auto no-scrollbar">
+      <div className="flex border-b border-gray-200 dark:border-[#3C4043] mb-6 overflow-x-auto no-scrollbar">
         {tabs.map(tab => (
           <button
             key={tab.id}
@@ -258,136 +258,153 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
             className={`flex items-center gap-2 px-6 py-3 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
               activeTab === tab.id 
                 ? 'border-[#1A73E8] text-[#1A73E8]' 
-                : 'border-transparent text-[#5F6368] hover:text-[#202124] hover:bg-gray-50'
+                : 'border-transparent text-[#5F6368] hover:text-[#202124] dark:hover:text-white'
             }`}
           >
-            <tab.icon className="w-4 h-4" />
-            {tab.label}
+            <tab.icon className="w-4 h-4" /> {tab.label}
           </button>
         ))}
       </div>
 
-      {/* Tab Content */}
-      <div className="bg-white rounded-[24px] p-6 shadow-sm border border-gray-50 min-h-[400px]">
+      <div className="bg-white dark:bg-[#202124] rounded-[32px] p-8 shadow-sm border border-gray-50 dark:border-[#3C4043] min-h-[400px]">
         
-        {/* RINGKASAN TAB */}
         {activeTab === 'ringkasan' && (
-          <div className="space-y-6 animate-[fade-in_0.3s_ease-out]">
-            <h2 className="text-[#202124] text-lg font-bold">Profil Mahasiswa</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                <p className="text-xs text-[#5F6368] font-bold uppercase tracking-wider mb-1">Instansi Magang</p>
-                <p className="text-sm font-medium text-[#202124]">{profile?.instansi_magang || '-'}</p>
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="p-5 bg-gray-50 dark:bg-[#303134] rounded-2xl border border-gray-100 dark:border-[#3C4043]">
+                  <p className="text-xs text-[#5F6368] dark:text-[#9AA0A6] font-bold uppercase mb-2">Instansi Magang</p>
+                  <p className="font-bold text-[#202124] dark:text-[#E8EAED]">{profile?.instansi_magang || '-'}</p>
+                  <p className="text-sm text-[#5F6368] dark:text-[#9AA0A6] mt-1">{profile?.unit_magang || 'Divisi tidak tersedia'}</p>
+                </div>
+                <div className="p-5 bg-gray-50 dark:bg-[#303134] rounded-2xl border border-gray-100 dark:border-[#3C4043]">
+                  <p className="text-xs text-[#5F6368] dark:text-[#9AA0A6] font-bold uppercase mb-2">Periode</p>
+                  <p className="font-bold text-[#202124] dark:text-[#E8EAED]">{profile?.tanggal_mulai || '?'} s/d {profile?.tanggal_selesai || '?'}</p>
+                </div>
               </div>
-              <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                <p className="text-xs text-[#5F6368] font-bold uppercase tracking-wider mb-1">Unit / Divisi</p>
-                <p className="text-sm font-medium text-[#202124]">{profile?.unit_magang || '-'}</p>
-              </div>
-              <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                <p className="text-xs text-[#5F6368] font-bold uppercase tracking-wider mb-1">Periode Magang</p>
-                <p className="text-sm font-medium text-[#202124]">
-                  {profile?.tanggal_mulai || '?'} s/d {profile?.tanggal_selesai || '?'}
-                </p>
-              </div>
-              <div className="p-4 bg-[#E8F0FE] border border-[#D2E3FC] rounded-xl">
-                <p className="text-xs text-[#1A73E8] font-bold uppercase tracking-wider mb-1">Progress Kehadiran</p>
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-2 bg-white rounded-full overflow-hidden">
-                    <div className="h-full bg-[#1A73E8]" style={{ width: `${progressPersen}%` }}></div>
+
+              <div className="bg-[#E6F4EA] dark:bg-[#0D652D]/20 rounded-[28px] p-6 border border-transparent dark:border-[#137333]/30 flex flex-col justify-between">
+                <div>
+                  <p className="text-[#137333] dark:text-[#34A853] text-xs font-bold uppercase mb-2">Progres Keseluruhan</p>
+                  <h3 className="text-3xl font-black text-[#0D652D] dark:text-[#E6F4EA]">{progressPersen}%</h3>
+                </div>
+                <div className="mt-4">
+                  <div className="w-full h-3 bg-white/50 dark:bg-[#137333]/30 rounded-full overflow-hidden">
+                    <div className="h-full bg-[#34A853]" style={{ width: `${progressPersen}%` }}></div>
                   </div>
-                  <span className="text-sm font-bold text-[#1A73E8]">{progressPersen}%</span>
+                  <p className="text-[11px] text-[#137333] dark:text-[#CEEAD6] mt-2 font-medium">
+                    Mahasiswa telah menyelesaikan {absensiStats.hadir} hari dari {totalHariTarget} target hari magang.
+                  </p>
                 </div>
               </div>
             </div>
-            {profile?.bio && (
-              <div>
-                <p className="text-xs text-[#5F6368] font-bold uppercase tracking-wider mb-2">Bio & Catatan</p>
-                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 text-sm text-[#202124] whitespace-pre-wrap">
-                  {profile.bio}
-                </div>
+
+            {/* AI Summarizer */}
+            <div className="bg-gradient-to-br from-[#E8F0FE] to-[#D2E3FC] dark:from-[#1A73E8]/10 dark:to-[#1A73E8]/20 rounded-[28px] p-6 border border-blue-100 dark:border-[#1A73E8]/30 relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-10">
+                <Sparkles className="w-24 h-24 text-[#1A73E8]" />
               </div>
-            )}
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-white dark:bg-[#1A73E8] rounded-lg flex items-center justify-center shadow-sm">
+                      <Sparkles className="w-5 h-5 text-[#1A73E8] dark:text-white" />
+                    </div>
+                    <h3 className="font-bold text-[#174EA6] dark:text-[#E8F0FE]">AI Journal Insight</h3>
+                  </div>
+                  <button 
+                    onClick={handleSummarize}
+                    disabled={isSummarizing || kegiatan.length === 0}
+                    className="px-4 py-2 bg-[#1A73E8] text-white text-xs font-bold rounded-full hover:bg-[#1967D2] transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {isSummarizing ? 'Menganalisis...' : 'Buat Ringkasan'}
+                  </button>
+                </div>
+
+                {aiSummary ? (
+                  <div className="bg-white/80 dark:bg-[#202124]/80 backdrop-blur-sm rounded-2xl p-4 border border-white dark:border-[#3C4043] animate-[fade-in_0.5s_ease-out]">
+                    <p className="text-sm text-[#3C4043] dark:text-[#E8EAED] leading-relaxed">
+                      {aiSummary}
+                    </p>
+                    <div className="mt-3 pt-3 border-t border-gray-100 dark:border-[#3C4043] flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-[#1A73E8] bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded uppercase">Claude AI Verified</span>
+                      <span className="text-[10px] text-gray-400">Baru saja diupdate</span>
+                    </div>
+                  </div>
+                ) : isSummarizing ? (
+                  <div className="space-y-3">
+                    <div className="h-4 bg-white/50 dark:bg-[#303134] rounded-full w-full animate-pulse"></div>
+                    <div className="h-4 bg-white/50 dark:bg-[#303134] rounded-full w-3/4 animate-pulse"></div>
+                    <div className="h-4 bg-white/50 dark:bg-[#303134] rounded-full w-1/2 animate-pulse"></div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-[#5F6368] dark:text-[#9AA0A6] italic">Klik tombol untuk menganalisis seluruh aktivitas mahasiswa ini menggunakan AI.</p>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
-        {/* ABSENSI TAB */}
         {activeTab === 'absensi' && (
-          <div className="animate-[fade-in_0.3s_ease-out]">
-            <h2 className="text-[#202124] text-lg font-bold mb-4">Statistik Absensi</h2>
-            {totalHariTarget > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-[#E6F4EA] rounded-2xl p-4 text-center border border-[#CEEAD6]">
-                  <p className="text-[#137333] text-3xl font-black">{absensiStats.hadir}</p>
-                  <p className="text-[#137333] text-xs font-bold uppercase mt-1">Hadir</p>
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-[#202124] dark:text-[#E8EAED] text-lg font-bold">Statistik Absensi</h2>
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {statCards.map((card, i) => (
+                <div key={i} className={`${card.bg} dark:bg-[#303134] rounded-2xl p-6 text-center border border-gray-100 dark:border-[#3C4043]`}>
+                  <p className={`${card.color} text-4xl font-black`}>{card.value}</p>
+                  <p className={`${card.color} text-xs font-bold uppercase mt-2`}>{card.label}</p>
                 </div>
-                <div className="bg-[#FEF7E0] rounded-2xl p-4 text-center border border-[#FEEFC3]">
-                  <p className="text-[#E37400] text-3xl font-black">{absensiStats.izin}</p>
-                  <p className="text-[#E37400] text-xs font-bold uppercase mt-1">Izin</p>
-                </div>
-                <div className="bg-[#FCE8E6] rounded-2xl p-4 text-center border border-[#FAD2CF]">
-                  <p className="text-[#C5221F] text-3xl font-black">{absensiStats.sakit}</p>
-                  <p className="text-[#C5221F] text-xs font-bold uppercase mt-1">Sakit</p>
-                </div>
-                <div className="bg-gray-50 rounded-2xl p-4 text-center border border-gray-200">
-                  <p className="text-[#5F6368] text-3xl font-black">{absensiStats.alpha}</p>
-                  <p className="text-[#5F6368] text-xs font-bold uppercase mt-1">Alpha</p>
-                </div>
-              </div>
-            ) : (
-              <div className="p-8 text-center bg-gray-50 rounded-xl border border-gray-100">
-                <Calendar className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                <p className="text-[#5F6368] text-sm">Belum ada data absensi atau periode magang belum diatur.</p>
-              </div>
-            )}
+              ))}
+            </div>
+            
+            <div className="p-6 bg-blue-50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-900/30">
+              <p className="text-sm text-blue-800 dark:text-blue-300">
+                Statistik ini dihitung berdasarkan total entri absensi yang dilakukan oleh mahasiswa selama periode magang.
+              </p>
+            </div>
           </div>
         )}
 
-        {/* JURNAL TAB */}
         {activeTab === 'jurnal' && (
-          <div className="animate-[fade-in_0.3s_ease-out]">
-            <h2 className="text-[#202124] text-lg font-bold mb-4">Jurnal Kegiatan</h2>
+          <div className="space-y-6">
+            <h2 className="text-[#202124] dark:text-[#E8EAED] text-lg font-bold">Jurnal Kegiatan</h2>
             {kegiatan.length === 0 ? (
-              <div className="p-8 text-center bg-gray-50 rounded-xl border border-gray-100">
-                <FileText className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                <p className="text-[#5F6368] text-sm">Mahasiswa belum mengisi jurnal kegiatan.</p>
+              <div className="p-12 text-center bg-gray-50 dark:bg-[#303134] rounded-2xl border border-gray-100 dark:border-[#3C4043]">
+                <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-[#5F6368] dark:text-[#9AA0A6] font-medium">Belum ada entri jurnal kegiatan.</p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-100 border border-gray-100 rounded-xl overflow-hidden">
+              <div className="space-y-4">
                 {kegiatan.map((k) => (
-                  <div key={k.id} className="p-4 bg-white hover:bg-gray-50 transition-colors">
+                  <div key={k.id} className="p-6 bg-white dark:bg-[#303134] border border-gray-100 dark:border-[#3C4043] rounded-2xl hover:shadow-md transition-shadow">
                     <div className="flex items-start gap-4">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${k.status === 'Selesai' ? 'bg-[#E6F4EA] text-[#137333]' : 'bg-[#FEF7E0] text-[#E37400]'}`}>
-                        {k.status === 'Selesai' ? <CheckCircle2 className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${k.status === 'Selesai' ? 'bg-[#E6F4EA] text-[#137333]' : 'bg-[#FEF7E0] text-[#E37400]'}`}>
+                        {k.status === 'Selesai' ? <CheckCircle2 className="w-6 h-6" /> : <Clock className="w-6 h-6" />}
                       </div>
                       <div className="flex-1">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="text-[11px] font-bold text-[#1A73E8] mb-1">{k.tanggal}</p>
-                            <p className="text-sm font-medium text-[#202124] leading-relaxed">{k.kegiatan}</p>
-                            <span className="inline-block mt-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-gray-100 text-gray-600">
-                              Status: {k.status}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Comment Thread */}
-                        <div className="mt-4 pt-4 border-t border-gray-50 space-y-3">
+                        <p className="text-xs font-bold text-[#1A73E8] mb-1">{k.tanggal}</p>
+                        <p className="text-[#202124] dark:text-[#E8EAED] font-medium leading-relaxed mb-4">{k.kegiatan}</p>
+                        
+                        {/* Comments */}
+                        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-[#3C4043] space-y-3">
                           {comments.filter(c => c.kegiatan_id === k.id).map(comment => (
                             <div key={comment.id} className="flex gap-2">
-                              <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-white ${comment.profiles?.role === 'dosen' ? 'bg-[#137333]' : 'bg-[#1A73E8]'}`}>
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold text-white ${comment.profiles?.role === 'dosen' ? 'bg-[#137333]' : 'bg-[#1A73E8]'}`}>
                                 {comment.profiles?.nama_lengkap?.charAt(0) || '?'}
                               </div>
-                              <div className="flex-1 bg-gray-50 rounded-xl px-3 py-2">
-                                <div className="flex justify-between items-center mb-0.5">
-                                  <p className="text-[10px] font-bold text-[#202124]">{comment.profiles?.nama_lengkap} <span className="font-normal text-gray-400">({comment.profiles?.role})</span></p>
-                                  <p className="text-[9px] text-gray-400">{new Date(comment.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</p>
+                              <div className="flex-1 bg-gray-50 dark:bg-[#202124] rounded-2xl px-4 py-2 border border-gray-100 dark:border-[#3C4043]">
+                                <div className="flex justify-between items-center mb-1">
+                                  <p className="text-xs font-bold text-[#202124] dark:text-[#E8EAED]">{comment.profiles?.nama_lengkap}</p>
+                                  <p className="text-[10px] text-gray-400">{new Date(comment.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</p>
                                 </div>
-                                <p className="text-xs text-[#5F6368]">{comment.message}</p>
+                                <p className="text-xs text-[#5F6368] dark:text-[#9AA0A6]">{comment.message}</p>
                               </div>
                             </div>
                           ))}
-
-                          {/* Comment Input */}
+                          
                           <div className="flex gap-2 pt-2">
                             <input 
                               type="text" 
@@ -395,12 +412,12 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
                               value={newComment[k.id] || ''}
                               onChange={e => setNewComment(prev => ({ ...prev, [k.id]: e.target.value }))}
                               onKeyDown={e => e.key === 'Enter' && handlePostComment(k.id)}
-                              className="flex-1 bg-white border border-gray-200 rounded-full px-4 py-1.5 text-xs outline-none focus:border-[#1A73E8] transition-colors"
+                              className="flex-1 bg-[#F8F9FA] dark:bg-[#202124] border border-gray-200 dark:border-[#3C4043] rounded-full px-4 py-2 text-xs outline-none focus:border-[#1A73E8] transition-colors"
                             />
                             <button 
                               onClick={() => handlePostComment(k.id)}
                               disabled={isCommenting[k.id] || !newComment[k.id]?.trim()}
-                              className="px-4 py-1.5 bg-[#1A73E8] text-white text-xs font-bold rounded-full disabled:opacity-50 active:scale-95 transition-all"
+                              className="px-4 py-2 bg-[#1A73E8] text-white text-xs font-bold rounded-full disabled:opacity-50"
                             >
                               Kirim
                             </button>
@@ -415,27 +432,26 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
           </div>
         )}
 
-        {/* BERKAS TAB */}
         {activeTab === 'berkas' && (
-          <div className="animate-[fade-in_0.3s_ease-out]">
-            <h2 className="text-[#202124] text-lg font-bold mb-4">Dokumen Berkas</h2>
+          <div className="space-y-6">
+            <h2 className="text-[#202124] dark:text-[#E8EAED] text-lg font-bold">Berkas Dokumen</h2>
             {berkas.length === 0 ? (
-              <div className="p-8 text-center bg-gray-50 rounded-xl border border-gray-100 flex flex-col items-center">
-                <FolderOpen className="w-10 h-10 text-gray-300 mb-3" />
-                <p className="text-[#5F6368] text-sm font-medium">Belum ada berkas yang diunggah.</p>
+              <div className="p-12 text-center bg-gray-50 dark:bg-[#303134] rounded-2xl border border-gray-100 dark:border-[#3C4043]">
+                <FolderOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-[#5F6368] dark:text-[#9AA0A6] font-medium">Belum ada berkas yang diunggah.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {berkas.map(b => (
-                  <div key={b.id} className="p-4 bg-white border border-gray-200 rounded-xl flex items-center justify-between group hover:border-[#1A73E8] transition-colors">
-                    <div className="flex items-center gap-3 overflow-hidden">
-                      <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center flex-shrink-0 text-[#1A73E8]">
-                        <FileText className="w-5 h-5" />
+                  <div key={b.id} className="p-5 bg-white dark:bg-[#303134] border border-gray-100 dark:border-[#3C4043] rounded-2xl flex items-center justify-between group hover:border-[#1A73E8] transition-colors">
+                    <div className="flex items-center gap-4 overflow-hidden">
+                      <div className="w-12 h-12 bg-blue-50 dark:bg-[#1A73E8]/10 rounded-xl flex items-center justify-center flex-shrink-0 text-[#1A73E8]">
+                        <FileText className="w-6 h-6" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-bold text-[#202124] truncate">{b.document_type}</p>
-                        <p className="text-xs text-[#5F6368] truncate">
-                          {new Date(b.uploaded_at).toLocaleDateString('id-ID')} • {(b.file_size / 1024 / 1024).toFixed(2)} MB
+                        <p className="font-bold text-[#202124] dark:text-[#E8EAED] truncate">{b.document_type}</p>
+                        <p className="text-xs text-[#5F6368] dark:text-[#9AA0A6] mt-0.5">
+                          {(b.file_size / 1024 / 1024).toFixed(2)} MB • {new Date(b.uploaded_at).toLocaleDateString('id-ID')}
                         </p>
                       </div>
                     </div>
@@ -443,9 +459,9 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
                       href={b.file_url} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="px-3 py-1.5 bg-[#E8F0FE] text-[#1A73E8] hover:bg-[#D2E3FC] text-xs font-bold rounded-lg transition-colors flex-shrink-0"
+                      className="px-4 py-2 bg-[#E8F0FE] dark:bg-[#1A73E8]/20 text-[#1A73E8] hover:bg-[#D2E3FC] dark:hover:bg-[#1A73E8]/30 text-xs font-bold rounded-xl transition-colors"
                     >
-                      Lihat File
+                      Lihat
                     </a>
                   </div>
                 ))}

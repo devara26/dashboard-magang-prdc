@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
+import { logAction } from '@/lib/audit'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -25,6 +26,8 @@ export default function LoginPage() {
       setLoading(false)
     } else if (authData.user) {
       try {
+        await logAction('Login', `Login sebagai ${selectedRole}`)
+        
         const { error: updateError } = await supabase
           .from('profiles')
           .update({ role: selectedRole })

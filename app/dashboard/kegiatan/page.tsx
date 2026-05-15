@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { List, Plus, Trash2, Calendar, Activity, CheckCircle2, FileText, ChevronRight, AlertCircle, X, Edit2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { logAction } from '@/lib/audit'
 
 type Kegiatan = {
   id: number
@@ -131,6 +132,7 @@ export default function KegiatanPage() {
         if (!data || data.length === 0) {
           throw new Error('Akses ditolak: Gagal mengupdate data. Pastikan pengaturan RLS (Row Level Security) Supabase Anda memperbolehkan operasi UPDATE pada tabel Kegiatan.')
         }
+        await logAction('Update Jurnal', `Update jurnal untuk tanggal ${form.tanggal}`, String(editingId))
         toast.success('Jurnal kegiatan berhasil diperbarui')
       } else {
         // Mode Tambah
@@ -169,6 +171,7 @@ export default function KegiatanPage() {
           nim: nim,
         })
         if (error) throw error
+        await logAction('Tambah Jurnal', `Tambah jurnal baru untuk tanggal ${form.tanggal}`)
         toast.success('Jurnal kegiatan berhasil disimpan')
       }
 
@@ -192,6 +195,7 @@ export default function KegiatanPage() {
         throw new Error('Akses ditolak: Tidak dapat menghapus karena pengaturan RLS (Row Level Security) di tabel Kegiatan Anda memblokir aksi DELETE.')
       }
       
+      await logAction('Hapus Jurnal', `Hapus jurnal ID: ${id}`)
       toast.success('Kegiatan berhasil dihapus')
       fetchKegiatan()
     } catch (error: any) {

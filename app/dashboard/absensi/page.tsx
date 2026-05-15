@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { Calendar, Clock, CheckCircle2, UserCheck, UserX, AlertCircle, LogIn, LogOut, FileText, ChevronRight, ChevronLeft, Plus, Flame, Bell } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
+import { logAction } from '@/lib/audit'
 
 type Absensi = {
   id: number
@@ -77,6 +78,7 @@ export default function AbsensiPage() {
       })
       if (error) throw error
 
+      await logAction('Check-in', `Check-in pada ${nowTime}`)
       toast.success('Berhasil Check-in pada ' + nowTime)
       fetchAbsensi()
     } catch (error: any) {
@@ -98,6 +100,7 @@ export default function AbsensiPage() {
         .eq('id', todayRecord.id)
       if (error) throw error
 
+      await logAction('Check-out', `Check-out pada ${nowTime}`)
       toast.success('Berhasil Check-out pada ' + nowTime)
       fetchAbsensi()
     } catch (error: any) {
@@ -152,6 +155,7 @@ export default function AbsensiPage() {
       })
       if (error) throw error
 
+      await logAction('Manual Absensi', `Entri manual: ${manualForm.status} pada ${manualForm.tanggal}`)
       toast.success('Riwayat absensi berhasil ditambahkan')
       setShowManualForm(false)
       setManualForm({ tanggal: '', check_in: '08:00', check_out: '17:00', status: 'Hadir', keterangan: '' })

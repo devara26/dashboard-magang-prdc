@@ -6,6 +6,7 @@ import { LayoutDashboard, CalendarCheck, List, LogOut, User, Menu, Users, Folder
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import NotificationBell from '@/components/NotificationBell'
+import ThemeToggle from '@/components/ThemeToggle'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -143,14 +144,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#F8F9FA] z-10 relative">
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#F8F9FA] dark:bg-[#121212] z-10 relative transition-colors">
         
-        {/* Top Right Profile Header (Desktop) */}
-        <header className="hidden md:flex h-16 items-center justify-end px-8 border-b border-gray-200 bg-white shrink-0 gap-4">
+        <header className="hidden md:flex h-16 items-center justify-end px-8 border-b border-gray-200 dark:border-[#3C4043] bg-white dark:bg-[#202124] shrink-0 gap-4 transition-colors">
+          <ThemeToggle />
           <NotificationBell />
-          <Link href="/dashboard/profil" className="flex items-center gap-3 hover:bg-gray-50 p-1.5 pr-3 rounded-full transition-colors border border-transparent hover:border-gray-200">
+          <Link href="/dashboard/profil" className="flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-[#303134] p-1.5 pr-3 rounded-full transition-colors border border-transparent hover:border-gray-200 dark:hover:border-[#3C4043]">
             <div className="text-right">
-              <p className="text-sm font-bold text-[#202124]">{profileName}</p>
+              <p className="text-sm font-bold text-[#202124] dark:text-[#E8EAED]">{profileName}</p>
             </div>
             <div className="relative">
               <div className="w-9 h-9 rounded-full bg-[#1A73E8] text-white flex items-center justify-center font-bold text-sm shadow-sm overflow-hidden">
@@ -174,7 +175,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex items-center justify-around z-40 pb-safe shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-[#202124] border-t border-gray-200 dark:border-[#3C4043] flex items-center justify-around z-40 pb-safe shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
         {bottomNavItems.map((item) => {
           const active = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
           return (
@@ -182,13 +183,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               key={item.href}
               href={item.href}
               className={`flex flex-col items-center justify-center py-3 w-full transition-colors ${
-                active ? 'text-[#1A73E8]' : 'text-[#5F6368] hover:text-[#202124]'
+                active ? 'text-[#1A73E8]' : 'text-[#5F6368] dark:text-[#9AA0A6] hover:text-[#202124] dark:hover:text-white'
               }`}
             >
-              <div className={`p-1 rounded-full mb-1 ${active ? 'bg-[#E8F0FE]' : ''}`}>
-                <item.icon className={`w-5 h-5 ${active ? 'text-[#1A73E8]' : 'text-[#5F6368]'}`} />
+              <div className={`p-1 rounded-full mb-1 ${active ? 'bg-[#E8F0FE] dark:bg-[#3C4043]' : ''}`}>
+                <item.icon className={`w-5 h-5 ${active ? 'text-[#1A73E8]' : 'text-[#5F6368] dark:text-[#9AA0A6]'}`} />
               </div>
-              <span className={`text-[10px] font-medium ${active ? 'text-[#1A73E8]' : 'text-[#5F6368]'}`}>{item.name}</span>
+              <span className={`text-[10px] font-medium ${active ? 'text-[#1A73E8]' : 'text-[#5F6368] dark:text-[#9AA0A6]'}`}>{item.name}</span>
             </Link>
           )
         })}
