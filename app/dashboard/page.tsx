@@ -233,8 +233,7 @@ export default function DashboardPage() {
   const progressPersen = totalHariTarget > 0 ? Math.min(Math.round((stats.hadir / totalHariTarget) * 100), 100) : 0
 
   return (
-    <div className="pb-8 animate-[fade-in_0.7s_ease-out] max-w-lg mx-auto md:max-w-none">
-      
+    <div className="pb-12 animate-[fade-in_0.7s_ease-out]">
       {showOnboarding && userId && (
         <OnboardingWizard 
           userId={userId} 
@@ -244,106 +243,58 @@ export default function DashboardPage() {
           }} 
         />
       )}
-      
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-[#FBBC04] flex-shrink-0 flex items-center justify-center shadow-sm border-2 border-white dark:border-[#3C4043]">
-            <span className="text-xl font-medium text-white">{profile?.nama_lengkap?.charAt(0).toUpperCase() || 'U'}</span>
-          </div>
-          <div>
-            <p className="text-[#5F6368] dark:text-[#9AA0A6] text-xs font-medium uppercase tracking-wider mb-0.5">Selamat datang!</p>
-            <h1 className="text-lg font-bold text-[#202124] dark:text-[#E8EAED] leading-tight line-clamp-1">{profile?.nama_lengkap || 'Mahasiswa'}</h1>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <button 
-            onClick={handleDownloadExcel} 
-            disabled={downloadingExcel}
-            className="flex items-center gap-1.5 px-3 py-2 bg-[#E8F0FE] text-[#1A73E8] rounded-full text-xs font-bold transition-colors hover:bg-[#D2E3FC] disabled:opacity-50"
-            title="Download Laporan Excel"
-          >
-            <Download className="w-4 h-4" />
-            <span className="hidden md:inline">{downloadingExcel ? 'Mengunduh...' : 'Laporan'}</span>
-          </button>
-          <button onClick={handleTambahClick} className="p-2 bg-white dark:bg-[#202124] rounded-full border border-gray-100 dark:border-[#3C4043] shadow-sm text-[#5F6368] dark:text-[#9AA0A6] hover:text-[#1A73E8] dark:hover:text-[#1A73E8]">
-            <Calendar className="w-5 h-5" />
-          </button>
-        </div>
+
+      <div className="mb-10">
+        <h1 className="text-3xl font-black text-[#202124] tracking-tight">Halo, {profile?.nama_lengkap || 'User'}!</h1>
+        <p className="text-[#5F6368] font-medium mt-1">Selesaikan target magangmu dan pantau progresmu di sini.</p>
       </div>
 
-      <div className="bg-[#E6F4EA] dark:bg-[#0D652D]/20 rounded-[28px] p-6 mb-4 shadow-sm relative overflow-hidden transition-colors border border-transparent dark:border-[#137333]/30">
-        <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/30 dark:bg-[#137333]/10 rounded-full blur-2xl"></div>
-        <div className="relative z-10 flex justify-between items-center gap-4">
-          <div className="flex-1">
-            <p className="text-[#137333] dark:text-[#34A853] text-xs font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
-              <Activity className="w-3.5 h-3.5"/> Progress
-            </p>
-            <h2 className="text-[#0D652D] dark:text-[#E6F4EA] text-2xl font-bold mb-1 leading-tight">Kehadiran<br />Mingguan</h2>
-            <p className="text-[#137333] dark:text-[#CEEAD6] text-xs font-medium">{stats.hadir} dari {totalHariTarget} hari kerja</p>
-          </div>
-          <div className="w-[84px] h-[84px] bg-white dark:bg-[#202124] rounded-full flex items-center justify-center shadow-sm border-[6px] border-[#CEEAD6] dark:border-[#137333]/40 flex-shrink-0 relative">
-            <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 36 36">
-              <path
-                className="text-[#34A853]"
-                strokeDasharray={`${progressPersen}, 100`}
-                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                fill="none" stroke="currentColor" strokeWidth="3"
-              />
-            </svg>
-            <span className="text-xl font-extrabold text-[#137333] dark:text-[#34A853] z-10">{progressPersen}%</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="bg-white dark:bg-[#202124] rounded-[24px] p-5 shadow-sm border border-gray-50 dark:border-[#3C4043] flex flex-col justify-between aspect-square transition-colors">
-          <div className="flex justify-between items-start">
-            <p className="text-[#5F6368] dark:text-[#9AA0A6] text-xs font-bold w-1/2 leading-tight">Langkah<br />Tugas</p>
-            <div className="p-2 bg-[#FEF7E0] dark:bg-[#FBBC04]/10 rounded-full text-[#FBBC04]"><CheckCircle2 className="w-4 h-4"/></div>
-          </div>
-          <div>
-            <p className="text-[#202124] dark:text-[#E8EAED] text-3xl font-extrabold tracking-tight">{stats.tugasSelesai}</p>
-            <p className="text-[#5F6368] dark:text-[#9AA0A6] text-[10px] font-medium uppercase mt-0.5">Diselesaikan</p>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-[#202124] rounded-[24px] p-5 shadow-sm border border-gray-50 dark:border-[#3C4043] flex flex-col justify-between aspect-square transition-colors">
-          <div className="flex justify-between items-start">
-            <p className="text-[#5F6368] dark:text-[#9AA0A6] text-xs font-bold w-1/2 leading-tight">Total<br />Log</p>
-            <div className="p-2 bg-[#E8F0FE] dark:bg-[#1A73E8]/10 rounded-full text-[#1A73E8]"><List className="w-4 h-4"/></div>
-          </div>
-          <div>
-            <p className="text-[#202124] dark:text-[#E8EAED] text-3xl font-extrabold tracking-tight">{stats.totalKegiatan}</p>
-            <p className="text-[#5F6368] dark:text-[#9AA0A6] text-[10px] font-medium uppercase mt-0.5">Kegiatan</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white dark:bg-[#202124] rounded-[28px] shadow-sm border border-gray-50 dark:border-[#3C4043] overflow-hidden transition-colors">
-        <div className="px-6 py-5 border-b border-gray-50 dark:border-[#3C4043] flex justify-between items-center bg-white dark:bg-[#202124]">
-          <div>
-            <h2 className="text-[#202124] dark:text-[#E8EAED] text-sm font-extrabold">Kegiatan Terbaru</h2>
-            <p className="text-xs text-[#5F6368] dark:text-[#9AA0A6] mt-0.5">5 aktivitas terakhir</p>
-          </div>
-          <button onClick={handleTambahClick} className="w-8 h-8 flex items-center justify-center bg-[#F8F9FA] dark:bg-[#303134] rounded-full text-[#1A73E8] hover:bg-[#E8F0FE] dark:hover:bg-[#3C4043] transition-colors border border-gray-100 dark:border-[#3C4043]">
-            <Plus className="w-4 h-4" />
-          </button>
-        </div>
-        
-        {kegiatan.length === 0 ? (
-          <div className="p-8 text-center flex flex-col items-center">
-            <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mb-3">
-              <Activity className="w-5 h-5 text-gray-300" />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+        {/* Bento Card: Attendance */}
+        <div className="md:col-span-2 bg-white p-8 rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-gray-100 flex flex-col justify-between group hover:border-[#1A73E8] transition-all duration-300">
+          <div className="flex justify-between items-start mb-4">
+            <div className="w-14 h-14 bg-[#E8F0FE] rounded-2xl flex items-center justify-center text-[#1A73E8]">
+              <Calendar className="w-7 h-7" />
             </div>
-            <p className="text-[#5F6368] text-sm font-medium">Belum ada kegiatan</p>
+            <span className="px-3 py-1 bg-[#E6F4EA] text-[#137333] rounded-full text-[10px] font-bold uppercase tracking-wider">On Track</span>
           </div>
-        ) : (
-          <div className="divide-y divide-gray-50 dark:divide-[#3C4043]">
-            {kegiatan.map((k) => (
-              <div key={k.id} onClick={() => router.push('/dashboard/kegiatan')} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-[#303134] transition-colors cursor-pointer group">
-                <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-[14px] flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105 ${k.status === 'Selesai' ? 'bg-[#E6F4EA] dark:bg-[#137333]/20 text-[#137333] dark:text-[#34A853]' : 'bg-[#FEF7E0] dark:bg-[#FBBC04]/10 text-[#E37400] dark:text-[#FBBC04]'}`}>
-                    {k.status === 'Selesai' ? <CheckCircle2 className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
+          <div>
+            <p className="text-[#5F6368] text-sm font-semibold uppercase tracking-wider mb-1">Kehadiran</p>
+            <div className="flex items-baseline gap-2">
+              <h2 className="text-4xl font-black text-[#202124]">{stats.hadir}</h2>
+              <span className="text-[#5F6368] text-sm font-medium">Hari Hadir</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Bento Card: Tasks */}
+        <div className="bg-white p-8 rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-gray-100 flex flex-col justify-between hover:border-[#1A73E8] transition-all duration-300">
+          <div className="w-14 h-14 bg-[#FEF7E0] rounded-2xl flex items-center justify-center text-[#E37400] mb-4">
+            <CheckCircle2 className="w-7 h-7" />
+          </div>
+          <div>
+            <p className="text-[#5F6368] text-sm font-semibold uppercase tracking-wider mb-1">Tugas</p>
+            <h2 className="text-4xl font-black text-[#202124]">{stats.tugasSelesai}</h2>
+            <p className="text-[#9AA0A6] text-xs font-medium mt-1">Selesai Diverifikasi</p>
+          </div>
+        </div>
+
+        {/* Bento Card: Progress */}
+        <div className="bg-[#1A73E8] p-8 rounded-[32px] shadow-[0_20px_50px_rgba(26,115,232,0.2)] text-white flex flex-col justify-between group hover:scale-[1.02] transition-all duration-300">
+          <div className="flex justify-between items-start mb-4">
+            <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center">
+              <TrendingUp className="w-7 h-7" />
+            </div>
+            <Activity className="w-6 h-6 text-white/40 animate-pulse" />
+          </div>
+          <div>
+            <p className="text-white/70 text-sm font-semibold uppercase tracking-wider mb-1">Progres</p>
+            <h2 className="text-4xl font-black">{totalHariTarget > 0 ? progressPersen : 0}%</h2>
+            <div className="w-full h-1.5 bg-white/20 rounded-full mt-3 overflow-hidden">
+              <div 
+                className="h-full bg-white transition-all duration-1000 ease-out" 
+                style={{ width: `${totalHariTarget > 0 ? progressPersen : 0}%` }}
+              />
             </div>
           </div>
         </div>
