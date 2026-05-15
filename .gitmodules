@@ -1,0 +1,3 @@
+[submodule "dashboard-magang-prdc"]
+	path = dashboard-magang-prdc
+	url = https://github.com/devara26/dashboard-magang-prdc.git
