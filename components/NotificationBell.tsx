@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Bell, Check, Trash2, Info, AlertCircle, MessageCircle } from 'lucide-react'
+import { Bell, Check, Trash2, Info, AlertCircle, MessageCircle, CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 type Notification = {
