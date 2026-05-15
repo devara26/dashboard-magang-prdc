@@ -79,18 +79,32 @@ export default function DashboardPage() {
 
       if (profileData?.nim) {
         const [kegRes, selCount, totCount] = await Promise.all([
-          supabase.from('Kegiatan').select('*').eq('nim', profileData.nim).order('tanggal', { ascending: false }).limit(5),
-          supabase.from('Kegiatan').select('*', { count: 'exact', head: true }).eq('nim', profileData.nim).eq('status', 'Selesai'),
-          supabase.from('Kegiatan').select('*', { count: 'exact', head: true }).eq('nim', profileData.nim)
+          supabase.from('kegiatan').select('*').eq('nim', profileData.nim).order('tanggal', { ascending: false }).limit(5),
+          supabase.from('kegiatan').select('*', { count: 'exact', head: true }).eq('nim', profileData.nim).eq('status', 'Selesai'),
+          supabase.from('kegiatan').select('*', { count: 'exact', head: true }).eq('nim', profileData.nim)
         ])
         
-        if (kegRes.error) throw new Error('Gagal mengambil data kegiatan terbaru.')
-        if (selCount.error) throw new Error('Gagal mengambil ringkasan tugas selesai.')
-        if (totCount.error) throw new Error('Gagal mengambil total kegiatan.')
-
-        kegiatanData = kegRes.data || []
-        countSelesai = selCount.count || 0
-        countTotalKegiatan = totCount.count || 0
+        // Fallback to uppercase if lowercase fails
+        if (kegRes.error) {
+          const [kegRes2, selCount2, totCount2] = await Promise.all([
+            supabase.from('Kegiatan').select('*').eq('nim', profileData.nim).order('tanggal', { ascending: false }).limit(5),
+            supabase.from('Kegiatan').select('*', { count: 'exact', head: true }).eq('nim', profileData.nim).eq('status', 'Selesai'),
+            supabase.from('Kegiatan').select('*', { count: 'exact', head: true }).eq('nim', profileData.nim)
+          ])
+          
+          if (!kegRes2.error) {
+            kegiatanData = kegRes2.data || []
+            countSelesai = selCount2.count || 0
+            countTotalKegiatan = totCount2.count || 0
+          } else {
+            console.error('Fetch Kegiatan Error:', kegRes2.error)
+            throw new Error('Gagal mengambil data kegiatan terbaru.')
+          }
+        } else {
+          kegiatanData = kegRes.data || []
+          countSelesai = selCount.count || 0
+          countTotalKegiatan = totCount.count || 0
+        }
       }
 
       setKegiatan(kegiatanData)

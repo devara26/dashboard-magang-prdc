@@ -8,6 +8,28 @@
 .dark {
   --background: #121212;
   --foreground: #e8eaed;
+  --card-bg: #1e1e1e;
+  --card-border: #333333;
+}
+
+.dark .bg-white {
+  background-color: var(--card-bg) !important;
+}
+
+.dark .text-[#202124] {
+  color: var(--foreground) !important;
+}
+
+.dark .text-[#5F6368], .dark .text-gray-600 {
+  color: #9aa0a6 !important;
+}
+
+.dark .border-gray-200, .dark .border-gray-100, .dark .border-gray-50 {
+  border-color: var(--card-border) !important;
+}
+
+.dark .bg-[#F8F9FA], .dark .bg-gray-50 {
+  background-color: #2d2d2d !important;
 }
 
 @theme inline {
