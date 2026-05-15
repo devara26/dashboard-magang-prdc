@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { User, ShieldCheck, CheckCircle2, AlertCircle, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 type Dosen = {
@@ -38,7 +37,6 @@ export default function PembimbingPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      // Fetch student profile
       const { data: studentData, error: studentError } = await supabase
         .from('profiles')
         .select('id, dosen_id, enrollment_date')
@@ -49,7 +47,6 @@ export default function PembimbingPage() {
       setProfile(studentData)
 
       if (studentData?.dosen_id) {
-        // Fetch current dosen and their enrolled count
         const [dosenRes, countRes] = await Promise.all([
           supabase
             .from('profiles')
@@ -63,7 +60,6 @@ export default function PembimbingPage() {
             .eq('role', 'mahasiswa')
         ])
         
-        if (dosenRes.error && dosenRes.error.code !== 'PGRST116') throw dosenRes.error
         if (dosenRes.data) {
           setCurrentDosen({ 
             ...dosenRes.data, 
@@ -71,23 +67,18 @@ export default function PembimbingPage() {
           })
         }
       } else {
-        // Fetch all dosen and their enrolled count
-        const { data: allDosen, error: allDosenError } = await supabase
+        const { data: allDosen } = await supabase
           .from('profiles')
           .select('id, nama_lengkap, nip, department, faculty, max_mahasiswa')
           .eq('role', 'dosen')
         
-        if (allDosenError) throw allDosenError
-
-        const { data: allStudents, error: studentsError } = await supabase
+        const { data: allStudents } = await supabase
           .from('profiles')
           .select('dosen_id')
           .eq('role', 'mahasiswa')
           .not('dosen_id', 'is', null)
 
-        if (studentsError) throw studentsError
-
-        const dosenCounts = allStudents.reduce((acc, curr) => {
+        const dosenCounts = (allStudents || []).reduce((acc, curr) => {
           if (curr.dosen_id) acc[curr.dosen_id] = (acc[curr.dosen_id] || 0) + 1
           return acc
         }, {} as Record<string, number>)
@@ -108,12 +99,8 @@ export default function PembimbingPage() {
   }
 
   async function handleEnroll(dosenId: string, availableSlots: number) {
-    if (availableSlots <= 0) {
-      toast.error('Kapasitas dosen ini sudah penuh')
-      return
-    }
-
-    if (!confirm('Apakah Anda yakin ingin mendaftar ke dosen ini?')) return
+    if (availableSlots <= 0) return toast.error('Kapasitas penuh')
+    if (!confirm('Daftar ke dosen ini?')) return
 
     setEnrolling(dosenId)
     try {
@@ -124,18 +111,17 @@ export default function PembimbingPage() {
         .eq('id', profile?.id)
 
       if (error) throw error
-      toast.success('Berhasil mendaftar ke dosen pembimbing')
+      toast.success('Berhasil mendaftar')
       fetchData()
     } catch (error: any) {
-      toast.error('Gagal mendaftar: ' + error.message)
+      toast.error('Gagal: ' + error.message)
     } finally {
       setEnrolling(null)
     }
   }
 
   async function handleUnenroll() {
-    if (!confirm('Apakah Anda yakin ingin membatalkan pendaftaran dosen pembimbing?')) return
-
+    if (!confirm('Batalkan pendaftaran pembimbing?')) return
     setUnloading(true)
     try {
       const { error } = await supabase
@@ -144,68 +130,64 @@ export default function PembimbingPage() {
         .eq('id', profile?.id)
 
       if (error) throw error
-      toast.success('Berhasil membatalkan pendaftaran')
+      toast.success('Pendaftaran dibatalkan')
       setCurrentDosen(null)
       fetchData()
     } catch (error: any) {
-      toast.error('Gagal membatalkan pendaftaran: ' + error.message)
+      toast.error('Gagal: ' + error.message)
     } finally {
       setUnloading(false)
     }
   }
 
-  if (loading) return (
-    <div className="flex h-[80vh] items-center justify-center">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-10 h-10 border-4 border-gray-200 border-t-[#1A73E8] rounded-full animate-spin"></div>
-        <p className="text-[#5F6368] text-sm font-medium animate-pulse">Memuat data pembimbing...</p>
-      </div>
-    </div>
-  )
+  if (loading) return null
 
   return (
-    <div className="pb-12 animate-[fade-in_0.7s_ease-out] max-w-5xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[#202124]">Dosen Pembimbing</h1>
-        <p className="text-[#5F6368] text-sm mt-1">Kelola dan lihat informasi dosen pembimbing magang Anda.</p>
-      </div>
+    <div className="animate-fade-in space-y-10">
+      {/* Header */}
+      <header>
+        <h1 className="text-[32px] leading-[40px] font-bold tracking-tight text-[var(--on-surface)]">Dosen Pembimbing</h1>
+        <p className="text-[14px] font-bold text-[var(--on-surface-variant)] uppercase tracking-widest mt-1">Pembimbing Akademik Magang</p>
+      </header>
 
       {currentDosen ? (
-        <div className="bg-white border border-gray-200 rounded-3xl p-8 relative overflow-hidden shadow-sm">
-          <div className="absolute top-0 right-0 p-4 bg-[#E6F4EA] rounded-bl-3xl border-b border-l border-[#CEEAD6]">
-            <p className="text-[#137333] text-xs font-bold flex items-center gap-1.5 uppercase tracking-wider">
-              <CheckCircle2 className="w-4 h-4" /> Terdaftar
-            </p>
+        <section className="bg-[var(--surface-container-lowest)] rounded-[48px] border border-[var(--outline-variant)] p-12 relative overflow-hidden shadow-sm">
+          <div className="absolute top-0 right-0 px-8 py-3 bg-[#e6f4ea] text-[#137333] rounded-bl-[32px] border-b border-l border-[#CEEAD6] text-[11px] font-black uppercase tracking-widest flex items-center gap-2">
+            <span className="material-symbols-outlined text-[16px] fill-1">verified</span>
+            Terdaftar
           </div>
-          
-          <div className="flex flex-col md:flex-row items-center md:items-start gap-8 relative z-10">
-            <div className="w-32 h-32 rounded-full bg-[#1A73E8] flex-shrink-0 flex items-center justify-center shadow-md border-4 border-white overflow-hidden">
-              <span className="text-5xl font-bold text-white">
+
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-12">
+            <div className="w-40 h-40 rounded-[40px] bg-[var(--primary)] flex-shrink-0 flex items-center justify-center shadow-xl shadow-blue-100 border-4 border-white overflow-hidden relative group">
+              <span className="text-6xl font-black text-white group-hover:scale-110 transition-transform">
                 {currentDosen.nama_lengkap.charAt(0).toUpperCase()}
               </span>
             </div>
-            
-            <div className="flex-1 text-center md:text-left">
-              <h2 className="text-2xl font-bold text-[#202124] mb-2">{currentDosen.nama_lengkap}</h2>
-              <div className="flex flex-wrap gap-2 justify-center md:justify-start mb-4">
-                <span className="px-3 py-1 bg-gray-100 text-[#5F6368] rounded-full text-xs font-semibold flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5" /> NIP: {currentDosen.nip || '-'}
-                </span>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                <div>
-                  <p className="text-xs text-[#5F6368] font-bold uppercase tracking-wider mb-1">Fakultas</p>
-                  <p className="text-sm font-medium text-[#202124]">{currentDosen.faculty || '-'}</p>
+
+            <div className="flex-1 text-center md:text-left space-y-8">
+              <div>
+                <h2 className="text-[32px] font-black text-[var(--on-surface)] leading-tight">{currentDosen.nama_lengkap}</h2>
+                <div className="flex flex-wrap gap-3 justify-center md:justify-start mt-3">
+                  <span className="px-4 py-1.5 bg-[var(--surface-container-high)] text-[var(--on-surface-variant)] rounded-full text-[11px] font-black uppercase tracking-widest flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[16px]">badge</span>
+                    NIP: {currentDosen.nip || '-'}
+                  </span>
                 </div>
-                <div>
-                  <p className="text-xs text-[#5F6368] font-bold uppercase tracking-wider mb-1">Departemen / Prodi</p>
-                  <p className="text-sm font-medium text-[#202124]">{currentDosen.department || '-'}</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black text-[var(--on-surface-variant)] uppercase tracking-widest">Fakultas</p>
+                  <p className="text-[16px] font-bold text-[var(--on-surface)]">{currentDosen.faculty || '-'}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black text-[var(--on-surface-variant)] uppercase tracking-widest">Departemen</p>
+                  <p className="text-[16px] font-bold text-[var(--on-surface)]">{currentDosen.department || '-'}</p>
                 </div>
                 {profile?.enrollment_date && (
-                  <div className="md:col-span-2">
-                    <p className="text-xs text-[#5F6368] font-bold uppercase tracking-wider mb-1">Tanggal Terdaftar</p>
-                    <p className="text-sm font-medium text-[#202124]">
+                  <div className="md:col-span-2 space-y-1">
+                    <p className="text-[10px] font-black text-[var(--on-surface-variant)] uppercase tracking-widest">Waktu Pendaftaran</p>
+                    <p className="text-[16px] font-bold text-[var(--on-surface)]">
                       {new Date(profile.enrollment_date).toLocaleDateString('id-ID', {
                         day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
                       })}
@@ -213,71 +195,73 @@ export default function PembimbingPage() {
                   </div>
                 )}
               </div>
-              
-              <div className="mt-8 border-t border-gray-100 pt-6">
+
+              <div className="pt-6 border-t border-[var(--outline-variant)]/30">
                 <button
                   onClick={handleUnenroll}
                   disabled={unloading}
-                  className="px-5 py-2.5 bg-white border border-red-200 text-red-600 hover:bg-red-50 rounded-full text-sm font-medium transition-colors flex items-center gap-2 mx-auto md:mx-0 disabled:opacity-50"
+                  className="px-8 py-4 bg-[var(--error-container)] text-[var(--error)] rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-[var(--error)] hover:text-white transition-all flex items-center gap-3 disabled:opacity-50"
                 >
-                  <X className="w-4 h-4" /> 
-                  {unloading ? 'Membatalkan...' : 'Batalkan Pendaftaran'}
+                  <span className="material-symbols-outlined text-[18px]">person_remove</span>
+                  {unloading ? 'MEMBATALKAN...' : 'BATALKAN PENDAFTARAN'}
                 </button>
               </div>
             </div>
           </div>
-        </div>
+        </section>
       ) : (
-        <div className="space-y-6">
-          <div className="bg-[#E8F0FE] border border-[#D2E3FC] p-4 rounded-2xl flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-[#1A73E8] flex-shrink-0 mt-0.5" />
+        <div className="space-y-10">
+          <section className="bg-[var(--primary-container)] p-8 rounded-[32px] flex items-start gap-6 border border-[var(--primary)]/10">
+            <span className="material-symbols-outlined text-[36px] text-[var(--on-primary-container)]">info</span>
             <div>
-              <p className="text-[#1A73E8] text-sm font-bold">Anda belum memilih dosen pembimbing</p>
-              <p className="text-[#1A73E8]/80 text-xs mt-1">Silakan pilih salah satu dosen dari daftar di bawah ini untuk menjadi pembimbing magang Anda.</p>
+              <h4 className="text-[18px] font-black text-[var(--on-primary-container)] mb-1">Pilih Pembimbing</h4>
+              <p className="text-[14px] font-medium text-[var(--on-primary-container)] opacity-80 leading-relaxed">
+                Anda belum terdaftar pada dosen pembimbing manapun. Silakan pilih dari daftar dosen yang tersedia di bawah ini untuk memulai pemantauan progres magang.
+              </p>
             </div>
-          </div>
+          </section>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {availableDosen.map(dosen => {
               const remaining = dosen.max_mahasiswa - dosen.enrolled_count
               const isFull = remaining <= 0
 
               return (
-                <div key={dosen.id} className="bg-white border border-gray-200 rounded-2xl p-5 hover:border-[#1A73E8] hover:shadow-md transition-all group flex flex-col justify-between">
+                <div key={dosen.id} className="bg-[var(--surface-container-lowest)] border border-[var(--outline-variant)] rounded-[40px] p-8 hover:border-[var(--primary)] hover:shadow-xl transition-all group flex flex-col justify-between">
                   <div>
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-[#E8F0FE] transition-colors">
-                        <User className="w-6 h-6 text-gray-500 group-hover:text-[#1A73E8]" />
+                    <div className="flex justify-between items-start mb-6">
+                      <div className="w-16 h-16 rounded-[24px] bg-[var(--surface-container-low)] flex items-center justify-center group-hover:bg-[var(--primary-container)] transition-all">
+                        <span className="material-symbols-outlined text-[32px] text-[var(--outline)] group-hover:text-[var(--primary)]">person</span>
                       </div>
-                      <div className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${isFull ? 'bg-[#FCE8E6] text-[#C5221F]' : 'bg-[#E6F4EA] text-[#137333]'}`}>
-                        {isFull ? 'Penuh' : `${remaining} slot tersisa`}
+                      <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${isFull ? 'bg-[var(--error-container)] text-[var(--error)]' : 'bg-[var(--secondary-container)] text-[var(--on-secondary-container)]'}`}>
+                        {isFull ? 'Penuh' : `${remaining} Slot`}
                       </div>
                     </div>
-                    <h3 className="text-base font-bold text-[#202124] mb-1">{dosen.nama_lengkap}</h3>
-                    <p className="text-xs text-[#5F6368] mb-3">NIP: {dosen.nip || '-'}</p>
-                    <div className="text-xs text-[#5F6368] space-y-1 mb-4">
-                      <p>Fakultas: <span className="font-medium text-[#202124]">{dosen.faculty || '-'}</span></p>
-                      <p>Dept: <span className="font-medium text-[#202124]">{dosen.department || '-'}</span></p>
+                    <h3 className="text-[20px] font-black text-[var(--on-surface)] mb-1 group-hover:text-[var(--primary)] transition-colors">{dosen.nama_lengkap}</h3>
+                    <p className="text-[12px] font-bold text-[var(--on-surface-variant)] uppercase tracking-widest mb-6">NIP: {dosen.nip || '-'}</p>
+                    
+                    <div className="space-y-4 mb-8">
+                      <div>
+                        <p className="text-[9px] font-black text-[var(--on-surface-variant)] uppercase tracking-widest">Fakultas</p>
+                        <p className="text-[14px] font-bold text-[var(--on-surface)]">{dosen.faculty || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] font-black text-[var(--on-surface-variant)] uppercase tracking-widest">Prodi</p>
+                        <p className="text-[14px] font-bold text-[var(--on-surface)]">{dosen.department || '-'}</p>
+                      </div>
                     </div>
                   </div>
                   
                   <button
                     onClick={() => handleEnroll(dosen.id, remaining)}
                     disabled={isFull || enrolling === dosen.id}
-                    className="w-full py-2.5 rounded-xl text-sm font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-[#F8F9FA] hover:bg-[#E8F0FE] text-[#1A73E8] border border-transparent hover:border-[#1A73E8]/30"
+                    className="w-full py-5 rounded-[24px] text-[12px] font-black uppercase tracking-widest transition-all disabled:opacity-50 bg-[var(--surface-container-high)] hover:bg-[var(--primary)] hover:text-white text-[var(--on-surface)]"
                   >
-                    {enrolling === dosen.id ? 'Mendaftar...' : isFull ? 'Kapasitas Penuh' : 'Daftar ke Dosen Ini'}
+                    {enrolling === dosen.id ? 'MENDAFTAR...' : isFull ? 'KAPASITAS PENUH' : 'DAFTAR PEMBIMBING'}
                   </button>
                 </div>
               )
             })}
-
-            {availableDosen.length === 0 && (
-              <div className="col-span-1 md:col-span-2 text-center py-12 bg-white rounded-2xl border border-gray-200">
-                <User className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-[#5F6368] text-sm font-medium">Belum ada data dosen yang terdaftar di sistem.</p>
-              </div>
-            )}
           </div>
         </div>
       )}

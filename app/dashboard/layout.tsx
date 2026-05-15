@@ -57,7 +57,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const menuItems = [
     { name: 'Dashboard', icon: 'dashboard', href: '/dashboard' },
     { name: 'Presence', icon: 'calendar_today', href: '/dashboard/absensi' },
-    { name: 'Mentor', icon: 'groups', href: '/dashboard/mentor' },
+    { name: 'Mentor', icon: 'groups', href: '/dashboard/pembimbing' },
     { name: 'Journal', icon: 'menu_book', href: '/dashboard/kegiatan' },
     { name: 'Documents', icon: 'folder_open', href: '/dashboard/berkas' },
     { name: 'Profile', icon: 'person', href: '/dashboard/profil' },
