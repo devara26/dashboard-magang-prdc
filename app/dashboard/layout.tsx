@@ -6,7 +6,6 @@ import { LayoutDashboard, CalendarCheck, List, LogOut, User, Menu, Users, Folder
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import NotificationBell from '@/components/NotificationBell'
-import ThemeToggle from '@/components/ThemeToggle'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -144,10 +143,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#F8F9FA] dark:bg-[#121212] z-10 relative transition-colors">
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#F8F9FA] z-10 relative transition-colors">
         
-        <header className="hidden md:flex h-16 items-center justify-end px-8 border-b border-gray-200 dark:border-[#3C4043] bg-white dark:bg-[#202124] shrink-0 gap-4 transition-colors">
-          <ThemeToggle />
+        <header className="hidden md:flex h-16 items-center justify-end px-8 border-b border-gray-200 bg-white shrink-0 gap-4 transition-colors">
           <NotificationBell />
           <Link href="/dashboard/profil" className="flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-[#303134] p-1.5 pr-3 rounded-full transition-colors border border-transparent hover:border-gray-200 dark:hover:border-[#3C4043]">
             <div className="text-right">
