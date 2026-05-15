@@ -66,8 +66,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="flex flex-col md:flex-row h-screen w-full bg-[#F8F9FA] text-[#202124] overflow-hidden font-sans selection:bg-blue-200">
 
       {/* Mobile Top Header */}
-      <div className="md:hidden flex items-center justify-center bg-[#202124] border-b border-[#3C4043] px-4 h-14 z-20 shadow-md relative shrink-0">
-        <img src="/Logo_Orbit.png" alt="Orbit Logo" className="h-10 w-auto object-contain" />
+      <div className="md:hidden flex items-center justify-center bg-white border-b border-gray-200 px-4 h-14 z-20 shadow-sm relative shrink-0">
+        <img src="/logoorbitsvg.svg" alt="Orbit Logo" className="h-10 w-auto object-contain" />
       </div>
 
       {/* Sidebar: Desktop Only (Dark Mode) */}
@@ -77,7 +77,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-[#9AA0A6] hover:text-white transition-colors flex-shrink-0">
               <Menu className="w-6 h-6" />
             </button>
-            {isSidebarOpen && <img src="/Logo_Orbit.png" alt="Orbit Logo" className="h-10 w-auto object-contain" />}
+            {isSidebarOpen && <img src="/logoorbitsvg.svg" alt="Orbit Logo" className="h-10 w-auto object-contain invert brightness-200" />}
           </div>
         </div>
 

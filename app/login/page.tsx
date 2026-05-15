@@ -47,7 +47,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="mb-8 text-center flex flex-col items-center">
           <div className="mb-4">
-            <img src="/Logo_Orbit.png" alt="Orbit Logo" className="h-24 w-auto object-contain drop-shadow-lg" />
+            <img src="/logoorbitsvg.svg" alt="Orbit Logo" className="h-16 w-auto object-contain" />
           </div>
           <h1 className="text-xl font-medium text-[#202124]">Online Record Base for Internship Tracking</h1>
           <p className="text-[#5F6368] text-sm mt-1">PRDC Team · Internship Program</p>
