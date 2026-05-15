@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import { User, Mail, CreditCard, Building, Building2, LogOut, ShieldCheck, ChevronLeft, Edit2, Save, X, Calendar, GraduationCap, Info, Camera, Download } from 'lucide-react'
+import Link from 'next/link'
 import { toast } from 'sonner'
 import { exportLaporanExcel } from '@/lib/export-excel'
 
-interface Profile {
+type Profile = {
   id: string
   nama_lengkap: string
   nim: string
@@ -31,36 +33,77 @@ export default function ProfilPage() {
   const [form, setForm] = useState<Partial<Profile>>({})
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+
   const [showDosenModal, setShowDosenModal] = useState(false)
   const [dosenCode, setDosenCode] = useState('')
   const [modalError, setModalError] = useState('')
   const [modalLoading, setModalLoading] = useState(false)
 
-  useEffect(() => { fetchUser() }, [])
+  useEffect(() => {
+    fetchUser()
+  }, [])
 
   async function fetchUser() {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return router.push('/login')
+    if (!user) {
+      router.push('/login')
+      return
+    }
     setEmail(user.email || '')
-    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-    if (data) { setProfile(data); setForm(data); setAvatarUrl(data.avatar_url); }
+
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single()
+
+    if (data) {
+      setProfile(data)
+      setForm(data)
+      setAvatarUrl(data.avatar_url)
+    }
     setLoading(false)
   }
 
   async function handleLogout() {
-    if (confirm('Keluar dari aplikasi?')) { await supabase.auth.signOut(); router.push('/login'); }
+    if (confirm('Apakah Anda yakin ingin keluar dari aplikasi?')) {
+      await supabase.auth.signOut()
+      router.push('/login')
+    }
   }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
     try {
-      const { data, error } = await supabase.from('profiles').update({ ...form }).eq('id', profile?.id).select()
-      if (error || !data?.length) throw new Error('Gagal update.')
+      if (!profile?.id) throw new Error('Profil tidak ditemukan')
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({
+          nama_lengkap: form.nama_lengkap,
+          nim: form.nim,
+          universitas: form.universitas,
+          prodi: form.prodi,
+          instansi_magang: form.instansi_magang,
+          unit_magang: form.unit_magang,
+          tanggal_mulai: form.tanggal_mulai,
+          tanggal_selesai: form.tanggal_selesai,
+          bio: form.bio,
+        })
+        .eq('id', profile.id)
+        .select()
+
+      if (error) throw error
+      if (!data || data.length === 0) {
+        throw new Error('Akses ditolak: RLS (Row Level Security) Supabase memblokir Anda untuk menyimpan profil. Anda harus menambahkan Policy UPDATE di tabel profiles.')
+      }
+
       setProfile({ ...profile, ...form } as Profile)
       setIsEditing(false)
-      toast.success('Profil diperbarui')
+      toast.success('Profil berhasil diperbarui')
     } catch (error) {
+      console.error(error)
       toast.error('Gagal memperbarui profil')
     } finally {
       setSaving(false)
@@ -70,20 +113,40 @@ export default function ProfilPage() {
   async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file || !profile?.id) return
+
+    // Optimistic UI
     const previewUrl = URL.createObjectURL(file)
+    const oldAvatarUrl = avatarUrl
     setAvatarUrl(previewUrl)
     setUploadingAvatar(true)
+
     try {
       const fileExt = file.name.split('.').pop()
       const filePath = `${profile.id}-${Math.random()}.${fileExt}`
-      const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file)
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file)
+
       if (uploadError) throw uploadError
-      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath)
-      await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', profile.id)
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath)
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', profile.id)
+
+      if (updateError) throw updateError
+
       setAvatarUrl(publicUrl)
-      toast.success('Foto diperbarui')
+      toast.success('Foto profil berhasil diperbarui')
     } catch (error: any) {
-      toast.error('Gagal upload: ' + error.message)
+      console.error(error)
+      setAvatarUrl(oldAvatarUrl) // Revert on error
+      toast.error('Gagal mengunggah foto: ' + (error.message || 'Error tidak diketahui'))
     } finally {
       setUploadingAvatar(false)
     }
@@ -93,10 +156,11 @@ export default function ProfilPage() {
     try {
       setDownloadingExcel(true)
       const { data: { user } } = await supabase.auth.getUser()
-      await exportLaporanExcel(user as any)
-      toast.success('Laporan diunduh')
+      if (!user) throw new Error('User tidak ditemukan')
+      await exportLaporanExcel(user)
+      toast.success('Laporan berhasil diunduh')
     } catch (error: any) {
-      toast.error('Gagal: ' + error.message)
+      toast.error('Gagal mengunduh laporan: ' + error.message)
     } finally {
       setDownloadingExcel(false)
     }
@@ -104,190 +168,397 @@ export default function ProfilPage() {
 
   async function handleDosenCodeSubmit(e: React.FormEvent) {
     e.preventDefault()
+    setModalError('')
     setModalLoading(true)
+
     if (dosenCode === '123') {
       const { data: { user } } = await supabase.auth.getUser()
-      await supabase.from('profiles').update({ role: 'dosen' }).eq('id', user?.id)
-      window.location.href = '/dosen'
+      if (user) {
+        try {
+          const { error } = await supabase.from('profiles').update({ role: 'dosen' }).eq('id', user.id)
+          if (error) {
+            console.error('Gagal ganti role di DB:', error.message)
+          }
+        } catch (err: any) {
+          console.error('Exception saat ganti role di DB:', err.message)
+        }
+        window.location.href = '/dosen'
+      } else {
+        setModalError('Sesi tidak ditemukan.')
+        setModalLoading(false)
+      }
     } else {
-      setModalError('Kode salah!'); setModalLoading(false);
+      setModalError('Kode akses salah!')
+      setModalLoading(false)
     }
   }
 
-  if (loading) return null
+  if (loading) return (
+    <div className="flex h-[80vh] items-center justify-center">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-10 h-10 border-4 border-gray-200 border-t-[#FBBC04] rounded-full animate-spin"></div>
+        <p className="text-[#5F6368] text-sm font-medium animate-pulse">Memuat profil pengguna...</p>
+      </div>
+    </div>
+  )
 
   return (
-    <div className="animate-fade-in space-y-10 max-w-4xl mx-auto">
-      {/* Header */}
-      <header className="flex justify-between items-end">
-        <div>
-          <h1 className="text-[32px] font-black text-[var(--on-surface)] tracking-tight">Profil Pengguna</h1>
-          <p className="text-[14px] font-bold text-[var(--on-surface-variant)] uppercase tracking-widest mt-1">Pengaturan Akun Magang</p>
+    <div className="pb-12 animate-[fade-in_0.7s_ease-out] max-w-5xl mx-auto">
+      {/* Header Section */}
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Link href="/dashboard" className="p-2 bg-white rounded-full border border-gray-200 text-[#5F6368] hover:text-[#1A73E8] hover:bg-gray-50 transition-colors shadow-sm">
+            <ChevronLeft className="w-5 h-5" />
+          </Link>
+          <h1 className="text-2xl font-bold text-[#202124]">Profile</h1>
         </div>
-        <button onClick={handleDownloadExcel} className="h-12 px-6 bg-[var(--surface-container-high)] text-[var(--primary)] rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-3 border border-[var(--primary)]/10 hover:bg-[var(--primary-container)] transition-all">
-          <span className="material-symbols-outlined text-[20px]">download</span>
-          {downloadingExcel ? 'Sabar...' : 'Laporan'}
+        <button
+          onClick={handleDownloadExcel}
+          disabled={downloadingExcel}
+          className="flex items-center gap-1.5 px-3 py-2 bg-[#E8F0FE] text-[#1A73E8] rounded-full text-xs font-bold transition-colors hover:bg-[#D2E3FC] disabled:opacity-50"
+          title="Download Laporan Excel"
+        >
+          <Download className="w-4 h-4" />
+          <span className="hidden md:inline">{downloadingExcel ? 'Mengunduh...' : 'Laporan'}</span>
         </button>
-      </header>
+      </div>
 
       {isEditing ? (
-        <form onSubmit={handleSave} className="bg-[var(--surface-container-lowest)] rounded-[48px] border border-[var(--outline-variant)] p-12 shadow-sm space-y-10">
-           <div className="flex flex-col items-center gap-6">
+        <form onSubmit={handleSave} className="bg-white border border-gray-200 rounded-2xl p-8 mb-8 relative animate-[fade-in_0.3s_ease-out] shadow-sm">
+          <div className="relative z-10 space-y-8">
+            <h2 className="text-xl font-medium text-[#202124] border-b border-gray-200 pb-4 flex items-center gap-2">
+              <Edit2 className="w-5 h-5 text-[#FBBC04]" /> Mode Edit Profil
+            </h2>
+
+            {/* Avatar Edit */}
+            <div className="flex flex-col items-center">
               <div className="relative">
-                 <div className="w-32 h-32 rounded-[40px] bg-[var(--primary)] border-4 border-white shadow-xl flex items-center justify-center overflow-hidden">
-                    {avatarUrl ? <img src={avatarUrl} className="w-full h-full object-cover" /> : <span className="text-5xl font-black text-white">{profile?.nama_lengkap?.charAt(0)}</span>}
-                    {uploadingAvatar && <div className="absolute inset-0 bg-black/40 flex items-center justify-center"><div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div></div>}
-                 </div>
-                 <label className="absolute -bottom-2 -right-2 w-11 h-11 bg-white rounded-2xl shadow-lg flex items-center justify-center text-[var(--primary)] cursor-pointer hover:scale-110 transition-transform border border-[var(--outline-variant)]">
-                    <span className="material-symbols-outlined">add_a_photo</span>
-                    <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
-                 </label>
+                <div className="w-24 h-24 rounded-full bg-[#FBBC04] flex-shrink-0 flex items-center justify-center shadow-md border-4 border-white overflow-hidden relative group">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-4xl font-normal text-white">
+                      {profile?.nama_lengkap?.charAt(0).toUpperCase() || 'U'}
+                    </span>
+                  )}
+                  {uploadingAvatar && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                      <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  )}
+                </div>
+                <label className="absolute bottom-0 right-0 bg-white p-2 rounded-full shadow-sm border border-gray-100 text-[#1A73E8] hover:bg-gray-50 transition-colors cursor-pointer">
+                  <Camera className="w-4 h-4" />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={uploadingAvatar}
+                    onChange={handleAvatarUpload}
+                  />
+                </label>
               </div>
-           </div>
+              <p className="text-xs text-[#5F6368] mt-2">Ketuk ikon kamera untuk mengubah foto</p>
+            </div>
 
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-              <div className="space-y-6">
-                 <h3 className="text-[12px] font-black text-[var(--primary)] uppercase tracking-widest">Informasi Akademik</h3>
-                 <div className="space-y-4">
-                    <div className="space-y-2">
-                       <label className="text-[10px] font-black text-[var(--on-surface-variant)] uppercase tracking-widest ml-1">Nama Lengkap</label>
-                       <input value={form.nama_lengkap || ''} onChange={e => setForm({...form, nama_lengkap: e.target.value})} className="w-full bg-[var(--surface-container-low)] border border-[var(--outline-variant)]/50 rounded-2xl px-6 py-4 text-[14px] font-bold outline-none focus:border-[var(--primary)] focus:bg-white transition-all" />
-                    </div>
-                    <div className="space-y-2">
-                       <label className="text-[10px] font-black text-[var(--on-surface-variant)] uppercase tracking-widest ml-1">NIM / Identitas</label>
-                       <input value={form.nim || ''} onChange={e => setForm({...form, nim: e.target.value})} className="w-full bg-[var(--surface-container-low)] border border-[var(--outline-variant)]/50 rounded-2xl px-6 py-4 text-[14px] font-bold outline-none focus:border-[var(--primary)] focus:bg-white transition-all" />
-                    </div>
-                 </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Data Diri */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium text-[#1A73E8] uppercase tracking-wider mb-2">Data Pribadi</h3>
+                <div>
+                  <label className="block text-sm font-medium text-[#5F6368] mb-2">Nama Lengkap</label>
+                  <input
+                    type="text"
+                    value={form.nama_lengkap || ''}
+                    onChange={e => setForm({ ...form, nama_lengkap: e.target.value })}
+                    required
+                    className="w-full bg-white text-[#202124] rounded-lg px-4 py-3 text-sm border border-gray-300 focus:outline-none focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#5F6368] mb-2">NIM / NIK</label>
+                  <input
+                    type="text"
+                    value={form.nim || ''}
+                    onChange={e => setForm({ ...form, nim: e.target.value })}
+                    className="w-full bg-white text-[#202124] rounded-lg px-4 py-3 text-sm border border-gray-300 focus:outline-none focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#5F6368] mb-2">Universitas / Asal Instansi</label>
+                  <input
+                    type="text"
+                    value={form.universitas || ''}
+                    onChange={e => setForm({ ...form, universitas: e.target.value })}
+                    className="w-full bg-white text-[#202124] rounded-lg px-4 py-3 text-sm border border-gray-300 focus:outline-none focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#5F6368] mb-2">Program Studi / Jurusan</label>
+                  <input
+                    type="text"
+                    value={form.prodi || ''}
+                    onChange={e => setForm({ ...form, prodi: e.target.value })}
+                    className="w-full bg-white text-[#202124] rounded-lg px-4 py-3 text-sm border border-gray-300 focus:outline-none focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] transition-colors"
+                  />
+                </div>
               </div>
-              <div className="space-y-6">
-                 <h3 className="text-[12px] font-black text-[var(--primary)] uppercase tracking-widest">Detail Penempatan</h3>
-                 <div className="space-y-4">
-                    <div className="space-y-2">
-                       <label className="text-[10px] font-black text-[var(--on-surface-variant)] uppercase tracking-widest ml-1">Instansi</label>
-                       <input value={form.instansi_magang || ''} onChange={e => setForm({...form, instansi_magang: e.target.value})} className="w-full bg-[var(--surface-container-low)] border border-[var(--outline-variant)]/50 rounded-2xl px-6 py-4 text-[14px] font-bold outline-none focus:border-[var(--primary)] focus:bg-white transition-all" />
-                    </div>
-                    <div className="space-y-2">
-                       <label className="text-[10px] font-black text-[var(--on-surface-variant)] uppercase tracking-widest ml-1">Unit / Divisi</label>
-                       <input value={form.unit_magang || ''} onChange={e => setForm({...form, unit_magang: e.target.value})} className="w-full bg-[var(--surface-container-low)] border border-[var(--outline-variant)]/50 rounded-2xl px-6 py-4 text-[14px] font-bold outline-none focus:border-[var(--primary)] focus:bg-white transition-all" />
-                    </div>
-                 </div>
-              </div>
-           </div>
 
-           <div className="flex justify-end gap-4 pt-10 border-t border-[var(--outline-variant)]/30">
-              <button type="button" onClick={() => setIsEditing(false)} className="px-8 py-4 font-black text-xs uppercase tracking-widest text-[var(--on-surface-variant)] hover:bg-[var(--surface-container-low)] rounded-2xl transition-all">Batal</button>
-              <button type="submit" disabled={saving} className="px-10 py-4 bg-[var(--primary)] text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-100 hover:scale-[1.02] active:scale-95 transition-all">Simpan Perubahan</button>
-           </div>
+              {/* Data Magang */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium text-[#1A73E8] uppercase tracking-wider mb-2">Data Magang</h3>
+                <div>
+                  <label className="block text-sm font-medium text-[#5F6368] mb-2">Instansi Tempat Magang</label>
+                  <input
+                    type="text"
+                    value={form.instansi_magang || ''}
+                    onChange={e => setForm({ ...form, instansi_magang: e.target.value })}
+                    className="w-full bg-white text-[#202124] rounded-lg px-4 py-3 text-sm border border-gray-300 focus:outline-none focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#5F6368] mb-2">Unit / Divisi Magang (Posisi)</label>
+                  <input
+                    type="text"
+                    value={form.unit_magang || ''}
+                    onChange={e => setForm({ ...form, unit_magang: e.target.value })}
+                    className="w-full bg-white text-[#202124] rounded-lg px-4 py-3 text-sm border border-gray-300 focus:outline-none focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] transition-colors"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[#5F6368] mb-2">Tanggal Mulai</label>
+                    <input
+                      type="date"
+                      value={form.tanggal_mulai || ''}
+                      onChange={e => setForm({ ...form, tanggal_mulai: e.target.value })}
+                      className="w-full bg-white text-[#202124] rounded-lg px-4 py-3 text-sm border border-gray-300 focus:outline-none focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#5F6368] mb-2">Tanggal Selesai</label>
+                    <input
+                      type="date"
+                      value={form.tanggal_selesai || ''}
+                      onChange={e => setForm({ ...form, tanggal_selesai: e.target.value })}
+                      className="w-full bg-white text-[#202124] rounded-lg px-4 py-3 text-sm border border-gray-300 focus:outline-none focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] transition-colors"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Keterangan Lain */}
+            <div>
+              <h3 className="text-sm font-medium text-[#1A73E8] uppercase tracking-wider mb-4">Informasi Tambahan</h3>
+              <div>
+                <label className="block text-sm font-medium text-[#5F6368] mb-2">Keterangan Lain / Bio Ringkas</label>
+                <textarea
+                  value={form.bio || ''}
+                  onChange={e => setForm({ ...form, bio: e.target.value })}
+                  rows={3}
+                  placeholder="Tambahkan catatan khusus, keahlian, atau keterangan magang lainnya..."
+                  className="w-full bg-white text-[#202124] rounded-lg px-4 py-3 text-sm border border-gray-300 focus:outline-none focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] resize-none transition-colors"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEditing(false)
+                  setForm(profile || {})
+                }}
+                className="px-5 py-2.5 rounded-full text-sm font-medium text-[#5F6368] hover:bg-gray-100 transition-colors flex items-center gap-2"
+              >
+                <X className="w-4 h-4" /> Batal
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="bg-[#1A73E8] hover:bg-[#1967D2] disabled:opacity-50 text-white text-sm font-medium px-8 py-2.5 rounded-full transition-all shadow-sm active:scale-95 flex items-center gap-2"
+              >
+                {saving ? 'Menyimpan...' : (
+                  <>
+                    <Save className="w-4 h-4" /> Simpan Profil
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </form>
       ) : (
-        <div className="space-y-10">
-           {/* Profile Hero */}
-           <section className="bg-[var(--surface-container-lowest)] rounded-[48px] border border-[var(--outline-variant)] p-12 shadow-sm flex flex-col md:flex-row items-center gap-12 text-center md:text-left">
-              <div className="w-40 h-40 rounded-[48px] bg-[var(--primary)] border-4 border-white shadow-2xl flex items-center justify-center overflow-hidden flex-shrink-0 relative group">
-                 {avatarUrl ? <img src={avatarUrl} className="w-full h-full object-cover" /> : <span className="text-6xl font-black text-white">{profile?.nama_lengkap?.charAt(0)}</span>}
-                 <button onClick={() => setIsEditing(true)} className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
-                    <span className="material-symbols-outlined text-[32px]">edit</span>
-                 </button>
+        /* Profile View Section */
+        <div className="mb-8 relative max-w-2xl mx-auto">
+          {/* Centered Avatar and Name */}
+          <div className="relative z-10 flex flex-col items-center mb-10 text-center">
+            <div className="relative mb-4">
+              <div className="w-28 h-28 rounded-full bg-[#FBBC04] flex-shrink-0 flex items-center justify-center shadow-md border-4 border-white overflow-hidden">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-5xl font-normal text-white">
+                    {profile?.nama_lengkap?.charAt(0).toUpperCase() || 'U'}
+                  </span>
+                )}
               </div>
-              <div className="flex-1 space-y-6">
-                 <div>
-                    <h2 className="text-[32px] font-black text-[var(--on-surface)] tracking-tight leading-tight">{profile?.nama_lengkap}</h2>
-                    <div className="flex flex-wrap gap-3 mt-3 justify-center md:justify-start">
-                       <span className="px-4 py-1.5 bg-[var(--secondary-container)] text-[var(--on-secondary-container)] rounded-full text-[10px] font-black uppercase tracking-widest border border-[var(--secondary)]/10">Mahasiswa Magang</span>
-                       <span className="px-4 py-1.5 bg-[var(--surface-container-high)] text-[var(--on-surface-variant)] rounded-full text-[10px] font-black uppercase tracking-widest border border-[var(--outline-variant)]/20">{profile?.nim}</span>
-                    </div>
-                 </div>
-                 <p className="text-[15px] font-medium text-[var(--on-surface-variant)] max-w-xl leading-relaxed">
-                   {profile?.bio || 'Mahasiswa magang yang berdedikasi untuk memberikan kontribusi terbaik di unit penempatan.'}
-                 </p>
-              </div>
-           </section>
-
-           {/* Info Cards */}
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-              <div className="bg-[var(--surface-container-lowest)] rounded-[40px] border border-[var(--outline-variant)] overflow-hidden shadow-sm">
-                 <div className="p-8 border-b border-[var(--outline-variant)]/30 bg-[var(--surface-container-low)]/50">
-                    <h3 className="text-[14px] font-black text-[var(--on-surface)] uppercase tracking-widest flex items-center gap-3">
-                       <span className="material-symbols-outlined text-[20px] text-[var(--primary)]">school</span>
-                       Data Akademik
-                    </h3>
-                 </div>
-                 <div className="p-8 space-y-8">
-                    <div className="flex items-start gap-4">
-                       <span className="material-symbols-outlined text-[var(--outline)] mt-1">mail</span>
-                       <div>
-                          <p className="text-[10px] font-black text-[var(--on-surface-variant)] uppercase tracking-widest">Email Terdaftar</p>
-                          <p className="text-[14px] font-bold text-[var(--on-surface)]">{email}</p>
-                       </div>
-                    </div>
-                    <div className="flex items-start gap-4">
-                       <span className="material-symbols-outlined text-[var(--outline)] mt-1">account_balance</span>
-                       <div>
-                          <p className="text-[10px] font-black text-[var(--on-surface-variant)] uppercase tracking-widest">Universitas & Prodi</p>
-                          <p className="text-[14px] font-bold text-[var(--on-surface)]">{profile?.universitas} • {profile?.prodi}</p>
-                       </div>
-                    </div>
-                 </div>
-              </div>
-
-              <div className="bg-[var(--surface-container-lowest)] rounded-[40px] border border-[var(--outline-variant)] overflow-hidden shadow-sm">
-                 <div className="p-8 border-b border-[var(--outline-variant)]/30 bg-[var(--surface-container-low)]/50">
-                    <h3 className="text-[14px] font-black text-[var(--on-surface)] uppercase tracking-widest flex items-center gap-3">
-                       <span className="material-symbols-outlined text-[20px] text-[var(--tertiary)]">business_center</span>
-                       Penempatan Magang
-                    </h3>
-                 </div>
-                 <div className="p-8 space-y-8">
-                    <div className="flex items-start gap-4">
-                       <span className="material-symbols-outlined text-[var(--outline)] mt-1">corporate_fare</span>
-                       <div>
-                          <p className="text-[10px] font-black text-[var(--on-surface-variant)] uppercase tracking-widest">Instansi & Unit</p>
-                          <p className="text-[14px] font-bold text-[var(--on-surface)]">{profile?.instansi_magang} — {profile?.unit_magang}</p>
-                       </div>
-                    </div>
-                    <div className="flex items-start gap-4">
-                       <span className="material-symbols-outlined text-[var(--outline)] mt-1">event</span>
-                       <div>
-                          <p className="text-[10px] font-black text-[var(--on-surface-variant)] uppercase tracking-widest">Masa Magang</p>
-                          <p className="text-[14px] font-bold text-[var(--on-surface)]">{profile?.tanggal_mulai} s/d {profile?.tanggal_selesai}</p>
-                       </div>
-                    </div>
-                 </div>
-              </div>
-           </div>
-
-           {/* Danger Zone */}
-           <div className="flex flex-col md:flex-row gap-6">
-              <button onClick={handleLogout} className="flex-1 p-6 bg-white border border-[var(--error)]/20 rounded-[32px] text-[var(--error)] font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-[var(--error-container)] transition-all active:scale-95">
-                 <span className="material-symbols-outlined">logout</span>
-                 Keluar dari Aplikasi
+              <button
+                onClick={() => setIsEditing(true)}
+                className="absolute bottom-0 right-0 bg-white p-2 rounded-full shadow-sm border border-gray-100 text-[#1A73E8] hover:bg-gray-50 transition-colors"
+                title="Edit Profil"
+              >
+                <Edit2 className="w-4 h-4" />
               </button>
-              <button onClick={() => setShowDosenModal(true)} className="flex-1 p-6 bg-[var(--inverse-surface)] border border-transparent rounded-[32px] text-white font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:scale-[1.02] transition-all active:scale-95">
-                 <span className="material-symbols-outlined">admin_panel_settings</span>
-                 Mode Verifikasi Dosen
-              </button>
-           </div>
+            </div>
+            <h2 className="text-2xl font-bold text-[#202124] mb-2">{profile?.nama_lengkap || 'User Magang'}</h2>
+            <div className="flex items-center gap-2">
+              <span className="px-4 py-1.5 bg-[#FEF7E0] text-[#E37400] rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm">
+                <ShieldCheck className="w-4 h-4" /> Magang {profile?.instansi_magang ? `di ${profile.instansi_magang}` : ''}
+              </span>
+              <select
+                value="mahasiswa"
+                onChange={async (e) => {
+                  if (e.target.value === 'dosen') {
+                    setShowDosenModal(true)
+                    e.target.value = 'mahasiswa' // reset visual state
+                  }
+                }}
+                className="px-3 py-1.5 bg-white border border-gray-200 rounded-full text-xs font-medium text-[#5F6368] focus:outline-none focus:border-[#1A73E8] shadow-sm cursor-pointer"
+              >
+                <option value="mahasiswa">Role: Mahasiswa</option>
+                <option value="dosen">Ganti ke Dosen</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Settings-like List Menu */}
+          <div className="space-y-6">
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+              <h3 className="px-6 py-4 text-sm font-bold text-[#202124] bg-gray-50/50 border-b border-gray-100">Informasi Pribadi</h3>
+              <div className="divide-y divide-gray-100">
+                <div className="px-6 py-4 flex items-center gap-4 hover:bg-gray-50 transition-colors">
+                  <div className="p-2.5 bg-[#F8F9FA] rounded-full text-[#5F6368]"><CreditCard className="w-5 h-5" /></div>
+                  <div className="flex-1">
+                    <p className="text-xs text-[#5F6368] font-medium mb-0.5">NIM / NIK</p>
+                    <p className="text-sm font-medium text-[#202124]">{profile?.nim || '-'}</p>
+                  </div>
+                </div>
+                <div className="px-6 py-4 flex items-center gap-4 hover:bg-gray-50 transition-colors">
+                  <div className="p-2.5 bg-[#F8F9FA] rounded-full text-[#5F6368]"><Mail className="w-5 h-5" /></div>
+                  <div className="flex-1">
+                    <p className="text-xs text-[#5F6368] font-medium mb-0.5">Email Pengguna</p>
+                    <p className="text-sm font-medium text-[#202124]">{email || '-'}</p>
+                  </div>
+                </div>
+                <div className="px-6 py-4 flex items-center gap-4 hover:bg-gray-50 transition-colors">
+                  <div className="p-2.5 bg-[#F8F9FA] rounded-full text-[#5F6368]"><GraduationCap className="w-5 h-5" /></div>
+                  <div className="flex-1">
+                    <p className="text-xs text-[#5F6368] font-medium mb-0.5">Universitas / Prodi</p>
+                    <p className="text-sm font-medium text-[#202124]">{profile?.universitas || '-'} {profile?.prodi ? `(${profile.prodi})` : ''}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+              <h3 className="px-6 py-4 text-sm font-bold text-[#202124] bg-gray-50/50 border-b border-gray-100">Detail Magang</h3>
+              <div className="divide-y divide-gray-100">
+                <div className="px-6 py-4 flex items-center gap-4 hover:bg-gray-50 transition-colors">
+                  <div className="p-2.5 bg-[#E8F0FE] rounded-full text-[#1A73E8]"><Building className="w-5 h-5" /></div>
+                  <div className="flex-1">
+                    <p className="text-xs text-[#5F6368] font-medium mb-0.5">Tempat Magang</p>
+                    <p className="text-sm font-medium text-[#202124]">{profile?.instansi_magang || '-'}</p>
+                  </div>
+                </div>
+                <div className="px-6 py-4 flex items-center gap-4 hover:bg-gray-50 transition-colors">
+                  <div className="p-2.5 bg-[#E8F0FE] rounded-full text-[#1A73E8]"><Building2 className="w-5 h-5" /></div>
+                  <div className="flex-1">
+                    <p className="text-xs text-[#5F6368] font-medium mb-0.5">Unit / Divisi</p>
+                    <p className="text-sm font-medium text-[#202124]">{profile?.unit_magang || 'Belum ada unit'}</p>
+                  </div>
+                </div>
+                <div className="px-6 py-4 flex items-center gap-4 hover:bg-gray-50 transition-colors">
+                  <div className="p-2.5 bg-[#E8F0FE] rounded-full text-[#1A73E8]"><Calendar className="w-5 h-5" /></div>
+                  <div className="flex-1">
+                    <p className="text-xs text-[#5F6368] font-medium mb-0.5">Periode Magang</p>
+                    <p className="text-sm font-medium text-[#202124]">{profile?.tanggal_mulai || '?'} s/d {profile?.tanggal_selesai || '?'}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {profile?.bio && (
+              <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+                <h3 className="px-6 py-4 text-sm font-bold text-[#202124] bg-gray-50/50 border-b border-gray-100">Bio & Keterangan</h3>
+                <div className="px-6 py-5">
+                  <p className="text-sm text-[#202124] leading-relaxed whitespace-pre-wrap">{profile.bio}</p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
-      {/* Modal M3 Style */}
+      {/* Actions Section */}
+      <div className="mt-8 max-w-2xl mx-auto">
+        <button
+          onClick={handleLogout}
+          className="w-full bg-white hover:bg-gray-50 text-[#C5221F] border border-gray-200 font-bold px-6 py-4 rounded-full transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2"
+        >
+          <LogOut className="w-5 h-5" />
+          Logout
+        </button>
+      </div>
+
+      {/* Dosen Access Modal */}
       {showDosenModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-[var(--on-surface)]/40 backdrop-blur-md" onClick={() => setShowDosenModal(false)} />
-          <div className="bg-white w-full max-w-sm rounded-[48px] shadow-2xl relative z-10 overflow-hidden animate-[fade-in_0.3s_ease-out]">
-            <form onSubmit={handleDosenCodeSubmit} className="p-10 space-y-8 text-center">
-              <div className="w-20 h-20 bg-[var(--primary-container)] rounded-3xl flex items-center justify-center mx-auto text-[var(--primary)]">
-                 <span className="material-symbols-outlined text-[40px]">key</span>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-[fade-in_0.2s_ease-out]">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-[scale-in_0.2s_ease-out]">
+            <div className="px-6 py-5 border-b border-gray-100 bg-[#F8F9FA]">
+              <h3 className="text-lg font-bold text-[#202124] flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-[#137333]" />
+                Verifikasi Dosen
+              </h3>
+            </div>
+            <form onSubmit={handleDosenCodeSubmit} className="p-6">
+              <p className="text-sm text-[#5F6368] mb-4">
+                Masukkan kode akses rahasia untuk beralih ke tampilan dan hak akses Dosen.
+              </p>
+              {modalError && (
+                <div className="mb-4 p-3 bg-[#FCE8E6] border border-[#FAD2CF] text-[#C5221F] text-xs font-medium rounded-lg">
+                  {modalError}
+                </div>
+              )}
+              <div className="mb-6">
+                <input
+                  type="password"
+                  value={dosenCode}
+                  onChange={e => setDosenCode(e.target.value)}
+                  placeholder="Kode Akses Dosen"
+                  className="w-full bg-white text-[#202124] rounded-xl px-4 py-3 text-sm border border-gray-300 focus:outline-none focus:border-[#137333] focus:ring-2 focus:ring-[#137333]/20 transition-all font-mono tracking-widest text-center"
+                  autoFocus
+                />
               </div>
-              <div>
-                <h3 className="text-[20px] font-black text-[var(--on-surface)]">Verifikasi Akses</h3>
-                <p className="text-[12px] font-medium text-[var(--on-surface-variant)] mt-2">Gunakan kode otorisasi untuk beralih ke hak akses dosen pembimbing.</p>
-              </div>
-              <input type="password" value={dosenCode} onChange={e => setDosenCode(e.target.value)} placeholder="Kode Otoritas" className="w-full bg-[var(--surface-container-low)] border border-[var(--outline-variant)]/50 rounded-2xl px-6 py-4 text-center font-black tracking-[8px] outline-none focus:border-[var(--primary)] transition-all" autoFocus />
-              {modalError && <p className="text-[10px] font-black text-[var(--error)] uppercase">{modalError}</p>}
-              <div className="flex gap-4">
-                 <button type="button" onClick={() => setShowDosenModal(false)} className="flex-1 py-4 font-black text-xs uppercase tracking-widest text-[var(--on-surface-variant)] hover:bg-[var(--surface-container-low)] rounded-xl">Batal</button>
-                 <button type="submit" disabled={modalLoading} className="flex-1 py-4 bg-[var(--primary)] text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-blue-100">{modalLoading ? '...' : 'Verifikasi'}</button>
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDosenModal(false)
+                    setDosenCode('')
+                    setModalError('')
+                  }}
+                  className="px-4 py-2 rounded-xl text-sm font-medium text-[#5F6368] hover:bg-gray-100 transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={modalLoading || !dosenCode}
+                  className="bg-[#137333] hover:bg-[#0D652D] disabled:opacity-50 text-white text-sm font-bold px-6 py-2 rounded-xl transition-all shadow-sm active:scale-95"
+                >
+                  {modalLoading ? 'Memproses...' : 'Verifikasi'}
+                </button>
               </div>
             </form>
           </div>

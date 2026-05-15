@@ -253,7 +253,7 @@ function DocumentCard({
         <h3 className="text-[16px] font-black text-[var(--on-surface)] leading-tight max-w-[70%] group-hover:text-[var(--primary)] transition-colors">{docType}</h3>
         {uploadedFile ? (
           <span className="bg-[#e6f4ea] text-[#137333] text-[10px] font-black px-3 py-1.5 rounded-xl uppercase tracking-widest flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-[14px] fill-1">check_circle</span> 
+            <span className="material-symbols-outlined text-[14px] fill-icon">check_circle</span> 
             Selesai
           </span>
         ) : (

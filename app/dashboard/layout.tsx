@@ -90,7 +90,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     : 'text-[var(--on-surface-variant)] hover:bg-[var(--surface-container-low)]'
                 }`}
               >
-                <span className={`material-symbols-outlined transition-all ${isActive ? 'fill-1 scale-110' : 'group-hover:text-[var(--primary)]'}`} style={{ fontVariationSettings: isActive ? "'FILL' 1" : "" }}>
+                <span className={`material-symbols-outlined transition-all ${isActive ? 'fill-icon scale-110' : 'group-hover:text-[var(--primary)]'}`} style={{ fontVariationSettings: isActive ? "'FILL' 1" : "" }}>
                   {item.icon}
                 </span>
                 <span className={`text-[14px] ${isActive ? 'font-black' : 'font-semibold'}`}>{item.name}</span>

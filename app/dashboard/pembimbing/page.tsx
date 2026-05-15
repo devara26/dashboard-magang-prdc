@@ -153,7 +153,7 @@ export default function PembimbingPage() {
       {currentDosen ? (
         <section className="bg-[var(--surface-container-lowest)] rounded-[48px] border border-[var(--outline-variant)] p-12 relative overflow-hidden shadow-sm">
           <div className="absolute top-0 right-0 px-8 py-3 bg-[#e6f4ea] text-[#137333] rounded-bl-[32px] border-b border-l border-[#CEEAD6] text-[11px] font-black uppercase tracking-widest flex items-center gap-2">
-            <span className="material-symbols-outlined text-[16px] fill-1">verified</span>
+            <span className="material-symbols-outlined text-[16px] fill-icon">verified</span>
             Terdaftar
           </div>
 
