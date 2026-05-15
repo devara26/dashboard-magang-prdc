@@ -40,7 +40,7 @@ export default function KegiatanPage() {
   })
 
   const [comments, setComments] = useState<Comment[]>([])
-  const [newComment, setNewComment] = useState<{ [key: number]: string }>({})
+  const [newComment, setNewComment] = useState<{ [key: string]: string }>({})
   const [isCommenting, setIsCommenting] = useState<{ [key: number]: boolean }>({})
   const [dosenId, setDosenId] = useState<string | null>(null)
 
