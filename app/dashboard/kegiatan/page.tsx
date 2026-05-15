@@ -12,7 +12,7 @@ export default function JurnalPage() {
   const [showModal, setShowModal] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [newKegiatan, setNewKegiatan] = useState({
-    kegiatan: '',
+    judul: '',
     deskripsi: '',
     tanggal: new Date().toISOString().split('T')[0],
     status: 'Proses'
@@ -31,11 +31,7 @@ export default function JurnalPage() {
       setProfile(profileData)
 
       if (profileData?.nim) {
-        let { data, error } = await supabase.from('Kegiatan').select('*').eq('nim', profileData.nim).order('tanggal', { ascending: false })
-        if (error) {
-          const { data: dataLow } = await supabase.from('kegiatan').select('*').eq('nim', profileData.nim).order('tanggal', { ascending: false })
-          data = dataLow
-        }
+        const { data, error } = await supabase.from('kegiatan').select('*').eq('nim', profileData.nim).order('tanggal', { ascending: false })
         setKegiatan(data || [])
       }
     } catch (error) {
@@ -49,17 +45,24 @@ export default function JurnalPage() {
     e.preventDefault()
     setSubmitting(true)
     try {
-      const payload = { ...newKegiatan, nim: profile.nim, nama_lengkap: profile.nama_lengkap }
-      let { error } = await supabase.from('Kegiatan').insert([payload])
-      if (error) {
-        const { error: errorLow } = await supabase.from('kegiatan').insert([payload])
-        if (errorLow) throw errorLow
+      // Merge title and description into 'kegiatan' column as 'deskripsi' doesn't exist in DB
+      const combinedKegiatan = `${newKegiatan.judul}${newKegiatan.deskripsi ? ': ' + newKegiatan.deskripsi : ''}`
+      
+      const payload = { 
+        kegiatan: combinedKegiatan,
+        tanggal: newKegiatan.tanggal,
+        status: newKegiatan.status,
+        nim: profile.nim, 
+        nama_lengkap: profile.nama_lengkap 
       }
       
-      await logAction('Tambah Jurnal', `Menambahkan kegiatan: ${newKegiatan.kegiatan}`)
+      const { error } = await supabase.from('kegiatan').insert([payload])
+      if (error) throw error
+      
+      await logAction('Tambah Jurnal', `Menambahkan kegiatan: ${newKegiatan.judul}`)
       toast.success('Jurnal berhasil ditambahkan')
       setShowModal(false)
-      setNewKegiatan({ kegiatan: '', deskripsi: '', tanggal: new Date().toISOString().split('T')[0], status: 'Proses' })
+      setNewKegiatan({ judul: '', deskripsi: '', tanggal: new Date().toISOString().split('T')[0], status: 'Proses' })
       fetchData()
     } catch (error: any) {
       toast.error('Gagal: ' + error.message)
@@ -161,7 +164,7 @@ export default function JurnalPage() {
                  <div className="space-y-6">
                     <div className="space-y-2">
                        <label className="text-[11px] font-black text-[var(--text-light)] uppercase tracking-widest ml-1">Activity Title</label>
-                       <input required value={newKegiatan.kegiatan} onChange={e => setNewKegiatan({...newKegiatan, kegiatan: e.target.value})} placeholder="e.g. Develop login authentication module" className="w-full bg-[var(--bg-app)] border border-[var(--border)] rounded-[var(--radius-md)] px-5 py-4 text-sm font-semibold outline-none focus:border-[var(--accent)] focus:bg-white transition-all" />
+                       <input required value={newKegiatan.judul} onChange={e => setNewKegiatan({...newKegiatan, judul: e.target.value})} placeholder="e.g. Develop login authentication module" className="w-full bg-[var(--bg-app)] border border-[var(--border)] rounded-[var(--radius-md)] px-5 py-4 text-sm font-semibold outline-none focus:border-[var(--accent)] focus:bg-white transition-all" />
                     </div>
                     <div className="grid grid-cols-2 gap-6">
                        <div className="space-y-2">

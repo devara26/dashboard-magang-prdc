@@ -40,16 +40,12 @@ export default function DashboardPage() {
       let countTotal = 0
 
       if (profileData?.nim) {
-        let { data, error } = await supabase.from('Kegiatan').select('*').eq('nim', profileData.nim).order('tanggal', { ascending: false }).limit(6)
-        if (error) {
-          const { data: dataLow } = await supabase.from('kegiatan').select('*').eq('nim', profileData.nim).order('tanggal', { ascending: false }).limit(6)
-          data = dataLow
-        }
+        const { data, error } = await supabase.from('kegiatan').select('*').eq('nim', profileData.nim).order('tanggal', { ascending: false }).limit(6)
         kegiatanData = data || []
         
         const [selCount, totCount] = await Promise.all([
-          supabase.from('Kegiatan').select('*', { count: 'exact', head: true }).eq('nim', profileData.nim).eq('status', 'Selesai'),
-          supabase.from('Kegiatan').select('*', { count: 'exact', head: true }).eq('nim', profileData.nim)
+          supabase.from('kegiatan').select('*', { count: 'exact', head: true }).eq('nim', profileData.nim).eq('status', 'Selesai'),
+          supabase.from('kegiatan').select('*', { count: 'exact', head: true }).eq('nim', profileData.nim)
         ])
         countSelesai = selCount.count || 0
         countTotal = totCount.count || 0
