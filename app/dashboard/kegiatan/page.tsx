@@ -27,7 +27,7 @@ type Comment = {
 }
 
 export default function KegiatanPage() {
-  const [kegiatan, setKegiatan] = useState<Kegiatan[]>([])
+  const [kegiatan, setKegiatan] = useState<KegiatanData[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
