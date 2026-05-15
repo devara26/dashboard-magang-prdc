@@ -344,21 +344,97 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-4">
                   <div className={`w-10 h-10 rounded-[14px] flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105 ${k.status === 'Selesai' ? 'bg-[#E6F4EA] dark:bg-[#137333]/20 text-[#137333] dark:text-[#34A853]' : 'bg-[#FEF7E0] dark:bg-[#FBBC04]/10 text-[#E37400] dark:text-[#FBBC04]'}`}>
                     {k.status === 'Selesai' ? <CheckCircle2 className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-[#202124] dark:text-[#E8EAED] line-clamp-1">{k.kegiatan}</p>
-                    <p className="text-[11px] font-medium text-[#9AA0A6] dark:text-[#9AA0A6] flex items-center gap-1 mt-0.5">
-                      {k.tanggal} • {k.status}
-                    </p>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-gray-300 dark:text-[#5F6368] group-hover:text-[#1A73E8] transition-colors" />
-              </div>
-            ))}
+            </div>
           </div>
-        )}
+        </div>
       </div>
-      
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* Main Content: Recent Activity */}
+        <div className="md:col-span-2 bg-white rounded-[40px] shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-gray-100 overflow-hidden">
+          <div className="px-8 py-8 border-b border-gray-50 flex items-center justify-between bg-gray-50/30">
+            <h3 className="text-xl font-black text-[#202124]">Aktivitas Terakhir</h3>
+            <Link href="/dashboard/kegiatan" className="p-2 bg-white rounded-full border border-gray-100 text-[#1A73E8] hover:bg-[#E8F0FE] transition-colors">
+              <Plus className="w-5 h-5" />
+            </Link>
+          </div>
+          <div className="p-8">
+            {kegiatan.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <List className="w-8 h-8 text-gray-300" />
+                </div>
+                <p className="text-[#5F6368] font-medium">Belum ada kegiatan yang dicatat.</p>
+                <Link href="/dashboard/kegiatan" className="text-[#1A73E8] text-sm font-bold mt-2 inline-block hover:underline">Mulai Mencatat &rarr;</Link>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {kegiatan.map((item) => (
+                  <div key={item.id} className="flex items-start gap-5 group">
+                    <div className="w-12 h-12 rounded-2xl bg-gray-50 border border-gray-100 flex flex-col items-center justify-center flex-shrink-0 group-hover:border-[#1A73E8] transition-colors">
+                      <span className="text-[10px] font-bold text-[#5F6368] uppercase">{new Date(item.tanggal).toLocaleDateString('id-ID', { month: 'short' })}</span>
+                      <span className="text-lg font-black text-[#202124] leading-none">{new Date(item.tanggal).getDate()}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-[15px] font-bold text-[#202124] mb-1 truncate group-hover:text-[#1A73E8] transition-colors">{item.kegiatan}</h4>
+                      <div className="flex items-center gap-3">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${item.status === 'Selesai' ? 'bg-[#E6F4EA] text-[#137333]' : 'bg-[#FEF7E0] text-[#E37400]'}`}>
+                          {item.status}
+                        </span>
+                        <span className="text-[10px] text-gray-400 font-medium">Dibuat {new Date(item.tanggal).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-[#1A73E8] transition-colors" />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Sidebar Cards */}
+        <div className="space-y-6">
+          <div className="bg-[#202124] rounded-[40px] p-8 text-white relative overflow-hidden shadow-xl">
+            <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full blur-3xl" />
+            <h3 className="text-lg font-bold mb-4 relative z-10">Laporan Magang</h3>
+            <p className="text-white/60 text-sm mb-8 leading-relaxed relative z-10">Unduh seluruh riwayat kegiatanmu dalam format Excel yang rapi.</p>
+            <button 
+              onClick={handleDownloadExcel}
+              disabled={downloadingExcel}
+              className="w-full py-4 bg-white text-[#202124] rounded-2xl font-bold text-sm shadow-lg hover:bg-[#F8F9FA] transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              {downloadingExcel ? 'Menyiapkan...' : 'Unduh Laporan'}
+            </button>
+          </div>
+
+          <div className="bg-white rounded-[40px] p-8 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)]">
+            <h3 className="text-[#202124] font-bold mb-4">Informasi Magang</h3>
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-[#5F6368]">
+                  <Activity className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-[#9AA0A6] uppercase tracking-wider">Instansi</p>
+                  <p className="text-sm font-bold text-[#202124] truncate max-w-[150px]">{profile?.instansi_magang || '-'}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-[#5F6368]">
+                  <List className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-[#9AA0A6] uppercase tracking-wider">Unit/Divisi</p>
+                  <p className="text-sm font-bold text-[#202124] truncate max-w-[150px]">{profile?.unit_magang || '-'}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <OnboardingWizard isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} userId={userId} />
     </div>
   )
 }

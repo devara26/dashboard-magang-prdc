@@ -66,42 +66,36 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   ]
 
   return (
-    <div className="flex flex-col md:flex-row h-screen w-full bg-[#F8F9FA] text-[#202124] overflow-hidden font-sans selection:bg-blue-200">
+    <div className="flex flex-col md:flex-row h-screen w-full bg-[#F8F9FC] text-[#202124] overflow-hidden selection:bg-blue-100">
 
-      {/* Mobile Top Header */}
-      <div className="md:hidden flex items-center justify-center bg-white border-b border-gray-200 px-4 h-14 z-20 shadow-sm relative shrink-0">
-        <img src="/logoorbitsvg.svg" alt="Orbit Logo" className="h-10 w-auto object-contain" />
-      </div>
-
-      {/* Sidebar: Desktop Only (Dark Mode) */}
-      <aside className={`hidden md:flex inset-y-0 left-0 z-40 flex-shrink-0 border-r border-[#3C4043] bg-[#202124] flex-col shadow-lg transition-all duration-300 ${isSidebarOpen ? 'w-64' : 'w-20'}`}>
-        <div className="h-16 flex items-center justify-between px-6 border-b border-[#3C4043]">
-          <div className="flex items-center gap-3 overflow-hidden">
-            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-[#9AA0A6] hover:text-white transition-colors flex-shrink-0">
+      {/* Sidebar: Desktop Only (Modern White Design) */}
+      <aside className={`hidden md:flex inset-y-0 left-0 z-40 flex-shrink-0 border-r border-gray-100 bg-white flex-col shadow-[4px_0_24px_rgba(0,0,0,0.02)] transition-all duration-300 ${isSidebarOpen ? 'w-72' : 'w-20'}`}>
+        <div className="h-20 flex items-center px-8">
+          <div className="flex items-center gap-4 overflow-hidden">
+            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-[#5F6368] hover:text-[#1A73E8] transition-colors flex-shrink-0">
               <Menu className="w-6 h-6" />
             </button>
-            {isSidebarOpen && <img src="/logoorbitsvg.svg" alt="Orbit Logo" className="h-10 w-auto object-contain invert brightness-200" />}
+            {isSidebarOpen && <img src="/logoorbitsvg.svg" alt="Orbit Logo" className="h-9 w-auto object-contain" />}
           </div>
         </div>
 
-        <nav className="flex-1 px-3 py-6 space-y-6 overflow-y-auto overflow-x-hidden">
+        <nav className="flex-1 px-4 py-4 space-y-8 overflow-y-auto no-scrollbar">
           <div>
-            {isSidebarOpen && <p className="px-3 text-[10px] font-bold text-[#9AA0A6] uppercase tracking-widest mb-3">Menu Utama</p>}
-            <div className="space-y-1">
+            {isSidebarOpen && <p className="px-4 text-[11px] font-bold text-[#9AA0A6] uppercase tracking-[0.1em] mb-4">Dashboard</p>}
+            <div className="space-y-1.5">
               {navItems.map((item) => {
                 const active = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    title={!isSidebarOpen ? item.name : undefined}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${active
-                        ? 'bg-[#3C4043] text-white'
-                        : 'text-[#9AA0A6] hover:bg-[#303134] hover:text-white'
-                      } ${!isSidebarOpen ? 'justify-center' : ''}`}
+                    className={`flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all duration-200 ${active
+                        ? 'bg-[#E8F0FE] text-[#1A73E8] shadow-sm'
+                        : 'text-[#5F6368] hover:bg-gray-50 hover:text-[#1A73E8]'
+                      } ${!isSidebarOpen ? 'justify-center px-0' : ''}`}
                   >
-                    <item.icon className={`w-5 h-5 flex-shrink-0 ${active ? 'text-white' : 'text-[#9AA0A6]'}`} />
-                    {isSidebarOpen && <span className="text-sm font-medium truncate">{item.name}</span>}
+                    <item.icon className={`w-5 h-5 flex-shrink-0 ${active ? 'text-[#1A73E8]' : 'text-[#5F6368]'}`} />
+                    {isSidebarOpen && <span className="text-[14px] font-semibold">{item.name}</span>}
                   </Link>
                 )
               })}
@@ -109,22 +103,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           <div>
-            {isSidebarOpen && <p className="px-3 text-[10px] font-bold text-[#9AA0A6] uppercase tracking-widest mb-3">Kegiatan</p>}
-            <div className="space-y-1">
+            {isSidebarOpen && <p className="px-4 text-[11px] font-bold text-[#9AA0A6] uppercase tracking-[0.1em] mb-4">Activities</p>}
+            <div className="space-y-1.5">
               {actionItems.map((item) => {
                 const active = pathname === item.href || pathname.startsWith(item.href)
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    title={!isSidebarOpen ? item.name : undefined}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${active
-                        ? 'bg-[#3C4043] text-white'
-                        : 'text-[#9AA0A6] hover:bg-[#303134] hover:text-white'
-                      } ${!isSidebarOpen ? 'justify-center' : ''}`}
+                    className={`flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all duration-200 ${active
+                        ? 'bg-[#E8F0FE] text-[#1A73E8] shadow-sm'
+                        : 'text-[#5F6368] hover:bg-gray-50 hover:text-[#1A73E8]'
+                      } ${!isSidebarOpen ? 'justify-center px-0' : ''}`}
                   >
-                    <item.icon className={`w-5 h-5 flex-shrink-0 ${active ? 'text-white' : 'text-[#9AA0A6]'}`} />
-                    {isSidebarOpen && <span className="text-sm font-medium truncate">{item.name}</span>}
+                    <item.icon className={`w-5 h-5 flex-shrink-0 ${active ? 'text-[#1A73E8]' : 'text-[#5F6368]'}`} />
+                    {isSidebarOpen && <span className="text-[14px] font-semibold">{item.name}</span>}
                   </Link>
                 )
               })}
@@ -132,13 +125,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </nav>
 
-        <div className="p-3 border-t border-[#3C4043] bg-[#202124]">
-          <div className="flex flex-col gap-2">
-            <button onClick={handleLogout} className={`flex items-center ${!isSidebarOpen ? 'justify-center' : 'gap-3'} px-3 py-2.5 rounded-lg hover:bg-[#3C4043] text-[#9AA0A6] hover:text-[#EA4335] transition-colors w-full`} title="Keluar">
-              <LogOut className="w-5 h-5 flex-shrink-0" />
-              {isSidebarOpen && <span className="text-sm font-medium">Keluar</span>}
-            </button>
-          </div>
+        <div className="p-4 border-t border-gray-50 bg-white">
+          <button onClick={handleLogout} className={`flex items-center ${!isSidebarOpen ? 'justify-center' : 'gap-3.5'} px-4 py-3 rounded-xl hover:bg-red-50 text-[#5F6368] hover:text-[#EA4335] transition-all duration-200 w-full group`} title="Keluar">
+            <LogOut className="w-5 h-5 flex-shrink-0 group-hover:rotate-180 transition-transform duration-500" />
+            {isSidebarOpen && <span className="text-[14px] font-semibold">Keluar Aplikasi</span>}
+          </button>
         </div>
       </aside>
 
