@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { CheckCircle2, Clock, Activity, Calendar, TrendingUp, Plus, ChevronRight, List, Download } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -48,7 +47,7 @@ export default function DashboardPage() {
   async function fetchData() {
     try {
       const { data: { user }, error: userError } = await supabase.auth.getUser()
-      if (userError || !user) throw new Error('Sesi pengguna tidak ditemukan. Silakan login kembali.')
+      if (userError || !user) throw new Error('Sesi pengguna tidak ditemukan.')
 
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
@@ -61,51 +60,37 @@ export default function DashboardPage() {
       setUserId(user.id)
       setProfile(profileData)
 
-      // Detection: If profile is incomplete (no NIM or Instansi), show onboarding
       if (!profileData?.nim || !profileData?.instansi_magang) {
         setShowOnboarding(true)
       }
 
-      const { count: countHadir, error: absensiError } = await supabase
+      const { count: countHadir } = await supabase
         .from('absensi')
         .select('*', { count: 'exact', head: true })
         .eq('mahasiswa_id', user.id)
         .eq('status', 'Hadir')
-
-      if (absensiError) throw new Error('Gagal mengambil data absensi.')
 
       let kegiatanData: any[] = []
       let countSelesai = 0
       let countTotalKegiatan = 0
 
       if (profileData?.nim) {
-        const [kegRes, selCount, totCount] = await Promise.all([
-          supabase.from('kegiatan').select('*').eq('nim', profileData.nim).order('tanggal', { ascending: false }).limit(5),
-          supabase.from('kegiatan').select('*', { count: 'exact', head: true }).eq('nim', profileData.nim).eq('status', 'Selesai'),
-          supabase.from('kegiatan').select('*', { count: 'exact', head: true }).eq('nim', profileData.nim)
-        ])
+        let { data, error } = await supabase.from('Kegiatan').select('*').eq('nim', profileData.nim).order('tanggal', { ascending: false }).limit(5)
         
-        // Fallback to uppercase if lowercase fails
-        if (kegRes.error) {
-          const [kegRes2, selCount2, totCount2] = await Promise.all([
-            supabase.from('Kegiatan').select('*').eq('nim', profileData.nim).order('tanggal', { ascending: false }).limit(5),
-            supabase.from('Kegiatan').select('*', { count: 'exact', head: true }).eq('nim', profileData.nim).eq('status', 'Selesai'),
-            supabase.from('Kegiatan').select('*', { count: 'exact', head: true }).eq('nim', profileData.nim)
-          ])
-          
-          if (!kegRes2.error) {
-            kegiatanData = kegRes2.data || []
-            countSelesai = selCount2.count || 0
-            countTotalKegiatan = totCount2.count || 0
-          } else {
-            console.error('Fetch Kegiatan Error:', kegRes2.error)
-            throw new Error('Gagal mengambil data kegiatan terbaru.')
-          }
-        } else {
-          kegiatanData = kegRes.data || []
-          countSelesai = selCount.count || 0
-          countTotalKegiatan = totCount.count || 0
+        if (error) {
+          const { data: dataLow, error: errorLow } = await supabase.from('kegiatan').select('*').eq('nim', profileData.nim).order('tanggal', { ascending: false }).limit(5)
+          if (!errorLow) data = dataLow
         }
+        
+        kegiatanData = data || []
+        
+        const [selCount, totCount] = await Promise.all([
+          supabase.from('Kegiatan').select('*', { count: 'exact', head: true }).eq('nim', profileData.nim).eq('status', 'Selesai'),
+          supabase.from('Kegiatan').select('*', { count: 'exact', head: true }).eq('nim', profileData.nim)
+        ])
+
+        countSelesai = selCount.count || 0
+        countTotalKegiatan = totCount.count || 0
       }
 
       setKegiatan(kegiatanData)
@@ -114,19 +99,12 @@ export default function DashboardPage() {
         tugasSelesai: countSelesai,
         totalKegiatan: countTotalKegiatan
       })
-
-      // Run automated checks
-      checkAndCreateNotifications(user.id, profileData?.nim, kegiatanData)
     } catch (error: any) {
-      toast.error(error.message || 'Gagal memuat data dashboard. Pastikan koneksi internet stabil.')
+      toast.error(error.message)
       console.error('Dashboard Fetch Error:', error)
     } finally {
       setLoading(false)
     }
-  }
-
-  function handleTambahClick() {
-    router.push('/dashboard/kegiatan')
   }
 
   async function handleDownloadExcel() {
@@ -137,91 +115,21 @@ export default function DashboardPage() {
       await exportLaporanExcel(user)
       toast.success('Laporan berhasil diunduh')
     } catch (error: any) {
-      toast.error('Gagal mengunduh laporan: ' + error.message)
+      toast.error('Gagal mengunduh: ' + error.message)
     } finally {
       setDownloadingExcel(false)
     }
   }
 
-  async function checkAndCreateNotifications(userId: string, nim?: string, activities?: any[]) {
-    try {
-      // 1. Check for Missing Documents
-      const { data: berkasData } = await supabase.from('berkas').select('document_type').eq('mahasiswa_id', userId)
-      const uploadedTypes = berkasData?.map(b => b.document_type) || []
-      const mandatoryDocs = ['CV', 'Surat Tugas']
-      const missing = mandatoryDocs.filter(doc => !uploadedTypes.includes(doc))
-
-      if (missing.length > 0) {
-        // Check if notification already exists for today to avoid spam
-        const today = new Date().toISOString().split('T')[0]
-        const { data: existing } = await supabase
-          .from('notifications')
-          .select('id')
-          .eq('user_id', userId)
-          .ilike('message', '%dokumen%')
-          .gte('created_at', today)
-          .limit(1)
-
-        if (!existing || existing.length === 0) {
-          await supabase.from('notifications').insert({
-            user_id: userId,
-            message: `Anda belum mengunggah dokumen: ${missing.join(', ')}. Harap segera lengkapi berkas Anda.`,
-            type: 'warning',
-            is_read: false
-          })
-        }
-      }
-
-      // 2. Check for Inactivity (3+ Days No Journal)
-      if (activities && activities.length > 0) {
-        const lastDate = new Date(activities[0].tanggal)
-        const now = new Date()
-        const diffDays = Math.floor((now.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24))
-
-        if (diffDays >= 3) {
-          const { data: existing } = await supabase
-            .from('notifications')
-            .select('id')
-            .eq('user_id', userId)
-            .ilike('message', '%jurnal%')
-            .limit(1)
-
-          if (!existing || existing.length === 0) {
-            await supabase.from('notifications').insert({
-              user_id: userId,
-              message: `Sudah ${diffDays} hari Anda tidak mengisi jurnal kegiatan. Jangan lupa untuk tetap update!`,
-              type: 'error',
-              is_read: false
-            })
-          }
-        }
-      }
-    } catch (err) {
-      console.error('Notification Trigger Error:', err)
-    }
-  }
-
-  if (loading) return (
-    <div className="flex h-[80vh] items-center justify-center">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-10 h-10 border-4 border-gray-200 border-t-[#1A73E8] rounded-full animate-spin"></div>
-        <p className="text-[#5F6368] text-sm font-medium animate-pulse">Memuat data dashboard...</p>
-      </div>
-    </div>
-  )
-
   function getWorkDays(startDateStr: string, endDateStr: string): number {
     const start = new Date(startDateStr)
     const end = new Date(endDateStr)
     if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) return 150
-    
     let count = 0
     let current = new Date(start)
     while (current <= end) {
       const day = current.getDay()
-      if (day !== 0 && day !== 6) {
-        count++
-      }
+      if (day !== 0 && day !== 6) count++
       current.setDate(current.getDate() + 1)
     }
     return count
@@ -230,171 +138,174 @@ export default function DashboardPage() {
   const totalHariTarget = profile?.tanggal_mulai && profile?.tanggal_selesai 
     ? getWorkDays(profile.tanggal_mulai, profile.tanggal_selesai) 
     : 150
-  
   const progressPersen = totalHariTarget > 0 ? Math.min(Math.round((stats.hadir / totalHariTarget) * 100), 100) : 0
 
+  if (loading) return null
+
   return (
-    <div className="animate-fade-in flex flex-col xl:flex-row gap-10">
+    <div className="animate-fade-in flex flex-col xl:flex-row gap-10 lg:gap-16">
       {showOnboarding && userId && (
-        <OnboardingWizard 
-          userId={userId ?? ''} 
-          onComplete={() => {
-            setShowOnboarding(false)
-            fetchData()
-          }} 
-        />
+        <OnboardingWizard userId={userId ?? ''} onComplete={() => { setShowOnboarding(false); fetchData(); }} />
       )}
 
-      {/* Left Column: Activity List (Google Style) */}
-      <div className="flex-1 space-y-10">
-        <header>
-          <h1 className="text-[32px] leading-[40px] font-bold tracking-tight text-[var(--on-surface)]">Dashboard Magang</h1>
-          <p className="text-[14px] font-bold text-[var(--on-surface-variant)] uppercase tracking-widest mt-1">
-            {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-          </p>
+      {/* Main Stream Column */}
+      <div className="flex-1 space-y-12">
+        <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <h1 className="text-[36px] font-black text-[var(--on-surface)] tracking-tight leading-tight">Beranda Magang</h1>
+            <p className="text-[14px] font-bold text-[var(--on-surface-variant)] uppercase tracking-widest mt-1">
+               {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}
+            </p>
+          </div>
+          <button 
+            onClick={() => router.push('/dashboard/kegiatan')}
+            className="flex items-center justify-center gap-3 bg-[var(--primary)] text-white px-8 py-4 rounded-[24px] font-black text-sm shadow-xl shadow-blue-100 hover:scale-[1.02] transition-all active:scale-95"
+          >
+            <span className="material-symbols-outlined">add</span>
+            Mulai Mencatat
+          </button>
         </header>
 
-        <section className="bg-[var(--surface-container-lowest)] rounded-[32px] p-8 md:p-10 border border-[var(--outline-variant)] shadow-sm">
-          <div className="flex justify-between items-center mb-10">
-            <h2 className="text-[20px] font-bold text-[var(--on-surface)]">Aktivitas Terakhir</h2>
-            <button 
-              onClick={handleTambahClick}
-              className="w-10 h-10 rounded-full bg-[var(--primary-container)] text-[var(--on-primary-container)] flex items-center justify-center hover:opacity-80 transition-opacity"
-            >
-              <span className="material-symbols-outlined">add</span>
-            </button>
+        {/* Activity Stream Section */}
+        <section className="bg-[var(--surface-container-lowest)] rounded-[40px] p-10 border border-[var(--outline-variant)] shadow-sm">
+          <div className="flex justify-between items-center mb-12">
+            <div className="flex items-center gap-3">
+               <div className="w-1.5 h-6 bg-[var(--primary)] rounded-full"></div>
+               <h2 className="text-[22px] font-black text-[var(--on-surface)]">Aktivitas Terakhir</h2>
+            </div>
+            <Link href="/dashboard/kegiatan" className="text-[12px] font-black text-[var(--primary)] hover:underline uppercase tracking-wider">
+              Lihat Semua
+            </Link>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-6">
             {kegiatan.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
-                <div className="w-20 h-20 rounded-full bg-[var(--surface-container-low)] flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[48px] text-[var(--outline)]">event_busy</span>
+              <div className="flex flex-col items-center justify-center py-24 text-center">
+                <div className="w-24 h-24 rounded-full bg-[var(--surface-container-low)] flex items-center justify-center mb-6">
+                  <span className="material-symbols-outlined text-[56px] text-[var(--outline-variant)]">pending_actions</span>
                 </div>
-                <div>
-                  <p className="text-[16px] font-medium text-[var(--on-surface-variant)]">Belum ada kegiatan yang dicatat.</p>
-                  <p className="text-[12px] text-[var(--outline)] mt-1">Mulai catat jurnal harian Anda untuk melacak kemajuan magang.</p>
-                </div>
+                <p className="text-[18px] font-black text-[var(--on-surface)]">Jurnal masih kosong</p>
+                <p className="text-[14px] font-medium text-[var(--on-surface-variant)] mt-2">Segera isi laporan harianmu untuk divalidasi pembimbing.</p>
               </div>
             ) : (
               kegiatan.map((item, idx) => {
-                const colorVars = [
-                  { bg: 'bg-[var(--primary)]', container: 'bg-[var(--primary-container)]', on: 'text-[var(--on-primary-container)]' },
-                  { bg: 'bg-[var(--tertiary)]', container: 'bg-[var(--tertiary-container)]', on: 'text-[var(--on-tertiary-container)]' },
-                  { bg: 'bg-[#006a6a]', container: 'bg-[#6ff7f6]', on: 'text-[#002020]' },
-                  { bg: 'bg-[#984061]', container: 'bg-[#ffd9e2]', on: 'text-[#3e001d]' }
+                const colors = [
+                  { bg: 'bg-[var(--primary)]', container: 'bg-[var(--primary-container)]' },
+                  { bg: 'bg-[var(--tertiary)]', container: 'bg-[var(--tertiary-container)]' },
+                  { bg: 'bg-[#1e8e3e]', container: 'bg-[#e6f4ea]' },
+                  { bg: 'bg-[#d93025]', container: 'bg-[#fce8e6]' }
                 ]
-                const color = colorVars[idx % colorVars.length]
+                const color = colors[idx % colors.length]
                 return (
-                  <div key={item.id} className={`${color.bg} p-6 rounded-[24px] text-white flex items-center justify-between group hover:scale-[1.01] transition-all duration-300 cursor-pointer shadow-sm`}>
+                  <div key={item.id} className="group flex items-center justify-between p-6 rounded-[32px] bg-[var(--surface-container-low)] border border-[var(--outline-variant)]/30 hover:border-[var(--primary)] transition-all cursor-pointer">
                     <div className="flex items-center gap-6">
-                      <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center">
-                        <span className="material-symbols-outlined text-[28px]">activity</span>
+                      <div className={`w-16 h-16 ${color.bg} rounded-2xl flex flex-col items-center justify-center text-white shadow-lg`}>
+                        <span className="text-[10px] font-black uppercase opacity-70">{new Date(item.tanggal).toLocaleDateString('id-ID', { month: 'short' })}</span>
+                        <span className="text-[24px] font-black leading-none">{new Date(item.tanggal).getDate()}</span>
                       </div>
                       <div className="min-w-0">
-                        <h4 className="text-[16px] font-bold truncate max-w-[200px] md:max-w-[400px]">{item.kegiatan}</h4>
-                        <p className="text-white/70 text-[12px] font-bold uppercase tracking-wider mt-0.5">{item.status} • {new Date(item.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</p>
+                        <h4 className="text-[16px] font-black text-[var(--on-surface)] truncate group-hover:text-[var(--primary)] transition-colors pr-4">{item.kegiatan}</h4>
+                        <div className="flex items-center gap-3 mt-1.5">
+                           <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider ${item.status === 'Selesai' ? 'bg-[#e6f4ea] text-[#137333]' : 'bg-[#fef7e0] text-[#e37400]'}`}>
+                             {item.status}
+                           </span>
+                           <span className="text-[11px] font-bold text-[var(--on-surface-variant)]">{new Date(item.tanggal).toLocaleDateString('id-ID', { weekday: 'long' })}</span>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-[var(--on-surface)]">
-                        <span className="text-[18px] font-black">{new Date(item.tanggal).getDate()}</span>
-                      </div>
-                    </div>
+                    <span className="material-symbols-outlined text-[var(--outline-variant)] group-hover:text-[var(--primary)] transition-all group-hover:translate-x-1">chevron_right</span>
                   </div>
                 )
               })
             )}
           </div>
-
-          <div className="mt-10 pt-6 border-t border-[var(--outline-variant)]">
-            <Link href="/dashboard/kegiatan" className="w-full py-4 border-2 border-dashed border-[var(--outline-variant)] text-[var(--on-surface-variant)] rounded-2xl font-bold hover:bg-[var(--surface-container-low)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition-all flex items-center justify-center gap-2">
-              Lihat Semua Aktivitas
-            </Link>
-          </div>
         </section>
       </div>
 
-      {/* Right Column: Progress (Google Style) */}
-      <div className="w-full xl:w-[400px] space-y-10">
-        <section className="bg-[var(--surface-container-lowest)] rounded-[32px] p-8 border border-[var(--outline-variant)] shadow-sm space-y-8">
-          <h3 className="text-[20px] font-bold text-[var(--on-surface)]">My Progress</h3>
-          <div className="space-y-6">
-            {/* Attendance Item */}
-            <div className="flex items-center justify-between p-4 bg-[var(--surface-container-low)] rounded-2xl border border-[var(--outline-variant)]/30">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-[var(--primary-container)] text-[var(--primary)] flex items-center justify-center">
-                  <span className="material-symbols-outlined">calendar_today</span>
-                </div>
-                <div>
-                  <p className="text-[14px] font-bold text-[var(--on-surface)]">Kehadiran</p>
-                  <p className="text-[12px] text-[var(--on-surface-variant)]">Target: {totalHariTarget} Hari</p>
-                </div>
+      {/* Progress & Cluster Column */}
+      <div className="w-full xl:w-[420px] space-y-10">
+        {/* Progress Card */}
+        <section className="bg-[var(--surface-container-lowest)] rounded-[40px] p-10 border border-[var(--outline-variant)] shadow-sm">
+           <h3 className="text-[20px] font-black text-[var(--on-surface)] mb-10 flex items-center gap-3">
+              <span className="material-symbols-outlined text-[var(--primary)]">analytics</span>
+              Progres Magang
+           </h3>
+           
+           <div className="grid grid-cols-2 gap-8">
+              <div className="flex flex-col items-center gap-4">
+                 <div className="relative w-28 h-28 flex items-center justify-center">
+                    <svg className="w-full h-full -rotate-90">
+                      <circle className="text-[var(--surface-container-high)]" cx="56" cy="56" fill="transparent" r="48" stroke="currentColor" strokeWidth="8"></circle>
+                      <circle className="text-[var(--primary)]" cx="56" cy="56" fill="transparent" r="48" stroke="currentColor" strokeDasharray="301.6" strokeDashoffset={301.6 - (301.6 * progressPersen / 100)} strokeWidth="8" strokeLinecap="round"></circle>
+                    </svg>
+                    <div className="absolute flex flex-col items-center">
+                       <span className="text-[24px] font-black text-[var(--on-surface)] leading-none">{progressPersen}%</span>
+                    </div>
+                 </div>
+                 <div className="text-center">
+                    <p className="text-[12px] font-black text-[var(--on-surface)] uppercase tracking-tighter">Kehadiran</p>
+                    <p className="text-[10px] font-bold text-[var(--on-surface-variant)]">{stats.hadir} / {totalHariTarget} Hari</p>
+                 </div>
               </div>
-              <div className="relative w-12 h-12 flex items-center justify-center">
-                <svg className="w-full h-full -rotate-90">
-                  <circle className="text-[var(--surface-container-high)]" cx="24" cy="24" fill="transparent" r="20" stroke="currentColor" strokeWidth="4"></circle>
-                  <circle className="text-[var(--primary)]" cx="24" cy="24" fill="transparent" r="20" stroke="currentColor" strokeDasharray="125.6" strokeDashoffset={125.6 - (125.6 * progressPersen / 100)} strokeWidth="4" strokeLinecap="round"></circle>
-                </svg>
-                <span className="absolute text-[10px] font-black">{progressPersen}%</span>
-              </div>
-            </div>
 
-            {/* Task Item */}
-            <div className="flex items-center justify-between p-4 bg-[var(--surface-container-low)] rounded-2xl border border-[var(--outline-variant)]/30">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-[var(--tertiary-container)] text-[var(--tertiary)] flex items-center justify-center">
-                  <span className="material-symbols-outlined">check_circle</span>
-                </div>
-                <div>
-                  <p className="text-[14px] font-bold text-[var(--on-surface)]">Tugas Selesai</p>
-                  <p className="text-[12px] text-[var(--on-surface-variant)]">{stats.tugasSelesai} Diverifikasi</p>
-                </div>
+              <div className="flex flex-col items-center gap-4">
+                 <div className="relative w-28 h-28 flex items-center justify-center">
+                    <svg className="w-full h-full -rotate-90">
+                      <circle className="text-[var(--surface-container-high)]" cx="56" cy="56" fill="transparent" r="48" stroke="currentColor" strokeWidth="8"></circle>
+                      <circle className="text-[var(--tertiary)]" cx="56" cy="56" fill="transparent" r="48" stroke="currentColor" strokeDasharray="301.6" strokeDashoffset={301.6 - (301.6 * (stats.totalKegiatan > 0 ? (stats.tugasSelesai / stats.totalKegiatan) * 100 : 0) / 100)} strokeWidth="8" strokeLinecap="round"></circle>
+                    </svg>
+                    <div className="absolute flex flex-col items-center">
+                       <span className="text-[24px] font-black text-[var(--on-surface)] leading-none">{stats.totalKegiatan > 0 ? Math.round((stats.tugasSelesai / stats.totalKegiatan) * 100) : 0}%</span>
+                    </div>
+                 </div>
+                 <div className="text-center">
+                    <p className="text-[12px] font-black text-[var(--on-surface)] uppercase tracking-tighter">Verifikasi</p>
+                    <p className="text-[10px] font-bold text-[var(--on-surface-variant)]">{stats.tugasSelesai} Log Selesai</p>
+                 </div>
               </div>
-              <div className="relative w-12 h-12 flex items-center justify-center">
-                <svg className="w-full h-full -rotate-90">
-                  <circle className="text-[var(--surface-container-high)]" cx="24" cy="24" fill="transparent" r="20" stroke="currentColor" strokeWidth="4"></circle>
-                  <circle className="text-[var(--tertiary)]" cx="24" cy="24" fill="transparent" r="20" stroke="currentColor" strokeDasharray="125.6" strokeDashoffset={125.6 - (125.6 * (stats.totalKegiatan > 0 ? (stats.tugasSelesai / stats.totalKegiatan) * 100 : 0) / 100)} strokeWidth="4" strokeLinecap="round"></circle>
-                </svg>
-                <span className="absolute text-[10px] font-black">{stats.totalKegiatan > 0 ? Math.round((stats.tugasSelesai / stats.totalKegiatan) * 100) : 0}%</span>
-              </div>
-            </div>
-          </div>
+           </div>
         </section>
 
-        {/* Streak Card */}
-        <div className="bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-[32px] p-8 text-white shadow-lg relative overflow-hidden group">
-          <div className="absolute -right-6 -bottom-6 opacity-20 group-hover:scale-110 transition-transform duration-500">
-            <span className="material-symbols-outlined text-[120px]">bolt</span>
-          </div>
-          <div className="relative z-10">
-            <div className="flex items-baseline gap-2">
-              <span className="text-[64px] font-extrabold leading-none">{stats.hadir}</span>
-              <span className="material-symbols-outlined">show_chart</span>
-            </div>
-            <h4 className="text-[20px] font-bold mt-2">Streak Days</h4>
-            <p className="text-[14px] opacity-90 mt-1 font-medium">Lanjutkan semangat magangmu!</p>
-          </div>
-        </div>
-
-        {/* Excel Report Card */}
-        <div className="bg-[var(--inverse-surface)] rounded-[32px] p-8 text-white shadow-xl hover:shadow-2xl transition-all border border-white/10 group cursor-pointer relative overflow-hidden" onClick={handleDownloadExcel}>
-          <div className="absolute -top-10 -left-10 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl" />
-          <div className="relative z-10">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center group-hover:bg-[var(--primary)] transition-colors">
-                <span className="material-symbols-outlined">table_view</span>
+        {/* Streak & Motivation Card */}
+        <section className="bg-gradient-to-br from-[#1a73e8] to-[#004ac6] rounded-[40px] p-10 text-white relative overflow-hidden shadow-2xl shadow-blue-200 group">
+           <div className="absolute -right-10 -bottom-10 opacity-10 group-hover:rotate-12 transition-transform duration-700">
+              <span className="material-symbols-outlined text-[200px]">auto_awesome</span>
+           </div>
+           <div className="relative z-10 flex flex-col gap-6">
+              <div className="flex items-center justify-between">
+                 <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center">
+                    <span className="material-symbols-outlined text-[32px]">bolt</span>
+                 </div>
+                 <span className="px-4 py-1.5 bg-white/20 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-widest border border-white/20">Keep it up!</span>
               </div>
-              <span className="material-symbols-outlined text-white/40 group-hover:text-white group-hover:translate-x-1 transition-all">arrow_forward</span>
-            </div>
-            <h4 className="text-[20px] font-bold mb-2">Laporan Excel</h4>
-            <p className="text-[14px] text-white/70 leading-relaxed font-medium">Unduh riwayat kegiatan untuk keperluan administrasi kampus secara praktis dan rapi.</p>
-            <div className="mt-8 flex items-center gap-2 text-[var(--primary-fixed)] font-bold text-xs uppercase tracking-widest">
-              <span className="material-symbols-outlined text-sm">download</span>
-              <span>{downloadingExcel ? 'Menyiapkan...' : 'Unduh Sekarang'}</span>
-            </div>
-          </div>
-        </div>
+              <div>
+                 <h4 className="text-[56px] font-black leading-none mb-2">{stats.hadir}</h4>
+                 <p className="text-[18px] font-black tracking-tight">Hari Beruntun</p>
+                 <p className="text-[12px] opacity-70 font-medium mt-1 leading-relaxed">Jangan biarkan harimu kosong tanpa progres. Kamu melakukannya dengan hebat!</p>
+              </div>
+           </div>
+        </section>
+
+        {/* Report Card */}
+        <section className="bg-[var(--inverse-surface)] rounded-[40px] p-10 text-white shadow-xl relative overflow-hidden group cursor-pointer" onClick={handleDownloadExcel}>
+           <div className="relative z-10">
+              <div className="flex items-center justify-between mb-8">
+                 <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center group-hover:bg-[var(--primary)] transition-all duration-300">
+                    <span className="material-symbols-outlined">description</span>
+                 </div>
+                 <span className="material-symbols-outlined opacity-40 group-hover:opacity-100 group-hover:translate-x-2 transition-all">arrow_forward_ios</span>
+              </div>
+              <h4 className="text-[20px] font-black mb-2">Laporan Magang</h4>
+              <p className="text-[13px] text-white/60 leading-relaxed font-medium">Export seluruh aktivitasmu ke format Excel dalam hitungan detik.</p>
+              <div className="mt-10 flex items-center gap-3 text-[var(--primary-fixed-dim)]">
+                 <div className={`flex items-center gap-2 ${downloadingExcel ? 'animate-pulse' : ''}`}>
+                    <span className="material-symbols-outlined text-sm">download</span>
+                    <span className="text-[11px] font-black uppercase tracking-widest">{downloadingExcel ? 'Sabar Ya...' : 'Download Sekarang'}</span>
+                 </div>
+              </div>
+           </div>
+           <div className="absolute -top-20 -right-20 w-64 h-64 bg-blue-500/5 rounded-full blur-[80px]" />
+        </section>
       </div>
     </div>
   )
