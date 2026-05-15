@@ -234,7 +234,7 @@ export default function DashboardPage() {
   const progressPersen = totalHariTarget > 0 ? Math.min(Math.round((stats.hadir / totalHariTarget) * 100), 100) : 0
 
   return (
-    <div className="pb-12 animate-[fade-in_0.7s_ease-out] flex flex-col xl:flex-row gap-8">
+    <div className="animate-fade-in flex flex-col xl:flex-row gap-10">
       {showOnboarding && userId && (
         <OnboardingWizard 
           userId={userId ?? ''} 
@@ -245,48 +245,61 @@ export default function DashboardPage() {
         />
       )}
 
-      {/* Main Column: Course/Activity Style */}
-      <div className="flex-1 space-y-8">
-        <div>
-          <h1 className="text-4xl font-black text-[#1d1d1f] tracking-tight">Dashboard Magang</h1>
-          <p className="text-[#86868b] font-semibold mt-1 uppercase text-xs tracking-widest">{new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-        </div>
+      {/* Left Column: Activity List (Google Style) */}
+      <div className="flex-1 space-y-10">
+        <header>
+          <h1 className="text-[32px] leading-[40px] font-bold tracking-tight text-[var(--on-surface)]">Dashboard Magang</h1>
+          <p className="text-[14px] font-bold text-[var(--on-surface-variant)] uppercase tracking-widest mt-1">
+            {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+          </p>
+        </header>
 
-        <div className="bg-white rounded-[48px] p-10 shadow-[0_20px_50px_rgba(0,0,0,0.04)] border border-gray-50">
+        <section className="bg-[var(--surface-container-lowest)] rounded-[32px] p-8 md:p-10 border border-[var(--outline-variant)] shadow-sm">
           <div className="flex justify-between items-center mb-10">
-            <h2 className="text-2xl font-black text-[#1d1d1f]">Aktivitas Terakhir</h2>
-            <div className="flex gap-2">
-              <button className="p-2.5 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors">
-                <Plus className="w-5 h-5 text-gray-400" />
-              </button>
-            </div>
+            <h2 className="text-[20px] font-bold text-[var(--on-surface)]">Aktivitas Terakhir</h2>
+            <button 
+              onClick={handleTambahClick}
+              className="w-10 h-10 rounded-full bg-[var(--primary-container)] text-[var(--on-primary-container)] flex items-center justify-center hover:opacity-80 transition-opacity"
+            >
+              <span className="material-symbols-outlined">add</span>
+            </button>
           </div>
 
           <div className="space-y-4">
             {kegiatan.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-[#86868b] font-medium">Belum ada kegiatan yang dicatat.</p>
+              <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
+                <div className="w-20 h-20 rounded-full bg-[var(--surface-container-low)] flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[48px] text-[var(--outline)]">event_busy</span>
+                </div>
+                <div>
+                  <p className="text-[16px] font-medium text-[var(--on-surface-variant)]">Belum ada kegiatan yang dicatat.</p>
+                  <p className="text-[12px] text-[var(--outline)] mt-1">Mulai catat jurnal harian Anda untuk melacak kemajuan magang.</p>
+                </div>
               </div>
             ) : (
               kegiatan.map((item, idx) => {
-                const colors = ['bg-[#3b82f6]', 'bg-[#a855f7]', 'bg-[#eab308]', 'bg-[#ef4444]', 'bg-[#10b981]']
-                const bgColor = colors[idx % colors.length]
+                const colorVars = [
+                  { bg: 'bg-[var(--primary)]', container: 'bg-[var(--primary-container)]', on: 'text-[var(--on-primary-container)]' },
+                  { bg: 'bg-[var(--tertiary)]', container: 'bg-[var(--tertiary-container)]', on: 'text-[var(--on-tertiary-container)]' },
+                  { bg: 'bg-[#006a6a]', container: 'bg-[#6ff7f6]', on: 'text-[#002020]' },
+                  { bg: 'bg-[#984061]', container: 'bg-[#ffd9e2]', on: 'text-[#3e001d]' }
+                ]
+                const color = colorVars[idx % colorVars.length]
                 return (
-                  <div key={item.id} className={`${bgColor} p-6 rounded-[32px] text-white flex items-center justify-between group hover:scale-[1.01] transition-all duration-300 cursor-pointer shadow-lg shadow-black/5`}>
+                  <div key={item.id} className={`${color.bg} p-6 rounded-[24px] text-white flex items-center justify-between group hover:scale-[1.01] transition-all duration-300 cursor-pointer shadow-sm`}>
                     <div className="flex items-center gap-6">
                       <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center">
-                        <Activity className="w-7 h-7" />
+                        <span className="material-symbols-outlined text-[28px]">activity</span>
                       </div>
-                      <div>
-                        <h4 className="text-lg font-bold truncate max-w-[200px] md:max-w-[400px]">{item.kegiatan}</h4>
-                        <p className="text-white/70 text-xs font-semibold uppercase tracking-wider">{item.status} • {new Date(item.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</p>
+                      <div className="min-w-0">
+                        <h4 className="text-[16px] font-bold truncate max-w-[200px] md:max-w-[400px]">{item.kegiatan}</h4>
+                        <p className="text-white/70 text-[12px] font-bold uppercase tracking-wider mt-0.5">{item.status} • {new Date(item.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-[#1d1d1f]">
-                        <span className="text-lg font-black">{new Date(item.tanggal).getDate()}</span>
+                      <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-[var(--on-surface)]">
+                        <span className="text-[18px] font-black">{new Date(item.tanggal).getDate()}</span>
                       </div>
-                      <ChevronRight className="w-6 h-6 text-white/50 group-hover:text-white transition-colors" />
                     </div>
                   </div>
                 )
@@ -294,107 +307,96 @@ export default function DashboardPage() {
             )}
           </div>
 
-          <Link href="/dashboard/kegiatan" className="mt-8 flex items-center justify-center w-full py-5 border-2 border-dashed border-gray-100 rounded-[32px] text-[#86868b] font-bold hover:border-[#1a73e8] hover:text-[#1a73e8] transition-all">
-            Lihat Semua Aktivitas
-          </Link>
-        </div>
+          <div className="mt-10 pt-6 border-t border-[var(--outline-variant)]">
+            <Link href="/dashboard/kegiatan" className="w-full py-4 border-2 border-dashed border-[var(--outline-variant)] text-[var(--on-surface-variant)] rounded-2xl font-bold hover:bg-[var(--surface-container-low)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition-all flex items-center justify-center gap-2">
+              Lihat Semua Aktivitas
+            </Link>
+          </div>
+        </section>
       </div>
 
-      {/* Right Column: Progress & Stats Style */}
-      <div className="w-full xl:w-[400px] space-y-8">
-        <div>
-          <div className="flex items-center justify-between mb-8">
-             <div className="flex items-center gap-4">
-               <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center border border-gray-100">
-                 <span className="text-lg font-black text-[#1d1d1f]">{profile?.nama_lengkap?.charAt(0) || 'U'}</span>
-               </div>
-               <div>
-                 <h3 className="font-bold text-[#1d1d1f]">{profile?.nama_lengkap || 'User'}</h3>
-                 <p className="text-[#86868b] text-[10px] font-black uppercase tracking-widest">{profile?.nim || 'Mahasiswa'}</p>
-               </div>
-             </div>
-          </div>
-        </div>
-
-        {/* Learning Progress Section */}
-        <div className="bg-white rounded-[48px] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.04)] border border-gray-50">
-          <h3 className="text-xl font-black text-[#1d1d1f] mb-8">My Progress</h3>
-          <div className="space-y-8">
-            <div className="flex items-center justify-between">
+      {/* Right Column: Progress (Google Style) */}
+      <div className="w-full xl:w-[400px] space-y-10">
+        <section className="bg-[var(--surface-container-lowest)] rounded-[32px] p-8 border border-[var(--outline-variant)] shadow-sm space-y-8">
+          <h3 className="text-[20px] font-bold text-[var(--on-surface)]">My Progress</h3>
+          <div className="space-y-6">
+            {/* Attendance Item */}
+            <div className="flex items-center justify-between p-4 bg-[var(--surface-container-low)] rounded-2xl border border-[var(--outline-variant)]/30">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-[#E8F0FE] rounded-2xl flex items-center justify-center text-[#1a73e8]">
-                  <Calendar className="w-6 h-6" />
+                <div className="w-10 h-10 rounded-xl bg-[var(--primary-container)] text-[var(--primary)] flex items-center justify-center">
+                  <span className="material-symbols-outlined">calendar_today</span>
                 </div>
                 <div>
-                  <p className="font-bold text-[#1d1d1f] text-sm">Kehadiran</p>
-                  <p className="text-[#86868b] text-[10px] font-semibold">Hari ini</p>
+                  <p className="text-[14px] font-bold text-[var(--on-surface)]">Kehadiran</p>
+                  <p className="text-[12px] text-[var(--on-surface-variant)]">Target: {totalHariTarget} Hari</p>
                 </div>
               </div>
-              <div className="relative w-12 h-12">
-                <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                  <path className="text-gray-100" strokeDasharray="100, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" />
-                  <path className="text-[#1a73e8]" strokeDasharray={`${progressPersen}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+              <div className="relative w-12 h-12 flex items-center justify-center">
+                <svg className="w-full h-full -rotate-90">
+                  <circle className="text-[var(--surface-container-high)]" cx="24" cy="24" fill="transparent" r="20" stroke="currentColor" strokeWidth="4"></circle>
+                  <circle className="text-[var(--primary)]" cx="24" cy="24" fill="transparent" r="20" stroke="currentColor" strokeDasharray="125.6" strokeDashoffset={125.6 - (125.6 * progressPersen / 100)} strokeWidth="4" strokeLinecap="round"></circle>
                 </svg>
-                <span className="absolute inset-0 flex items-center justify-center text-[8px] font-black">{progressPersen}%</span>
+                <span className="absolute text-[10px] font-black">{progressPersen}%</span>
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
+            {/* Task Item */}
+            <div className="flex items-center justify-between p-4 bg-[var(--surface-container-low)] rounded-2xl border border-[var(--outline-variant)]/30">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-[#FEF7E0] rounded-2xl flex items-center justify-center text-[#eab308]">
-                  <CheckCircle2 className="w-6 h-6" />
+                <div className="w-10 h-10 rounded-xl bg-[var(--tertiary-container)] text-[var(--tertiary)] flex items-center justify-center">
+                  <span className="material-symbols-outlined">check_circle</span>
                 </div>
                 <div>
-                  <p className="font-bold text-[#1d1d1f] text-sm">Tugas Selesai</p>
-                  <p className="text-[#86868b] text-[10px] font-semibold">{stats.tugasSelesai} dari {stats.totalKegiatan}</p>
+                  <p className="text-[14px] font-bold text-[var(--on-surface)]">Tugas Selesai</p>
+                  <p className="text-[12px] text-[var(--on-surface-variant)]">{stats.tugasSelesai} Diverifikasi</p>
                 </div>
               </div>
-              <div className="relative w-12 h-12">
-                <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                  <path className="text-gray-100" strokeDasharray="100, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" />
-                  <path className="text-[#eab308]" strokeDasharray={`${stats.totalKegiatan > 0 ? (stats.tugasSelesai / stats.totalKegiatan) * 100 : 0}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+              <div className="relative w-12 h-12 flex items-center justify-center">
+                <svg className="w-full h-full -rotate-90">
+                  <circle className="text-[var(--surface-container-high)]" cx="24" cy="24" fill="transparent" r="20" stroke="currentColor" strokeWidth="4"></circle>
+                  <circle className="text-[var(--tertiary)]" cx="24" cy="24" fill="transparent" r="20" stroke="currentColor" strokeDasharray="125.6" strokeDashoffset={125.6 - (125.6 * (stats.totalKegiatan > 0 ? (stats.tugasSelesai / stats.totalKegiatan) * 100 : 0) / 100)} strokeWidth="4" strokeLinecap="round"></circle>
                 </svg>
-                <span className="absolute inset-0 flex items-center justify-center text-[8px] font-black">{stats.totalKegiatan > 0 ? Math.round((stats.tugasSelesai / stats.totalKegiatan) * 100) : 0}%</span>
+                <span className="absolute text-[10px] font-black">{stats.totalKegiatan > 0 ? Math.round((stats.tugasSelesai / stats.totalKegiatan) * 100) : 0}%</span>
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Streak Style Card */}
-        <div className="bg-[#eab308] rounded-[48px] p-8 text-white relative overflow-hidden shadow-[0_20px_50px_rgba(234,179,8,0.2)]">
+        {/* Streak Card */}
+        <div className="bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-[32px] p-8 text-white shadow-lg relative overflow-hidden group">
+          <div className="absolute -right-6 -bottom-6 opacity-20 group-hover:scale-110 transition-transform duration-500">
+            <span className="material-symbols-outlined text-[120px]">bolt</span>
+          </div>
           <div className="relative z-10">
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="text-4xl font-black">{stats.hadir}</h4>
-              <div className="bg-white/20 backdrop-blur-md p-2 rounded-xl">
-                 <TrendingUp className="w-5 h-5 text-white" />
-              </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-[64px] font-extrabold leading-none">{stats.hadir}</span>
+              <span className="material-symbols-outlined">show_chart</span>
             </div>
-            <p className="text-lg font-bold">Streak Days</p>
-            <p className="text-white/70 text-xs font-semibold mt-1">Lanjutkan semangat magangmu!</p>
-          </div>
-          <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
-          <div className="absolute top-4 right-8 opacity-20">
-             <Activity className="w-20 h-20" />
+            <h4 className="text-[20px] font-bold mt-2">Streak Days</h4>
+            <p className="text-[14px] opacity-90 mt-1 font-medium">Lanjutkan semangat magangmu!</p>
           </div>
         </div>
 
-        {/* Planning Section Style */}
-        <div className="bg-[#1d1d1f] rounded-[48px] p-8 text-white shadow-xl relative overflow-hidden">
-           <div className="relative z-10">
-             <h4 className="font-bold mb-4">Laporan Excel</h4>
-             <p className="text-white/50 text-xs leading-relaxed mb-8">Download riwayat kegiatan untuk keperluan administrasi kampus.</p>
-             <button 
-               onClick={handleDownloadExcel}
-               disabled={downloadingExcel}
-               className="w-full py-4 bg-white text-[#1d1d1f] rounded-[24px] font-black text-sm flex items-center justify-center gap-2 hover:bg-gray-100 transition-all active:scale-95 disabled:opacity-50"
-             >
-               <Download className="w-4 h-4" />
-               {downloadingExcel ? 'Menyiapkan...' : 'Download Report'}
-             </button>
-           </div>
-           <div className="absolute -top-10 -left-10 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl" />
+        {/* Excel Report Card */}
+        <div className="bg-[var(--inverse-surface)] rounded-[32px] p-8 text-white shadow-xl hover:shadow-2xl transition-all border border-white/10 group cursor-pointer relative overflow-hidden" onClick={handleDownloadExcel}>
+          <div className="absolute -top-10 -left-10 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl" />
+          <div className="relative z-10">
+            <div className="flex items-start justify-between mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center group-hover:bg-[var(--primary)] transition-colors">
+                <span className="material-symbols-outlined">table_view</span>
+              </div>
+              <span className="material-symbols-outlined text-white/40 group-hover:text-white group-hover:translate-x-1 transition-all">arrow_forward</span>
+            </div>
+            <h4 className="text-[20px] font-bold mb-2">Laporan Excel</h4>
+            <p className="text-[14px] text-white/70 leading-relaxed font-medium">Unduh riwayat kegiatan untuk keperluan administrasi kampus secara praktis dan rapi.</p>
+            <div className="mt-8 flex items-center gap-2 text-[var(--primary-fixed)] font-bold text-xs uppercase tracking-widest">
+              <span className="material-symbols-outlined text-sm">download</span>
+              <span>{downloadingExcel ? 'Menyiapkan...' : 'Unduh Sekarang'}</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   )
+}
 }
