@@ -7,6 +7,12 @@ import { User, Mail, CreditCard, LogOut, Edit2, Save, X, Camera, Users, Trash2, 
 import Link from 'next/link'
 import { toast } from 'sonner'
 
+type DosenProfile = {
+  id: string
+  nama_lengkap: string
+  nip: string
+  department: string
+  faculty: string
   universitas: string | null
   max_mahasiswa: number
   avatar_url: string | null
@@ -32,9 +38,9 @@ export default function DosenProfilPage() {
   const [form, setForm] = useState<Partial<DosenProfile>>({})
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
-  
+
   const [mahasiswa, setMahasiswa] = useState<MahasiswaBimbingan[]>([])
-  
+
   const [showTambahModal, setShowTambahModal] = useState(false)
   const [searchMahasiswa, setSearchMahasiswa] = useState('')
   const [searchResults, setSearchResults] = useState<any[]>([])
@@ -91,7 +97,7 @@ export default function DosenProfilPage() {
         const hadir = absensiData?.filter(a => a.mahasiswa_id === m.id && a.status === 'Hadir').length || 0
         const start = m.tanggal_mulai ? new Date(m.tanggal_mulai) : null
         const end = m.tanggal_selesai ? new Date(m.tanggal_selesai) : null
-        
+
         let target = 150
         if (start && end && !isNaN(start.getTime()) && !isNaN(end.getTime()) && start <= end) {
           target = 0
@@ -102,7 +108,7 @@ export default function DosenProfilPage() {
             current.setDate(current.getDate() + 1)
           }
         }
-        
+
         const progress = target > 0 ? Math.min(Math.round((hadir / target) * 100), 100) : 0
         return { ...m, progress }
       })
@@ -291,10 +297,10 @@ export default function DosenProfilPage() {
                 </div>
                 <label className="absolute bottom-0 right-0 bg-white p-2 rounded-full shadow-sm border border-gray-100 text-[#137333] hover:bg-gray-50 transition-colors cursor-pointer">
                   <Camera className="w-4 h-4" />
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    className="hidden" 
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
                     disabled={uploadingAvatar}
                     onChange={handleAvatarUpload}
                   />
@@ -395,8 +401,8 @@ export default function DosenProfilPage() {
                   </span>
                 )}
               </div>
-              <button 
-                onClick={() => setIsEditing(true)} 
+              <button
+                onClick={() => setIsEditing(true)}
                 className="absolute bottom-0 right-0 bg-white p-2 rounded-full shadow-sm border border-gray-100 text-[#137333] hover:bg-gray-50 transition-colors"
               >
                 <Edit2 className="w-4 h-4" />
@@ -454,7 +460,7 @@ export default function DosenProfilPage() {
                 <Plus className="w-3.5 h-3.5" /> Tambah Mahasiswa
               </button>
             </div>
-            
+
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm whitespace-nowrap">
                 <thead className="bg-[#F8F9FA] text-[#5F6368] font-medium border-b border-gray-200">
@@ -528,7 +534,7 @@ export default function DosenProfilPage() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="p-6 flex-1 overflow-hidden flex flex-col">
               <div className="flex gap-2 mb-4">
                 <div className="relative flex-1">
