@@ -494,7 +494,7 @@ export default function KegiatanPage() {
                             placeholder="Balas komentar..."
                             value={newComment[k.id] || ''}
                             onChange={e => setNewComment(prev => ({ ...prev, [k.id]: e.target.value }))}
-                            onKeyDown={e => e.key === 'Enter' && handlePostComment(k.id)}
+                            onKeyDown={e => e.key === 'Enter' && handlePostComment(Number(k.id))}
                             className="flex-1 bg-[#F8F9FA] border border-gray-200 rounded-full px-3 py-1 text-[11px] outline-none focus:border-[#1A73E8] transition-colors"
                           />
                           <button 
