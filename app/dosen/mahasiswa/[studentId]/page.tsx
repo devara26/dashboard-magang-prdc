@@ -35,6 +35,18 @@ type Berkas = {
   uploaded_at: string
 }
 
+type Comment = {
+  id: string
+  kegiatan_id: number
+  user_id: string
+  message: string
+  created_at: string
+  profiles?: {
+    nama_lengkap: string
+    role: string
+  }
+}
+
 export default function StudentDashboardView({ params }: { params: Promise<{ studentId: string }> }) {
   const router = useRouter()
   const resolvedParams = use(params)
@@ -47,15 +59,17 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
   const [kegiatan, setKegiatan] = useState<Kegiatan[]>([])
   const [absensiStats, setAbsensiStats] = useState({ hadir: 0, izin: 0, sakit: 0, alpha: 0 })
   const [berkas, setBerkas] = useState<Berkas[]>([])
+  const [comments, setComments] = useState<Comment[]>([])
+  const [newComment, setNewComment] = useState<{ [key: number]: string }>({})
+  const [isCommenting, setIsCommenting] = useState<{ [key: number]: boolean }>({})
 
   useEffect(() => {
     fetchData()
   }, [studentId])
 
-  async function fetchData() {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Anda belum login')
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      if (authError || !user) throw new Error('Sesi tidak ditemukan. Silakan login kembali.')
 
       // Fetch student profile and verify access
       const { data: profileData, error: profileError } = await supabase
@@ -64,7 +78,7 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
         .eq('id', studentId)
         .single()
       
-      if (profileError) throw profileError
+      if (profileError) throw new Error('Gagal mengambil data profil mahasiswa.')
       if (profileData.dosen_id !== user.id) {
         toast.error('Akses ditolak. Mahasiswa ini tidak berada di bawah bimbingan Anda.')
         router.push('/dosen/mahasiswa')
@@ -74,10 +88,12 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
       setProfile(profileData)
 
       // Fetch Absensi
-      const { data: absensiData } = await supabase
+      const { data: absensiData, error: absensiError } = await supabase
         .from('absensi')
         .select('status')
         .eq('mahasiswa_id', studentId)
+
+      if (absensiError) throw new Error('Gagal mengambil data absensi.')
 
       if (absensiData) {
         const stats = { hadir: 0, izin: 0, sakit: 0, alpha: 0 }
@@ -92,27 +108,76 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
 
       // Fetch Kegiatan
       if (profileData.nim) {
-        const { data: kegiatanData } = await supabase
+        const { data: kegiatanData, error: kegiatanError } = await supabase
           .from('Kegiatan')
           .select('*')
           .eq('nim', profileData.nim)
           .order('tanggal', { ascending: false })
+        
+        if (kegiatanError) throw new Error('Gagal mengambil data kegiatan mahasiswa.')
         setKegiatan(kegiatanData || [])
       }
 
       // Fetch Berkas
-      const { data: berkasData } = await supabase
+      const { data: berkasData, error: berkasError } = await supabase
         .from('berkas')
         .select('*')
         .eq('mahasiswa_id', studentId)
       
+      if (berkasError) throw new Error('Gagal mengambil daftar berkas mahasiswa.')
       setBerkas(berkasData || [])
 
+      // Fetch Comments
+      const { data: commentsData, error: commentsError } = await supabase
+        .from('comments')
+        .select('*, profiles(nama_lengkap, role)')
+        .in('kegiatan_id', kegiatanData?.map(k => k.id) || [])
+        .order('created_at', { ascending: true })
+      
+      if (commentsError) console.error('Comments Fetch Error:', commentsError)
+      setComments(commentsData as any || [])
+
     } catch (error: any) {
-      toast.error('Gagal memuat detail mahasiswa')
-      console.error(error)
+      toast.error(error.message || 'Gagal memuat detail mahasiswa. Silakan coba lagi.')
+      console.error('Student View Error:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handlePostComment(kegiatanId: number) {
+    const message = newComment[kegiatanId]
+    if (!message || message.trim() === '') return
+
+    setIsCommenting(prev => ({ ...prev, [kegiatanId]: true }))
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Sesi tidak ditemukan')
+
+      const { data, error } = await supabase.from('comments').insert({
+        kegiatan_id: kegiatanId,
+        user_id: user.id,
+        message: message.trim()
+      }).select('*, profiles(nama_lengkap, role)').single()
+
+      if (error) throw error
+
+      setComments(prev => [...prev, data as any])
+      setNewComment(prev => ({ ...prev, [kegiatanId]: '' }))
+      
+      // Trigger Notification for Student
+      await supabase.from('notifications').insert({
+        user_id: studentId,
+        message: `Dosen memberikan komentar pada jurnal Anda: "${message.substring(0, 30)}..."`,
+        type: 'info',
+        is_read: false
+      })
+
+      toast.success('Komentar berhasil dikirim')
+    } catch (error: any) {
+      toast.error('Gagal mengirim komentar: ' + error.message)
+    } finally {
+      setIsCommenting(prev => ({ ...prev, [kegiatanId]: false }))
     }
   }
 
@@ -295,11 +360,52 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
                         {k.status === 'Selesai' ? <CheckCircle2 className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
                       </div>
                       <div className="flex-1">
-                        <p className="text-[11px] font-bold text-[#1A73E8] mb-1">{k.tanggal}</p>
-                        <p className="text-sm font-medium text-[#202124] leading-relaxed">{k.kegiatan}</p>
-                        <span className="inline-block mt-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-gray-100 text-gray-600">
-                          Status: {k.status}
-                        </span>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="text-[11px] font-bold text-[#1A73E8] mb-1">{k.tanggal}</p>
+                            <p className="text-sm font-medium text-[#202124] leading-relaxed">{k.kegiatan}</p>
+                            <span className="inline-block mt-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-gray-100 text-gray-600">
+                              Status: {k.status}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Comment Thread */}
+                        <div className="mt-4 pt-4 border-t border-gray-50 space-y-3">
+                          {comments.filter(c => c.kegiatan_id === k.id).map(comment => (
+                            <div key={comment.id} className="flex gap-2">
+                              <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-white ${comment.profiles?.role === 'dosen' ? 'bg-[#137333]' : 'bg-[#1A73E8]'}`}>
+                                {comment.profiles?.nama_lengkap?.charAt(0) || '?'}
+                              </div>
+                              <div className="flex-1 bg-gray-50 rounded-xl px-3 py-2">
+                                <div className="flex justify-between items-center mb-0.5">
+                                  <p className="text-[10px] font-bold text-[#202124]">{comment.profiles?.nama_lengkap} <span className="font-normal text-gray-400">({comment.profiles?.role})</span></p>
+                                  <p className="text-[9px] text-gray-400">{new Date(comment.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</p>
+                                </div>
+                                <p className="text-xs text-[#5F6368]">{comment.message}</p>
+                              </div>
+                            </div>
+                          ))}
+
+                          {/* Comment Input */}
+                          <div className="flex gap-2 pt-2">
+                            <input 
+                              type="text" 
+                              placeholder="Tambah komentar..."
+                              value={newComment[k.id] || ''}
+                              onChange={e => setNewComment(prev => ({ ...prev, [k.id]: e.target.value }))}
+                              onKeyDown={e => e.key === 'Enter' && handlePostComment(k.id)}
+                              className="flex-1 bg-white border border-gray-200 rounded-full px-4 py-1.5 text-xs outline-none focus:border-[#1A73E8] transition-colors"
+                            />
+                            <button 
+                              onClick={() => handlePostComment(k.id)}
+                              disabled={isCommenting[k.id] || !newComment[k.id]?.trim()}
+                              className="px-4 py-1.5 bg-[#1A73E8] text-white text-xs font-bold rounded-full disabled:opacity-50 active:scale-95 transition-all"
+                            >
+                              Kirim
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>

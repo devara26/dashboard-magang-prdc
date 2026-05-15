@@ -15,30 +15,38 @@ export default function DosenBeranda() {
     fetchData()
   }, [])
 
-  async function fetchData() {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const { data: profile } = await supabase.from('profiles').select('nama_lengkap').eq('id', user.id).single()
-        if (profile?.nama_lengkap) setProfileName(profile.nama_lengkap)
-      }
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      if (authError || !user) throw new Error('Sesi tidak ditemukan. Silakan login kembali.')
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('nama_lengkap')
+        .eq('id', user.id)
+        .single()
+      
+      if (profileError) throw new Error('Gagal mengambil data profil dosen.')
+      if (profile?.nama_lengkap) setProfileName(profile.nama_lengkap)
 
       // 1. Total Mahasiswa (Hanya yang dibimbing oleh dosen ini)
       const { data: mhsData, error: mhsErr } = await supabase
         .from('profiles')
         .select('id, nama_lengkap, nim, tanggal_mulai, tanggal_selesai')
         .eq('role', 'mahasiswa')
-        .eq('dosen_id', user?.id)
+        .eq('dosen_id', user.id)
       
-      if (mhsErr) throw mhsErr
+      if (mhsErr) throw new Error('Gagal mengambil daftar mahasiswa bimbingan.')
       const mahasiswaList = mhsData || []
 
       // 2. Kehadiran
-      const { data: absensiData } = await supabase.from('absensi').select('mahasiswa_id, status')
+      const { data: absensiData, error: absensiError } = await supabase
+        .from('absensi')
+        .select('mahasiswa_id, status')
+      
+      if (absensiError) throw new Error('Gagal mengambil rekap absensi mahasiswa.')
       
       let totalHadir = 0
       let totalTarget = 0
-
       const mhsAttendance: Record<string, number> = {}
       
       mahasiswaList.forEach(m => {
@@ -63,11 +71,13 @@ export default function DosenBeranda() {
       const rataKehadiran = totalTarget > 0 ? Math.round((totalHadir / totalTarget) * 100) : 0
 
       // 3. Kegiatan
-      const { data: kegiatanData } = await supabase
+      const { data: kegiatanData, error: kegiatanError } = await supabase
         .from('Kegiatan')
         .select('id, nim, tanggal, kegiatan, status, status_persetujuan')
         .order('tanggal', { ascending: false })
       
+      if (kegiatanError) throw new Error('Gagal mengambil data kegiatan terbaru.')
+
       const kegiatanList = kegiatanData || []
       const menungguCount = kegiatanList.filter(k => k.status_persetujuan === 'Menunggu' || !k.status_persetujuan).length
 
@@ -94,33 +104,53 @@ export default function DosenBeranda() {
       })
 
       setTableData(tableRows)
-
     } catch (error: any) {
-      toast.error('Gagal memuat data: ' + error.message)
+      toast.error(error.message || 'Gagal memuat data dashboard. Silakan coba lagi.')
+      console.error('Dosen Fetch Error:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  async function handleApprove(journalId: number) {
+  async function handleApprove(journalId: number, studentId: string) {
     try {
       const { error } = await supabase.from('Kegiatan').update({ status_persetujuan: 'Disetujui' }).eq('id', journalId)
       if (error) throw error
-      toast.success('Jurnal disetujui')
+
+      // Create Notification
+      await supabase.from('notifications').insert({
+        user_id: studentId,
+        message: 'Dosen pembimbing telah menyetujui jurnal kegiatan Anda.',
+        type: 'success',
+        is_read: false
+      })
+
+      toast.success('Jurnal berhasil disetujui')
       fetchData()
     } catch (error: any) {
-      toast.error('Gagal menyetujui: ' + error.message)
+      toast.error('Gagal menyetujui jurnal: ' + (error.message || 'Terjadi kesalahan'))
+      console.error('Approve Error:', error)
     }
   }
 
-  async function handleReject(journalId: number) {
+  async function handleReject(journalId: number, studentId: string) {
     try {
       const { error } = await supabase.from('Kegiatan').update({ status_persetujuan: 'Ditolak' }).eq('id', journalId)
       if (error) throw error
-      toast.success('Jurnal ditolak')
+
+      // Create Notification
+      await supabase.from('notifications').insert({
+        user_id: studentId,
+        message: 'Dosen pembimbing menolak jurnal kegiatan Anda. Silakan periksa kembali.',
+        type: 'warning',
+        is_read: false
+      })
+
+      toast.success('Jurnal telah ditolak')
       fetchData()
     } catch (error: any) {
-      toast.error('Gagal menolak: ' + error.message)
+      toast.error('Gagal menolak jurnal: ' + (error.message || 'Terjadi kesalahan'))
+      console.error('Reject Error:', error)
     }
   }
 
@@ -259,14 +289,14 @@ export default function DosenBeranda() {
                       {(row.journalId && (!row.journalStatus || row.journalStatus === 'Menunggu')) ? (
                         <div className="flex items-center justify-end gap-2">
                           <button 
-                            onClick={() => handleApprove(row.journalId)}
+                            onClick={() => handleApprove(row.journalId, row.id)}
                             className="p-1.5 bg-[#E6F4EA] text-[#137333] hover:bg-[#CEEAD6] rounded-md transition-colors"
                             title="Setujui"
                           >
                             <Check className="w-4 h-4" />
                           </button>
                           <button 
-                            onClick={() => handleReject(row.journalId)}
+                            onClick={() => handleReject(row.journalId, row.id)}
                             className="p-1.5 bg-[#FCE8E6] text-[#C5221F] hover:bg-[#FAD2CF] rounded-md transition-colors"
                             title="Tolak"
                           >

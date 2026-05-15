@@ -7,14 +7,9 @@ import { User, Mail, CreditCard, LogOut, Edit2, Save, X, Camera, Users, Trash2, 
 import Link from 'next/link'
 import { toast } from 'sonner'
 
-type DosenProfile = {
-  id: string
-  nama_lengkap: string
-  nip: string | null
-  department: string | null
-  faculty: string | null
   universitas: string | null
   max_mahasiswa: number
+  avatar_url: string | null
 }
 
 type MahasiswaBimbingan = {
@@ -35,7 +30,8 @@ export default function DosenProfilPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<Partial<DosenProfile>>({})
-  const [avatarBase64, setAvatarBase64] = useState<string | null>(null)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
   
   const [mahasiswa, setMahasiswa] = useState<MahasiswaBimbingan[]>([])
   
@@ -59,7 +55,7 @@ export default function DosenProfilPage() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, nama_lengkap, nip, department, faculty, universitas, max_mahasiswa')
+        .select('id, nama_lengkap, nip, department, faculty, universitas, max_mahasiswa, avatar_url')
         .eq('id', user.id)
         .single()
 
@@ -67,8 +63,7 @@ export default function DosenProfilPage() {
       if (data) {
         setProfile({ ...data, max_mahasiswa: data.max_mahasiswa || 10 })
         setForm({ ...data, max_mahasiswa: data.max_mahasiswa || 10 })
-        const savedAvatar = localStorage.getItem(`orbit_avatar_${data.id}`)
-        if (savedAvatar) setAvatarBase64(savedAvatar)
+        setAvatarUrl(data.avatar_url)
       }
 
       // Fetch Mahasiswa Bimbingan
@@ -210,6 +205,48 @@ export default function DosenProfilPage() {
     }
   }
 
+  async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !profile?.id) return
+
+    // Optimistic UI
+    const previewUrl = URL.createObjectURL(file)
+    const oldAvatarUrl = avatarUrl
+    setAvatarUrl(previewUrl)
+    setUploadingAvatar(true)
+
+    try {
+      const fileExt = file.name.split('.').pop()
+      const filePath = `${profile.id}-${Math.random()}.${fileExt}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file)
+
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath)
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', profile.id)
+
+      if (updateError) throw updateError
+
+      setAvatarUrl(publicUrl)
+      toast.success('Foto profil berhasil diperbarui')
+    } catch (error: any) {
+      console.error(error)
+      setAvatarUrl(oldAvatarUrl) // Revert on error
+      toast.error('Gagal mengunggah foto: ' + (error.message || 'Error tidak diketahui'))
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
+
   if (loading) return (
     <div className="flex h-[80vh] items-center justify-center">
       <div className="flex flex-col items-center gap-4">
@@ -238,13 +275,18 @@ export default function DosenProfilPage() {
             {/* Avatar Edit */}
             <div className="flex flex-col items-center">
               <div className="relative">
-                <div className="w-24 h-24 rounded-full bg-[#137333] flex-shrink-0 flex items-center justify-center shadow-md border-4 border-white overflow-hidden">
-                  {avatarBase64 ? (
-                    <img src={avatarBase64} alt="Avatar" className="w-full h-full object-cover" />
+                <div className="w-24 h-24 rounded-full bg-[#137333] flex-shrink-0 flex items-center justify-center shadow-md border-4 border-white overflow-hidden relative group">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-4xl font-normal text-white">
                       {profile?.nama_lengkap?.charAt(0).toUpperCase() || 'D'}
                     </span>
+                  )}
+                  {uploadingAvatar && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                      <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    </div>
                   )}
                 </div>
                 <label className="absolute bottom-0 right-0 bg-white p-2 rounded-full shadow-sm border border-gray-100 text-[#137333] hover:bg-gray-50 transition-colors cursor-pointer">
@@ -253,20 +295,8 @@ export default function DosenProfilPage() {
                     type="file" 
                     accept="image/*" 
                     className="hidden" 
-                    onChange={(e) => {
-                      const file = e.target.files?.[0]
-                      if (file) {
-                        const reader = new FileReader()
-                        reader.onloadend = () => {
-                          const base64String = reader.result as string
-                          setAvatarBase64(base64String)
-                          if (profile?.id) {
-                            localStorage.setItem(`orbit_avatar_${profile.id}`, base64String)
-                          }
-                        }
-                        reader.readAsDataURL(file)
-                      }
-                    }}
+                    disabled={uploadingAvatar}
+                    onChange={handleAvatarUpload}
                   />
                 </label>
               </div>
@@ -357,8 +387,8 @@ export default function DosenProfilPage() {
           <div className="relative z-10 flex flex-col items-center mb-10 text-center">
             <div className="relative mb-4">
               <div className="w-28 h-28 rounded-full bg-[#137333] flex-shrink-0 flex items-center justify-center shadow-md border-4 border-white overflow-hidden">
-                {avatarBase64 ? (
-                  <img src={avatarBase64} alt="Avatar" className="w-full h-full object-cover" />
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-5xl font-normal text-white">
                     {profile?.nama_lengkap?.charAt(0).toUpperCase() || 'D'}

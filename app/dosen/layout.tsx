@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { Home, Users, CheckSquare, LogOut, User, Menu } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import NotificationBell from '@/components/NotificationBell'
 
 export default function DosenLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -12,6 +13,7 @@ export default function DosenLayout({ children }: { children: React.ReactNode })
   const [profileName, setProfileName] = useState('Memuat...')
   const [role, setRole] = useState('Dosen')
   const [initial, setInitial] = useState('D')
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 
   useEffect(() => {
@@ -21,7 +23,7 @@ export default function DosenLayout({ children }: { children: React.ReactNode })
 
       const { data } = await supabase
         .from('profiles')
-        .select('nama_lengkap, role')
+        .select('nama_lengkap, role, avatar_url')
         .eq('id', user.id)
         .single()
 
@@ -29,8 +31,9 @@ export default function DosenLayout({ children }: { children: React.ReactNode })
         setProfileName(data.nama_lengkap)
         setInitial(data.nama_lengkap.charAt(0).toUpperCase())
         setRole(data.role || 'Dosen')
+        setAvatarUrl(data.avatar_url)
       } else {
-        setProfileName('Dosen')
+        setProfileName('Dosen Orbit')
       }
     }
     fetchUser()
@@ -115,14 +118,17 @@ export default function DosenLayout({ children }: { children: React.ReactNode })
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#F8F9FA] z-10 relative">
         
         {/* Top Right Profile Header (Desktop) */}
-        <header className="hidden md:flex h-16 items-center justify-end px-8 border-b border-gray-200 bg-white shrink-0">
+        <header className="hidden md:flex h-16 items-center justify-end px-8 border-b border-gray-200 bg-white shrink-0 gap-4">
+          <NotificationBell />
           <Link href="/dosen/profil" className="flex items-center gap-3 hover:bg-gray-50 p-1.5 pr-3 rounded-full transition-colors border border-transparent hover:border-gray-200">
             <div className="text-right">
               <p className="text-sm font-bold text-[#202124]">{profileName}</p>
             </div>
             <div className="relative">
-              <div className="w-9 h-9 rounded-full bg-[#137333] text-white flex items-center justify-center font-bold text-sm shadow-sm">
-                {initial}
+              <div className="w-9 h-9 rounded-full bg-[#137333] text-white flex items-center justify-center font-bold text-sm shadow-sm overflow-hidden">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                ) : initial}
               </div>
               <div className="absolute -bottom-1 -right-2 bg-[#137333] text-white text-[9px] font-bold px-1.5 py-0.5 rounded border border-white shadow-sm uppercase tracking-wider">
                 DOSEN

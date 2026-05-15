@@ -44,11 +44,23 @@ export default function DashboardPage() {
   async function fetchData() {
     try {
       const { data: { user }, error: userError } = await supabase.auth.getUser()
-      if (userError || !user) throw new Error('User tidak ditemukan')
+      if (userError || !user) throw new Error('Sesi pengguna tidak ditemukan. Silakan login kembali.')
 
-      const { data: profileData } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single()
       
-      const { count: countHadir } = await supabase.from('absensi').select('*', { count: 'exact', head: true }).eq('mahasiswa_id', user.id).eq('status', 'Hadir')
+      if (profileError) throw new Error('Gagal mengambil data profil.')
+
+      const { count: countHadir, error: absensiError } = await supabase
+        .from('absensi')
+        .select('*', { count: 'exact', head: true })
+        .eq('mahasiswa_id', user.id)
+        .eq('status', 'Hadir')
+
+      if (absensiError) throw new Error('Gagal mengambil data absensi.')
 
       let kegiatanData: any[] = []
       let countSelesai = 0
@@ -60,6 +72,11 @@ export default function DashboardPage() {
           supabase.from('Kegiatan').select('*', { count: 'exact', head: true }).eq('nim', profileData.nim).eq('status', 'Selesai'),
           supabase.from('Kegiatan').select('*', { count: 'exact', head: true }).eq('nim', profileData.nim)
         ])
+        
+        if (kegRes.error) throw new Error('Gagal mengambil data kegiatan terbaru.')
+        if (selCount.error) throw new Error('Gagal mengambil ringkasan tugas selesai.')
+        if (totCount.error) throw new Error('Gagal mengambil total kegiatan.')
+
         kegiatanData = kegRes.data || []
         countSelesai = selCount.count || 0
         countTotalKegiatan = totCount.count || 0
@@ -72,9 +89,12 @@ export default function DashboardPage() {
         tugasSelesai: countSelesai,
         totalKegiatan: countTotalKegiatan
       })
+
+      // Run automated checks
+      checkAndCreateNotifications(user.id, profileData?.nim, kegiatanData)
     } catch (error: any) {
-      toast.error('Gagal memuat data dashboard')
-      console.error(error)
+      toast.error(error.message || 'Gagal memuat data dashboard. Pastikan koneksi internet stabil.')
+      console.error('Dashboard Fetch Error:', error)
     } finally {
       setLoading(false)
     }
@@ -95,6 +115,65 @@ export default function DashboardPage() {
       toast.error('Gagal mengunduh laporan: ' + error.message)
     } finally {
       setDownloadingExcel(false)
+    }
+  }
+
+  async function checkAndCreateNotifications(userId: string, nim?: string, activities?: any[]) {
+    try {
+      // 1. Check for Missing Documents
+      const { data: berkasData } = await supabase.from('berkas').select('document_type').eq('mahasiswa_id', userId)
+      const uploadedTypes = berkasData?.map(b => b.document_type) || []
+      const mandatoryDocs = ['CV', 'Surat Tugas']
+      const missing = mandatoryDocs.filter(doc => !uploadedTypes.includes(doc))
+
+      if (missing.length > 0) {
+        // Check if notification already exists for today to avoid spam
+        const today = new Error().toISOString().split('T')[0]
+        const { data: existing } = await supabase
+          .from('notifications')
+          .select('id')
+          .eq('user_id', userId)
+          .ilike('message', '%dokumen%')
+          .gte('created_at', today)
+          .limit(1)
+
+        if (!existing || existing.length === 0) {
+          await supabase.from('notifications').insert({
+            user_id: userId,
+            message: `Anda belum mengunggah dokumen: ${missing.join(', ')}. Harap segera lengkapi berkas Anda.`,
+            type: 'warning',
+            is_read: false
+          })
+        }
+      }
+
+      // 2. Check for Inactivity (3+ Days No Journal)
+      if (activities && activities.length > 0) {
+        const lastDate = new Date(activities[0].tanggal)
+        const now = new Date()
+        const diffDays = Math.floor((now.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24))
+
+        if (diffDays >= 3) {
+          const { data: existing } = await supabase
+            .from('notifications')
+            .select('id')
+            .eq('user_id', userId)
+            .ilike('message', '%jurnal%')
+            .limit(1)
+            // Note: For inactivity, we might only notify once until they fill it
+
+          if (!existing || existing.length === 0) {
+            await supabase.from('notifications').insert({
+              user_id: userId,
+              message: `Sudah ${diffDays} hari Anda tidak mengisi jurnal kegiatan. Jangan lupa untuk tetap update!`,
+              type: 'error',
+              is_read: false
+            })
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Notification Trigger Error:', err)
     }
   }
 

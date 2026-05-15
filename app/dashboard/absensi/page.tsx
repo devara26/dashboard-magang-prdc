@@ -40,26 +40,34 @@ export default function AbsensiPage() {
   useEffect(() => { fetchAbsensi() }, [])
 
   async function fetchAbsensi() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (userError || !user) throw new Error('Sesi tidak ditemukan. Silakan login kembali.')
 
-    const { data } = await supabase
-      .from('absensi')
-      .select('*')
-      .eq('mahasiswa_id', user.id)
-      .order('tanggal', { ascending: false })
+      const { data, error } = await supabase
+        .from('absensi')
+        .select('*')
+        .eq('mahasiswa_id', user.id)
+        .order('tanggal', { ascending: false })
 
-    setAbsensi(data || [])
-    const todayData = data?.find(a => a.tanggal === today) || null
-    setTodayRecord(todayData)
-    setLoading(false)
+      if (error) throw error
+
+      setAbsensi(data || [])
+      const todayData = data?.find(a => a.tanggal === today) || null
+      setTodayRecord(todayData)
+    } catch (error: any) {
+      console.error('Fetch Absensi Error:', error)
+      toast.error('Gagal memuat data absensi: ' + (error.message || 'Error koneksi'))
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function handleCheckIn() {
     setSubmitting(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('User not found')
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (userError || !user) throw new Error('Sesi tidak ditemukan')
 
       const { error } = await supabase.from('absensi').insert({
         mahasiswa_id: user.id,
@@ -71,9 +79,9 @@ export default function AbsensiPage() {
 
       toast.success('Berhasil Check-in pada ' + nowTime)
       fetchAbsensi()
-    } catch (error) {
-      toast.error('Gagal melakukan Check-in')
-      console.error(error)
+    } catch (error: any) {
+      toast.error('Gagal melakukan Check-in: ' + (error.message || 'Terjadi kesalahan'))
+      console.error('Check-in Error:', error)
     } finally {
       setSubmitting(false)
     }
@@ -82,7 +90,7 @@ export default function AbsensiPage() {
   async function handleCheckOut() {
     setSubmitting(true)
     try {
-      if (!todayRecord) throw new Error('No record found')
+      if (!todayRecord) throw new Error('Data absensi hari ini tidak ditemukan')
 
       const { error } = await supabase
         .from('absensi')
@@ -92,9 +100,9 @@ export default function AbsensiPage() {
 
       toast.success('Berhasil Check-out pada ' + nowTime)
       fetchAbsensi()
-    } catch (error) {
-      toast.error('Gagal melakukan Check-out')
-      console.error(error)
+    } catch (error: any) {
+      toast.error('Gagal melakukan Check-out: ' + (error.message || 'Terjadi kesalahan'))
+      console.error('Check-out Error:', error)
     } finally {
       setSubmitting(false)
     }
@@ -104,8 +112,8 @@ export default function AbsensiPage() {
     e.preventDefault()
     setSubmitting(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('User not found')
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (userError || !user) throw new Error('Sesi tidak ditemukan')
 
       const { error } = await supabase.from('absensi').insert({
         mahasiswa_id: user.id,
@@ -119,9 +127,9 @@ export default function AbsensiPage() {
       setShowIzin(false)
       setKeterangan('')
       fetchAbsensi()
-    } catch (error) {
-      toast.error('Gagal mengirim pengajuan ' + statusIzin)
-      console.error(error)
+    } catch (error: any) {
+      toast.error('Gagal mengirim pengajuan ' + statusIzin + ': ' + (error.message || 'Terjadi kesalahan'))
+      console.error('Izin Error:', error)
     } finally {
       setSubmitting(false)
     }
@@ -131,8 +139,8 @@ export default function AbsensiPage() {
     e.preventDefault()
     setSubmitting(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('User not found')
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (userError || !user) throw new Error('Sesi tidak ditemukan')
 
       const { error } = await supabase.from('absensi').insert({
         mahasiswa_id: user.id,
@@ -148,9 +156,9 @@ export default function AbsensiPage() {
       setShowManualForm(false)
       setManualForm({ tanggal: '', check_in: '08:00', check_out: '17:00', status: 'Hadir', keterangan: '' })
       fetchAbsensi()
-    } catch (error) {
-      toast.error('Gagal menambahkan riwayat absensi')
-      console.error(error)
+    } catch (error: any) {
+      toast.error('Gagal menambahkan riwayat absensi: ' + (error.message || 'Terjadi kesalahan'))
+      console.error('Manual Submit Error:', error)
     } finally {
       setSubmitting(false)
     }
