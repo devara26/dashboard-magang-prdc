@@ -141,18 +141,6 @@ export default function KegiatanPage() {
         if (profileError) throw new Error('Gagal memverifikasi data mahasiswa.')
         const nim = profile?.nim || ''
 
-        const { data: existing, error: checkError } = await supabase
-          .from('Kegiatan')
-          .select('id')
-          .eq('nim', nim)
-          .eq('tanggal', form.tanggal)
-          .limit(1)
-        
-        if (checkError) throw checkError
-        if (existing && existing.length > 0) {
-          throw new Error(`Jurnal untuk tanggal ${form.tanggal} sudah ada. Silakan edit jurnal yang sudah ada jika ingin mengubahnya.`)
-        }
-
         if (form.kegiatan.length < 50) {
           throw new Error('Deskripsi kegiatan terlalu singkat. Minimal 50 karakter.')
         }
