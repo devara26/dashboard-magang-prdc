@@ -23,11 +23,12 @@ export default function DosenBeranda() {
         if (profile?.nama_lengkap) setProfileName(profile.nama_lengkap)
       }
 
-      // 1. Total Mahasiswa
+      // 1. Total Mahasiswa (Hanya yang dibimbing oleh dosen ini)
       const { data: mhsData, error: mhsErr } = await supabase
         .from('profiles')
         .select('id, nama_lengkap, nim, tanggal_mulai, tanggal_selesai')
         .eq('role', 'mahasiswa')
+        .eq('dosen_id', user?.id)
       
       if (mhsErr) throw mhsErr
       const mahasiswaList = mhsData || []

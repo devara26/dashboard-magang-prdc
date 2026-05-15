@@ -111,7 +111,7 @@ export default function RegisterPage() {
       <div className="w-full max-w-md">
         <div className="mb-8 text-center flex flex-col items-center">
           <div className="mb-4">
-            <img src="/orbit-logo.svg" alt="Orbit Logo" className="h-12 w-auto object-contain" />
+            <img src="/Logo_Orbit.png" alt="Orbit Logo" className="h-24 w-auto object-contain drop-shadow-lg" />
           </div>
           <h1 className="text-xl font-medium text-[#202124]">Online Record Base for Internship Tracking</h1>
           <p className="text-[#5F6368] text-sm mt-1">Daftar Akun · PRDC Team</p>
