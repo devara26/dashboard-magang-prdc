@@ -6,11 +6,10 @@ import { List, Plus, Trash2, Calendar, Activity, CheckCircle2, FileText, Chevron
 import { toast } from 'sonner'
 import { logAction } from '@/lib/audit'
 
-type Kegiatan = {
-  id: number
+interface KegiatanData { // atau type Kegiatan = {
+  id: string
   tanggal: string
   kegiatan: string
-  status: string
   status: string
   created_at: string
 }
