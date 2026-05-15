@@ -31,7 +31,7 @@ export default function KegiatanPage() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
   
   const [form, setForm] = useState({
     tanggal: new Date().toISOString().split('T')[0],
