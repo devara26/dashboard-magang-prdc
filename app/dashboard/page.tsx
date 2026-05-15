@@ -237,7 +237,7 @@ export default function DashboardPage() {
     <div className="pb-12 animate-[fade-in_0.7s_ease-out]">
       {showOnboarding && userId && (
         <OnboardingWizard 
-          userId={userId} 
+          userId={userId ?? ''} 
           onComplete={() => {
             setShowOnboarding(false)
             fetchData()
@@ -386,7 +386,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <OnboardingWizard isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} userId={userId} />
     </div>
   )
 }
