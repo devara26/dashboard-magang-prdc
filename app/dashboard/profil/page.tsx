@@ -7,7 +7,16 @@ import { User, Mail, CreditCard, Building, Building2, LogOut, ShieldCheck, Chevr
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { exportLaporanExcel } from '@/lib/export-excel'
-
+type Profile = {
+  id: string
+  nama_lengkap: string
+  nim: string
+  universitas: string
+  prodi: string
+  instansi_magang: string
+  unit_magang: string
+  tanggal_mulai: string
+  tanggal_selesai: string
   bio: string
   avatar_url: string | null
 }
