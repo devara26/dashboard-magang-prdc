@@ -18,7 +18,7 @@ type Comment = {
   id: string
   kegiatan_id: number
   user_id: string
-  message: string
+  comment: string
   created_at: string
   profiles?: {
     nama_lengkap: string
@@ -40,7 +40,7 @@ export default function KegiatanPage() {
   })
 
   const [comments, setComments] = useState<Comment[]>([])
-  const [newComment, setNewComment] = useState<{ [key: string]: string }>({})
+  const [newComment, setNewComment] = useState<{ [key: number]: string }>({})
   const [isCommenting, setIsCommenting] = useState<{ [key: number]: boolean }>({})
   const [dosenId, setDosenId] = useState<string | null>(null)
 
@@ -77,7 +77,6 @@ export default function KegiatanPage() {
         if (error) throw error
         setKegiatan(data || [])
 
-        // Fetch Comments
         const { data: commentsData } = await supabase
           .from('comments')
           .select('*, profiles(nama_lengkap, role)')
@@ -120,7 +119,6 @@ export default function KegiatanPage() {
       if (userError || !user) throw new Error('Sesi tidak ditemukan')
 
       if (editingId) {
-        // Mode Edit
         const { data, error } = await supabase.from('Kegiatan').update({
           tanggal: form.tanggal,
           kegiatan: form.kegiatan,
@@ -129,12 +127,11 @@ export default function KegiatanPage() {
         
         if (error) throw error
         if (!data || data.length === 0) {
-          throw new Error('Akses ditolak: Gagal mengupdate data. Pastikan pengaturan RLS (Row Level Security) Supabase Anda memperbolehkan operasi UPDATE pada tabel Kegiatan.')
+          throw new Error('Akses ditolak: Gagal mengupdate data. Pastikan RLS Supabase memperbolehkan operasi UPDATE pada tabel Kegiatan.')
         }
         await logAction('Update Jurnal', `Update jurnal untuk tanggal ${form.tanggal}`, String(editingId))
         toast.success('Jurnal kegiatan berhasil diperbarui')
       } else {
-        // Mode Tambah
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('nama_lengkap, nim')
@@ -144,7 +141,6 @@ export default function KegiatanPage() {
         if (profileError) throw new Error('Gagal memverifikasi data mahasiswa.')
         const nim = profile?.nim || ''
 
-        // VALIDATION: Check Duplicate Date
         const { data: existing, error: checkError } = await supabase
           .from('Kegiatan')
           .select('id')
@@ -157,7 +153,6 @@ export default function KegiatanPage() {
           throw new Error(`Jurnal untuk tanggal ${form.tanggal} sudah ada. Silakan edit jurnal yang sudah ada jika ingin mengubahnya.`)
         }
 
-        // VALIDATION: Min Characters
         if (form.kegiatan.length < 50) {
           throw new Error('Deskripsi kegiatan terlalu singkat. Minimal 50 karakter.')
         }
@@ -191,7 +186,7 @@ export default function KegiatanPage() {
       if (error) throw error
       
       if (!data || data.length === 0) {
-        throw new Error('Akses ditolak: Tidak dapat menghapus karena pengaturan RLS (Row Level Security) di tabel Kegiatan Anda memblokir aksi DELETE.')
+        throw new Error('Akses ditolak: Tidak dapat menghapus karena pengaturan RLS di tabel Kegiatan memblokir aksi DELETE.')
       }
       
       await logAction('Hapus Jurnal', `Hapus jurnal ID: ${id}`)
@@ -224,7 +219,7 @@ export default function KegiatanPage() {
 
       setNewComment(prev => ({ ...prev, [kegiatanId]: '' }))
       toast.success('Komentar berhasil dikirim')
-      // Panggil fungsi refresh data kegiatan di sini jika ada, contoh: fetchKegiatan()
+      fetchKegiatan()
     } catch (error: any) {
       console.error(error)
       toast.error('Gagal mengirim komentar: ' + error.message)
@@ -246,7 +241,6 @@ export default function KegiatanPage() {
     <div className="pb-12 max-w-5xl mx-auto px-4">
       <h1 className="text-2xl font-bold text-[#202124] mb-6">Daftar Kegiatan Magang</h1>
 
-      {/* Tampilan List Kegiatan */}
       <div className="space-y-4">
         {kegiatan.map((k) => (
           <div key={k.id} className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
@@ -260,24 +254,18 @@ export default function KegiatanPage() {
             </div>
             <p className="text-sm text-[#202124] mb-4 whitespace-pre-wrap">{k.kegiatan}</p>
 
-            {/* Tombol Aksi Edit */}
             <div className="flex gap-2 border-t border-gray-100 pt-3 mb-4">
               <button
-                onClick={() => {
-                  setEditingId(k.id)
-                  setShowForm(true)
-                }}
+                onClick={() => handleEditClick(k)}
                 className="text-xs text-[#1A73E8] hover:underline font-medium"
               >
                 Edit Kegiatan
               </button>
             </div>
 
-            {/* Bagian Kolom Komentar */}
             <div className="border-t border-gray-100 pt-4">
               <h4 className="text-xs font-bold text-[#202124] mb-3">Komentar</h4>
               
-              {/* Daftar Thread Komentar */}
               <div className="mt-2 space-y-2 max-w-lg mb-4">
                 {comments
                   .filter(c => String(c.kegiatan_id) === String(k.id))
@@ -296,7 +284,6 @@ export default function KegiatanPage() {
                   ))}
               </div>
 
-              {/* Form Input Balas Komentar */}
               <div className="flex items-center gap-2 max-w-lg">
                 <input
                   type="text"
@@ -318,10 +305,6 @@ export default function KegiatanPage() {
 
           </div>
         ))}
-      </div>
-    </div>
-  )
-}
       </div>
     </div>
   )
