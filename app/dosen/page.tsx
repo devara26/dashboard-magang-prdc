@@ -1,8 +1,9 @@
+cat > app / dosen / page.tsx << 'ENDOFFILE'
 'use client'
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Users, CheckCircle2, Clock, Calendar, Download, Check, X } from 'lucide-react'
+import { Users, CheckCircle2, Clock, Download, Check, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function DosenBeranda() {
@@ -15,6 +16,7 @@ export default function DosenBeranda() {
     fetchData()
   }, [])
 
+  async function fetchData() {
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser()
       if (authError || !user) throw new Error('Sesi tidak ditemukan. Silakan login kembali.')
@@ -24,31 +26,29 @@ export default function DosenBeranda() {
         .select('nama_lengkap')
         .eq('id', user.id)
         .single()
-      
+
       if (profileError) throw new Error('Gagal mengambil data profil dosen.')
       if (profile?.nama_lengkap) setProfileName(profile.nama_lengkap)
 
-      // 1. Total Mahasiswa (Hanya yang dibimbing oleh dosen ini)
       const { data: mhsData, error: mhsErr } = await supabase
         .from('profiles')
         .select('id, nama_lengkap, nim, tanggal_mulai, tanggal_selesai')
         .eq('role', 'mahasiswa')
         .eq('dosen_id', user.id)
-      
+
       if (mhsErr) throw new Error('Gagal mengambil daftar mahasiswa bimbingan.')
       const mahasiswaList = mhsData || []
 
-      // 2. Kehadiran
       const { data: absensiData, error: absensiError } = await supabase
         .from('absensi')
         .select('mahasiswa_id, status')
-      
+
       if (absensiError) throw new Error('Gagal mengambil rekap absensi mahasiswa.')
-      
+
       let totalHadir = 0
       let totalTarget = 0
       const mhsAttendance: Record<string, number> = {}
-      
+
       mahasiswaList.forEach(m => {
         const hadir = absensiData?.filter(a => a.mahasiswa_id === m.id && a.status === 'Hadir').length || 0
         const start = m.tanggal_mulai ? new Date(m.tanggal_mulai) : null
@@ -70,27 +70,21 @@ export default function DosenBeranda() {
 
       const rataKehadiran = totalTarget > 0 ? Math.round((totalHadir / totalTarget) * 100) : 0
 
-      // 3. Kegiatan
       const { data: kegiatanData, error: kegiatanError } = await supabase
         .from('Kegiatan')
         .select('id, nim, tanggal, kegiatan, status, status_persetujuan')
         .order('tanggal', { ascending: false })
-      
+
       if (kegiatanError) throw new Error('Gagal mengambil data kegiatan terbaru.')
 
       const kegiatanList = kegiatanData || []
       const menungguCount = kegiatanList.filter(k => k.status_persetujuan === 'Menunggu' || !k.status_persetujuan).length
 
-      setStats({
-        totalMahasiswa: mahasiswaList.length,
-        menunggu: menungguCount,
-        rataKehadiran
-      })
+      setStats({ totalMahasiswa: mahasiswaList.length, menunggu: menungguCount, rataKehadiran })
 
       const tableRows = mahasiswaList.map(m => {
         const studentJournals = kegiatanList.filter(k => k.nim === m.nim)
         const latestJournal = studentJournals.length > 0 ? studentJournals[0] : null
-        
         return {
           id: m.id,
           nim: m.nim,
@@ -105,8 +99,7 @@ export default function DosenBeranda() {
 
       setTableData(tableRows)
     } catch (error: any) {
-      toast.error(error.message || 'Gagal memuat data dashboard. Silakan coba lagi.')
-      console.error('Dosen Fetch Error:', error)
+      toast.error(error.message || 'Gagal memuat data dashboard.')
     } finally {
       setLoading(false)
     }
@@ -116,20 +109,11 @@ export default function DosenBeranda() {
     try {
       const { error } = await supabase.from('Kegiatan').update({ status_persetujuan: 'Disetujui' }).eq('id', journalId)
       if (error) throw error
-
-      // Create Notification
-      await supabase.from('notifications').insert({
-        user_id: studentId,
-        message: 'Dosen pembimbing telah menyetujui jurnal kegiatan Anda.',
-        type: 'success',
-        is_read: false
-      })
-
+      await supabase.from('notifications').insert({ user_id: studentId, message: 'Dosen pembimbing telah menyetujui jurnal kegiatan Anda.', type: 'success', is_read: false })
       toast.success('Jurnal berhasil disetujui')
       fetchData()
     } catch (error: any) {
       toast.error('Gagal menyetujui jurnal: ' + (error.message || 'Terjadi kesalahan'))
-      console.error('Approve Error:', error)
     }
   }
 
@@ -137,32 +121,17 @@ export default function DosenBeranda() {
     try {
       const { error } = await supabase.from('Kegiatan').update({ status_persetujuan: 'Ditolak' }).eq('id', journalId)
       if (error) throw error
-
-      // Create Notification
-      await supabase.from('notifications').insert({
-        user_id: studentId,
-        message: 'Dosen pembimbing menolak jurnal kegiatan Anda. Silakan periksa kembali.',
-        type: 'warning',
-        is_read: false
-      })
-
+      await supabase.from('notifications').insert({ user_id: studentId, message: 'Dosen pembimbing menolak jurnal kegiatan Anda. Silakan periksa kembali.', type: 'warning', is_read: false })
       toast.success('Jurnal telah ditolak')
       fetchData()
     } catch (error: any) {
       toast.error('Gagal menolak jurnal: ' + (error.message || 'Terjadi kesalahan'))
-      console.error('Reject Error:', error)
     }
   }
 
   function downloadCSV() {
     const headers = ['Nama Mahasiswa', 'NIM', 'Persentase Kehadiran', 'Status Jurnal Terakhir', 'Tanggal Jurnal']
-    const csvContent = [
-      headers.join(','),
-      ...tableData.map(row => 
-        `"${row.nama}","${row.nim}","${row.attendance}%","${row.journalStatus}","${row.date}"`
-      )
-    ].join('\n')
-
+    const csvContent = [headers.join(','), ...tableData.map(row => `"${row.nama}","${row.nim}","${row.attendance}%","${row.journalStatus}","${row.date}"`)].join('\n')
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -188,8 +157,6 @@ export default function DosenBeranda() {
         <h1 className="text-2xl font-bold text-[#202124]">Selamat datang, {profileName}</h1>
         <p className="text-[#5F6368] text-sm mt-1">Berikut adalah ringkasan aktivitas mahasiswa bimbingan Anda.</p>
       </div>
-
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
           <div className="flex items-center gap-4">
@@ -225,20 +192,14 @@ export default function DosenBeranda() {
           </div>
         </div>
       </div>
-
-      {/* Data Table */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="px-6 py-5 border-b border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <h3 className="text-[#202124] text-lg font-bold">Status Mahasiswa & Jurnal Terakhir</h3>
-          <button 
-            onClick={downloadCSV}
-            className="flex items-center justify-center gap-2 bg-white border border-gray-300 text-[#5F6368] hover:bg-gray-50 px-4 py-2 rounded-full text-sm font-medium transition-colors w-full md:w-auto"
-          >
+          <button onClick={downloadCSV} className="flex items-center justify-center gap-2 bg-white border border-gray-300 text-[#5F6368] hover:bg-gray-50 px-4 py-2 rounded-full text-sm font-medium transition-colors w-full md:w-auto">
             <Download className="w-4 h-4" />
             Download CSV
           </button>
         </div>
-        
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm whitespace-nowrap">
             <thead className="bg-[#F8F9FA] text-[#5F6368] font-medium border-b border-gray-200">
@@ -251,9 +212,7 @@ export default function DosenBeranda() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {tableData.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-[#5F6368]">Belum ada data mahasiswa</td>
-                </tr>
+                <tr><td colSpan={4} className="px-6 py-8 text-center text-[#5F6368]">Belum ada data mahasiswa</td></tr>
               ) : (
                 tableData.map(row => (
                   <tr key={row.id} className="hover:bg-gray-50 transition-colors">
@@ -264,21 +223,14 @@ export default function DosenBeranda() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full ${row.attendance >= 80 ? 'bg-[#137333]' : row.attendance >= 50 ? 'bg-[#FBBC04]' : 'bg-[#EA4335]'}`} 
-                            style={{ width: `${row.attendance}%` }}
-                          />
+                          <div className={`h-full ${row.attendance >= 80 ? 'bg-[#137333]' : row.attendance >= 50 ? 'bg-[#FBBC04]' : 'bg-[#EA4335]'}`} style={{ width: `${row.attendance}%` }} />
                         </div>
                         <span className="font-medium text-[#202124]">{row.attendance}%</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       {row.journalId ? (
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
-                          row.journalStatus === 'Disetujui' ? 'bg-[#E6F4EA] text-[#137333]' :
-                          row.journalStatus === 'Ditolak' ? 'bg-[#FCE8E6] text-[#C5221F]' :
-                          'bg-[#FEF7E0] text-[#E37400]'
-                        }`}>
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${row.journalStatus === 'Disetujui' ? 'bg-[#E6F4EA] text-[#137333]' : row.journalStatus === 'Ditolak' ? 'bg-[#FCE8E6] text-[#C5221F]' : 'bg-[#FEF7E0] text-[#E37400]'}`}>
                           {row.journalStatus || 'Menunggu'}
                         </span>
                       ) : (
@@ -288,20 +240,8 @@ export default function DosenBeranda() {
                     <td className="px-6 py-4 text-right">
                       {(row.journalId && (!row.journalStatus || row.journalStatus === 'Menunggu')) ? (
                         <div className="flex items-center justify-end gap-2">
-                          <button 
-                            onClick={() => handleApprove(row.journalId, row.id)}
-                            className="p-1.5 bg-[#E6F4EA] text-[#137333] hover:bg-[#CEEAD6] rounded-md transition-colors"
-                            title="Setujui"
-                          >
-                            <Check className="w-4 h-4" />
-                          </button>
-                          <button 
-                            onClick={() => handleReject(row.journalId, row.id)}
-                            className="p-1.5 bg-[#FCE8E6] text-[#C5221F] hover:bg-[#FAD2CF] rounded-md transition-colors"
-                            title="Tolak"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
+                          <button onClick={() => handleApprove(row.journalId, row.id)} className="p-1.5 bg-[#E6F4EA] text-[#137333] hover:bg-[#CEEAD6] rounded-md transition-colors" title="Setujui"><Check className="w-4 h-4" /></button>
+                          <button onClick={() => handleReject(row.journalId, row.id)} className="p-1.5 bg-[#FCE8E6] text-[#C5221F] hover:bg-[#FAD2CF] rounded-md transition-colors" title="Tolak"><X className="w-4 h-4" /></button>
                         </div>
                       ) : (
                         <span className="text-xs text-gray-400">-</span>
@@ -314,7 +254,6 @@ export default function DosenBeranda() {
           </table>
         </div>
       </div>
-
     </div>
   )
 }
