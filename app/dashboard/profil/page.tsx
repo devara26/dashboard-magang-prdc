@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
-import { User, Mail, CreditCard, Building, Building2, LogOut, ShieldCheck, ChevronLeft, Edit2, Save, X, Calendar, GraduationCap, Info, Camera } from 'lucide-react'
+import { User, Mail, CreditCard, Building, Building2, LogOut, ShieldCheck, ChevronLeft, Edit2, Save, X, Calendar, GraduationCap, Info, Camera, Download } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
+import { exportLaporanExcel } from '@/lib/export-excel'
 
 type Profile = {
   id: string
@@ -25,6 +26,7 @@ export default function ProfilPage() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [email, setEmail] = useState<string>('')
   const [loading, setLoading] = useState(true)
+  const [downloadingExcel, setDownloadingExcel] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<Partial<Profile>>({})
@@ -107,6 +109,20 @@ export default function ProfilPage() {
     }
   }
 
+  async function handleDownloadExcel() {
+    try {
+      setDownloadingExcel(true)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('User tidak ditemukan')
+      await exportLaporanExcel(user)
+      toast.success('Laporan berhasil diunduh')
+    } catch (error: any) {
+      toast.error('Gagal mengunduh laporan: ' + error.message)
+    } finally {
+      setDownloadingExcel(false)
+    }
+  }
+
   async function handleDosenCodeSubmit(e: React.FormEvent) {
     e.preventDefault()
     setModalError('')
@@ -146,13 +162,22 @@ export default function ProfilPage() {
   return (
     <div className="pb-12 animate-[fade-in_0.7s_ease-out] max-w-5xl mx-auto">
       {/* Header Section */}
-      <div className="mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link href="/dashboard" className="p-2 bg-white rounded-full border border-gray-200 text-[#5F6368] hover:text-[#1A73E8] hover:bg-gray-50 transition-colors shadow-sm">
             <ChevronLeft className="w-5 h-5" />
           </Link>
           <h1 className="text-2xl font-bold text-[#202124]">Profile</h1>
         </div>
+        <button 
+          onClick={handleDownloadExcel} 
+          disabled={downloadingExcel}
+          className="flex items-center gap-1.5 px-3 py-2 bg-[#E8F0FE] text-[#1A73E8] rounded-full text-xs font-bold transition-colors hover:bg-[#D2E3FC] disabled:opacity-50"
+          title="Download Laporan Excel"
+        >
+          <Download className="w-4 h-4" />
+          <span className="hidden md:inline">{downloadingExcel ? 'Mengunduh...' : 'Laporan'}</span>
+        </button>
       </div>
 
       {isEditing ? (

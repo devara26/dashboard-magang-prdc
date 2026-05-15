@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, CalendarCheck, List, LogOut, User, Menu } from 'lucide-react'
+import { LayoutDashboard, CalendarCheck, List, LogOut, User, Menu, Users, FolderOpen } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
@@ -47,10 +47,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const navItems = [
     { name: 'Beranda', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Absensi Harian', href: '/dashboard/absensi', icon: CalendarCheck },
+    { name: 'Dosen Pembimbing', href: '/dashboard/pembimbing', icon: Users },
   ]
 
   const actionItems = [
     { name: 'Jurnal Kegiatan', href: '/dashboard/kegiatan', icon: List },
+    { name: 'Berkas Magang', href: '/dashboard/berkas', icon: FolderOpen },
   ]
 
   const bottomNavItems = [

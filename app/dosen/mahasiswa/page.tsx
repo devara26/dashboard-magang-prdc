@@ -27,10 +27,14 @@ export default function DaftarMahasiswaPage() {
   useEffect(() => {
     async function fetchData() {
       try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
         const { data: mhsData, error } = await supabase
           .from('profiles')
           .select('id, nama_lengkap, nim, prodi, instansi_magang, tanggal_mulai, tanggal_selesai')
           .eq('role', 'mahasiswa')
+          .eq('dosen_id', user.id)
           .order('nama_lengkap', { ascending: true })
 
         if (error) throw error
@@ -150,7 +154,7 @@ export default function DaftarMahasiswaPage() {
                   </td>
                   <td className="px-6 py-3 text-right">
                     <Link 
-                      href={`/dosen/monitor/${m.id}`}
+                      href={`/dosen/mahasiswa/${m.id}`}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#E6F4EA] text-[#137333] hover:bg-[#CEEAD6] rounded-md text-xs font-bold transition-colors"
                     >
                       <Eye className="w-3.5 h-3.5" />

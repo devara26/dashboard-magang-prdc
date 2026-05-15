@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { CheckCircle2, Clock, Activity, Calendar, TrendingUp, Plus, ChevronRight, List } from 'lucide-react'
+import { CheckCircle2, Clock, Activity, Calendar, TrendingUp, Plus, ChevronRight, List, Download } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { exportLaporanExcel } from '@/lib/export-excel'
 
 type Profile = {
   nama_lengkap: string
@@ -34,6 +35,7 @@ export default function DashboardPage() {
   const [kegiatan, setKegiatan] = useState<Kegiatan[]>([])
   const [stats, setStats] = useState<DashboardStats>({ hadir: 0, tugasSelesai: 0, totalKegiatan: 0 })
   const [loading, setLoading] = useState(true)
+  const [downloadingExcel, setDownloadingExcel] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -80,6 +82,20 @@ export default function DashboardPage() {
 
   function handleTambahClick() {
     router.push('/dashboard/kegiatan')
+  }
+
+  async function handleDownloadExcel() {
+    try {
+      setDownloadingExcel(true)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('User tidak ditemukan')
+      await exportLaporanExcel(user)
+      toast.success('Laporan berhasil diunduh')
+    } catch (error: any) {
+      toast.error('Gagal mengunduh laporan: ' + error.message)
+    } finally {
+      setDownloadingExcel(false)
+    }
   }
 
   if (loading) return (
@@ -135,9 +151,20 @@ export default function DashboardPage() {
             <h1 className="text-lg font-bold text-[#202124] leading-tight line-clamp-1">{profile?.nama_lengkap || 'Mahasiswa'}</h1>
           </div>
         </div>
-        <button onClick={handleTambahClick} className="p-2 bg-white rounded-full border border-gray-100 shadow-sm text-[#5F6368] hover:text-[#1A73E8]">
-          <Calendar className="w-5 h-5" />
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={handleDownloadExcel} 
+            disabled={downloadingExcel}
+            className="flex items-center gap-1.5 px-3 py-2 bg-[#E8F0FE] text-[#1A73E8] rounded-full text-xs font-bold transition-colors hover:bg-[#D2E3FC] disabled:opacity-50"
+            title="Download Laporan Excel"
+          >
+            <Download className="w-4 h-4" />
+            <span className="hidden md:inline">{downloadingExcel ? 'Mengunduh...' : 'Laporan'}</span>
+          </button>
+          <button onClick={handleTambahClick} className="p-2 bg-white rounded-full border border-gray-100 shadow-sm text-[#5F6368] hover:text-[#1A73E8]">
+            <Calendar className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {/* Featured Bento Card (Progress) */}
