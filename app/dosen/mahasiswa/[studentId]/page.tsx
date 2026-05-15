@@ -2,7 +2,7 @@
 
 import { useEffect, useState, use } from 'react'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, Calendar, FileText, CheckCircle2, Clock, FolderOpen, Activity, Sparkles, User, Mail, Phone, MapPin } from 'lucide-react'
+import { ArrowLeft, Calendar, FileText, CheckCircle2, Clock, FolderOpen, Activity, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
@@ -155,7 +155,6 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
       setComments(prev => [...prev, data as any])
       setNewComment(prev => ({ ...prev, [kegiatanId]: '' }))
       
-      // Trigger Notification for Student
       await supabase.from('notifications').insert({
         user_id: studentId,
         message: `Dosen memberikan komentar pada jurnal Anda: "${message.substring(0, 30)}..."`,
@@ -178,12 +177,9 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
     
     try {
       await new Promise(resolve => setTimeout(resolve, 2000))
-      
       const activitiesCount = kegiatan.length
       const statusSelesai = kegiatan.filter(k => k.status === 'Selesai').length
-      
       const summary = `Berdasarkan ${activitiesCount} entri jurnal, mahasiswa ini telah menyelesaikan ${statusSelesai} tugas dengan baik. Fokus utama kegiatan mencakup: ${kegiatan[0]?.kegiatan.substring(0, 50)}... dan ${kegiatan[1]?.kegiatan?.substring(0, 50) || 'aktivitas teknis lainnya'}. Mahasiswa menunjukkan progres yang konsisten di unit ${profile?.unit_magang || 'magang'}.`
-      
       setAiSummary(summary)
       toast.success('Ringkasan AI berhasil dibuat')
     } catch (error) {
@@ -299,7 +295,6 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
               </div>
             </div>
 
-            {/* AI Summarizer */}
             <div className="bg-gradient-to-br from-[#E8F0FE] to-[#D2E3FC] dark:from-[#1A73E8]/10 dark:to-[#1A73E8]/20 rounded-[28px] p-6 border border-blue-100 dark:border-[#1A73E8]/30 relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-10">
                 <Sparkles className="w-24 h-24 text-[#1A73E8]" />
@@ -347,10 +342,7 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
 
         {activeTab === 'absensi' && (
           <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-[#202124] dark:text-[#E8EAED] text-lg font-bold">Statistik Absensi</h2>
-            </div>
-            
+            <h2 className="text-[#202124] dark:text-[#E8EAED] text-lg font-bold">Statistik Absensi</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {statCards.map((card, i) => (
                 <div key={i} className={`${card.bg} dark:bg-[#303134] rounded-2xl p-6 text-center border border-gray-100 dark:border-[#3C4043]`}>
@@ -359,7 +351,6 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
                 </div>
               ))}
             </div>
-            
             <div className="p-6 bg-blue-50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-900/30">
               <p className="text-sm text-blue-800 dark:text-blue-300">
                 Statistik ini dihitung berdasarkan total entri absensi yang dilakukan oleh mahasiswa selama periode magang.
@@ -387,8 +378,6 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
                       <div className="flex-1">
                         <p className="text-xs font-bold text-[#1A73E8] mb-1">{k.tanggal}</p>
                         <p className="text-[#202124] dark:text-[#E8EAED] font-medium leading-relaxed mb-4">{k.kegiatan}</p>
-                        
-                        {/* Comments */}
                         <div className="mt-4 pt-4 border-t border-gray-100 dark:border-[#3C4043] space-y-3">
                           {comments.filter(c => c.kegiatan_id === k.id).map(comment => (
                             <div key={comment.id} className="flex gap-2">
@@ -404,7 +393,6 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
                               </div>
                             </div>
                           ))}
-                          
                           <div className="flex gap-2 pt-2">
                             <input 
                               type="text" 
@@ -469,7 +457,6 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
             )}
           </div>
         )}
-
       </div>
     </div>
   )

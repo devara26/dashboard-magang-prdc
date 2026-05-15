@@ -49,6 +49,12 @@ export default function DashboardPage() {
       const { data: { user }, error: userError } = await supabase.auth.getUser()
       if (userError || !user) throw new Error('Sesi pengguna tidak ditemukan. Silakan login kembali.')
 
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single()
+
       if (profileError) throw new Error('Gagal mengambil data profil.')
 
       setUserId(user.id)
@@ -87,7 +93,6 @@ export default function DashboardPage() {
         countTotalKegiatan = totCount.count || 0
       }
 
-      setProfile(profileData)
       setKegiatan(kegiatanData)
       setStats({
         hadir: countHadir || 0,
@@ -133,7 +138,7 @@ export default function DashboardPage() {
 
       if (missing.length > 0) {
         // Check if notification already exists for today to avoid spam
-        const today = new Error().toISOString().split('T')[0]
+        const today = new Date().toISOString().split('T')[0]
         const { data: existing } = await supabase
           .from('notifications')
           .select('id')
@@ -165,7 +170,6 @@ export default function DashboardPage() {
             .eq('user_id', userId)
             .ilike('message', '%jurnal%')
             .limit(1)
-            // Note: For inactivity, we might only notify once until they fill it
 
           if (!existing || existing.length === 0) {
             await supabase.from('notifications').insert({
@@ -214,13 +218,6 @@ export default function DashboardPage() {
   
   const progressPersen = totalHariTarget > 0 ? Math.min(Math.round((stats.hadir / totalHariTarget) * 100), 100) : 0
 
-  const statCards = [
-    { label: 'Target Hari Magang', value: String(totalHariTarget), sub: 'hari kerja efektif', icon: Calendar, color: 'text-[#4285F4]', bg: 'bg-[#E8F0FE]', border: 'group-hover:border-[#4285F4]' },
-    { label: 'Total Kehadiran', value: String(stats.hadir), sub: `${progressPersen}% dari target`, icon: CheckCircle2, color: 'text-[#34A853]', bg: 'bg-[#E6F4EA]', border: 'group-hover:border-[#34A853]' },
-    { label: 'Tugas Selesai', value: String(stats.tugasSelesai), sub: 'kegiatan telah selesai', icon: Activity, color: 'text-[#FBBC04]', bg: 'bg-[#FEF7E0]', border: 'group-hover:border-[#FBBC04]' },
-    { label: 'Total Kegiatan', value: String(stats.totalKegiatan), sub: 'tercatat di sistem', icon: TrendingUp, color: 'text-[#EA4335]', bg: 'bg-[#FCE8E6]', border: 'group-hover:border-[#EA4335]' },
-  ]
-
   return (
     <div className="pb-8 animate-[fade-in_0.7s_ease-out] max-w-lg mx-auto md:max-w-none">
       
@@ -229,12 +226,11 @@ export default function DashboardPage() {
           userId={userId} 
           onComplete={() => {
             setShowOnboarding(false)
-            fetchData() // Refresh data after onboarding
+            fetchData()
           }} 
         />
       )}
       
-      {/* Header Section */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-full bg-[#FBBC04] flex-shrink-0 flex items-center justify-center shadow-sm border-2 border-white dark:border-[#3C4043]">
@@ -261,20 +257,17 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Featured Bento Card (Progress) */}
       <div className="bg-[#E6F4EA] dark:bg-[#0D652D]/20 rounded-[28px] p-6 mb-4 shadow-sm relative overflow-hidden transition-colors border border-transparent dark:border-[#137333]/30">
-        {/* Dekorasi Background */}
         <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/30 dark:bg-[#137333]/10 rounded-full blur-2xl"></div>
         <div className="relative z-10 flex justify-between items-center gap-4">
           <div className="flex-1">
             <p className="text-[#137333] dark:text-[#34A853] text-xs font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
               <Activity className="w-3.5 h-3.5"/> Progress
             </p>
-            <h2 className="text-[#0D652D] dark:text-[#E6F4EA] text-2xl font-bold mb-1 leading-tight">Kehadiran<br/>Mingguan</h2>
+            <h2 className="text-[#0D652D] dark:text-[#E6F4EA] text-2xl font-bold mb-1 leading-tight">Kehadiran<br />Mingguan</h2>
             <p className="text-[#137333] dark:text-[#CEEAD6] text-xs font-medium">{stats.hadir} dari {totalHariTarget} hari kerja</p>
           </div>
           <div className="w-[84px] h-[84px] bg-white dark:bg-[#202124] rounded-full flex items-center justify-center shadow-sm border-[6px] border-[#CEEAD6] dark:border-[#137333]/40 flex-shrink-0 relative">
-            {/* Indikator Melingkar Semu */}
             <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 36 36">
               <path
                 className="text-[#34A853]"
@@ -288,11 +281,10 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Bento Grid */}
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div className="bg-white dark:bg-[#202124] rounded-[24px] p-5 shadow-sm border border-gray-50 dark:border-[#3C4043] flex flex-col justify-between aspect-square transition-colors">
           <div className="flex justify-between items-start">
-            <p className="text-[#5F6368] dark:text-[#9AA0A6] text-xs font-bold w-1/2 leading-tight">Langkah<br/>Tugas</p>
+            <p className="text-[#5F6368] dark:text-[#9AA0A6] text-xs font-bold w-1/2 leading-tight">Langkah<br />Tugas</p>
             <div className="p-2 bg-[#FEF7E0] dark:bg-[#FBBC04]/10 rounded-full text-[#FBBC04]"><CheckCircle2 className="w-4 h-4"/></div>
           </div>
           <div>
@@ -303,7 +295,7 @@ export default function DashboardPage() {
 
         <div className="bg-white dark:bg-[#202124] rounded-[24px] p-5 shadow-sm border border-gray-50 dark:border-[#3C4043] flex flex-col justify-between aspect-square transition-colors">
           <div className="flex justify-between items-start">
-            <p className="text-[#5F6368] dark:text-[#9AA0A6] text-xs font-bold w-1/2 leading-tight">Total<br/>Log</p>
+            <p className="text-[#5F6368] dark:text-[#9AA0A6] text-xs font-bold w-1/2 leading-tight">Total<br />Log</p>
             <div className="p-2 bg-[#E8F0FE] dark:bg-[#1A73E8]/10 rounded-full text-[#1A73E8]"><List className="w-4 h-4"/></div>
           </div>
           <div>
@@ -313,7 +305,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Activities List */}
       <div className="bg-white dark:bg-[#202124] rounded-[28px] shadow-sm border border-gray-50 dark:border-[#3C4043] overflow-hidden transition-colors">
         <div className="px-6 py-5 border-b border-gray-50 dark:border-[#3C4043] flex justify-between items-center bg-white dark:bg-[#202124]">
           <div>
