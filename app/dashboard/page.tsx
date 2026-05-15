@@ -234,7 +234,7 @@ export default function DashboardPage() {
   const progressPersen = totalHariTarget > 0 ? Math.min(Math.round((stats.hadir / totalHariTarget) * 100), 100) : 0
 
   return (
-    <div className="pb-12 animate-[fade-in_0.7s_ease-out]">
+    <div className="pb-12 animate-[fade-in_0.7s_ease-out] flex flex-col xl:flex-row gap-8">
       {showOnboarding && userId && (
         <OnboardingWizard 
           userId={userId ?? ''} 
@@ -245,147 +245,156 @@ export default function DashboardPage() {
         />
       )}
 
-      <div className="mb-10">
-        <h1 className="text-3xl font-black text-[#202124] tracking-tight">Halo, {profile?.nama_lengkap || 'User'}!</h1>
-        <p className="text-[#5F6368] font-medium mt-1">Selesaikan target magangmu dan pantau progresmu di sini.</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-        {/* Bento Card: Attendance */}
-        <div className="md:col-span-2 bg-white p-8 rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-gray-100 flex flex-col justify-between group hover:border-[#1A73E8] transition-all duration-300">
-          <div className="flex justify-between items-start mb-4">
-            <div className="w-14 h-14 bg-[#E8F0FE] rounded-2xl flex items-center justify-center text-[#1A73E8]">
-              <Calendar className="w-7 h-7" />
-            </div>
-            <span className="px-3 py-1 bg-[#E6F4EA] text-[#137333] rounded-full text-[10px] font-bold uppercase tracking-wider">On Track</span>
-          </div>
-          <div>
-            <p className="text-[#5F6368] text-sm font-semibold uppercase tracking-wider mb-1">Kehadiran</p>
-            <div className="flex items-baseline gap-2">
-              <h2 className="text-4xl font-black text-[#202124]">{stats.hadir}</h2>
-              <span className="text-[#5F6368] text-sm font-medium">Hari Hadir</span>
-            </div>
-          </div>
+      {/* Main Column: Course/Activity Style */}
+      <div className="flex-1 space-y-8">
+        <div>
+          <h1 className="text-4xl font-black text-[#1d1d1f] tracking-tight">Dashboard Magang</h1>
+          <p className="text-[#86868b] font-semibold mt-1 uppercase text-xs tracking-widest">{new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
         </div>
 
-        {/* Bento Card: Tasks */}
-        <div className="bg-white p-8 rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-gray-100 flex flex-col justify-between hover:border-[#1A73E8] transition-all duration-300">
-          <div className="w-14 h-14 bg-[#FEF7E0] rounded-2xl flex items-center justify-center text-[#E37400] mb-4">
-            <CheckCircle2 className="w-7 h-7" />
-          </div>
-          <div>
-            <p className="text-[#5F6368] text-sm font-semibold uppercase tracking-wider mb-1">Tugas</p>
-            <h2 className="text-4xl font-black text-[#202124]">{stats.tugasSelesai}</h2>
-            <p className="text-[#9AA0A6] text-xs font-medium mt-1">Selesai Diverifikasi</p>
-          </div>
-        </div>
-
-        {/* Bento Card: Progress */}
-        <div className="bg-[#1A73E8] p-8 rounded-[32px] shadow-[0_20px_50px_rgba(26,115,232,0.2)] text-white flex flex-col justify-between group hover:scale-[1.02] transition-all duration-300">
-          <div className="flex justify-between items-start mb-4">
-            <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center">
-              <TrendingUp className="w-7 h-7" />
-            </div>
-            <Activity className="w-6 h-6 text-white/40 animate-pulse" />
-          </div>
-          <div>
-            <p className="text-white/70 text-sm font-semibold uppercase tracking-wider mb-1">Progres</p>
-            <h2 className="text-4xl font-black">{totalHariTarget > 0 ? progressPersen : 0}%</h2>
-            <div className="w-full h-1.5 bg-white/20 rounded-full mt-3 overflow-hidden">
-              <div 
-                className="h-full bg-white transition-all duration-1000 ease-out" 
-                style={{ width: `${totalHariTarget > 0 ? progressPersen : 0}%` }}
-              />
+        <div className="bg-white rounded-[48px] p-10 shadow-[0_20px_50px_rgba(0,0,0,0.04)] border border-gray-50">
+          <div className="flex justify-between items-center mb-10">
+            <h2 className="text-2xl font-black text-[#1d1d1f]">Aktivitas Terakhir</h2>
+            <div className="flex gap-2">
+              <button className="p-2.5 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors">
+                <Plus className="w-5 h-5 text-gray-400" />
+              </button>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Main Content: Recent Activity */}
-        <div className="md:col-span-2 bg-white rounded-[40px] shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-gray-100 overflow-hidden">
-          <div className="px-8 py-8 border-b border-gray-50 flex items-center justify-between bg-gray-50/30">
-            <h3 className="text-xl font-black text-[#202124]">Aktivitas Terakhir</h3>
-            <Link href="/dashboard/kegiatan" className="p-2 bg-white rounded-full border border-gray-100 text-[#1A73E8] hover:bg-[#E8F0FE] transition-colors">
-              <Plus className="w-5 h-5" />
-            </Link>
-          </div>
-          <div className="p-8">
+          <div className="space-y-4">
             {kegiatan.length === 0 ? (
               <div className="text-center py-12">
-                <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <List className="w-8 h-8 text-gray-300" />
-                </div>
-                <p className="text-[#5F6368] font-medium">Belum ada kegiatan yang dicatat.</p>
-                <Link href="/dashboard/kegiatan" className="text-[#1A73E8] text-sm font-bold mt-2 inline-block hover:underline">Mulai Mencatat &rarr;</Link>
+                <p className="text-[#86868b] font-medium">Belum ada kegiatan yang dicatat.</p>
               </div>
             ) : (
-              <div className="space-y-6">
-                {kegiatan.map((item) => (
-                  <div key={item.id} className="flex items-start gap-5 group">
-                    <div className="w-12 h-12 rounded-2xl bg-gray-50 border border-gray-100 flex flex-col items-center justify-center flex-shrink-0 group-hover:border-[#1A73E8] transition-colors">
-                      <span className="text-[10px] font-bold text-[#5F6368] uppercase">{new Date(item.tanggal).toLocaleDateString('id-ID', { month: 'short' })}</span>
-                      <span className="text-lg font-black text-[#202124] leading-none">{new Date(item.tanggal).getDate()}</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-[15px] font-bold text-[#202124] mb-1 truncate group-hover:text-[#1A73E8] transition-colors">{item.kegiatan}</h4>
-                      <div className="flex items-center gap-3">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${item.status === 'Selesai' ? 'bg-[#E6F4EA] text-[#137333]' : 'bg-[#FEF7E0] text-[#E37400]'}`}>
-                          {item.status}
-                        </span>
-                        <span className="text-[10px] text-gray-400 font-medium">Dibuat {new Date(item.tanggal).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
+              kegiatan.map((item, idx) => {
+                const colors = ['bg-[#3b82f6]', 'bg-[#a855f7]', 'bg-[#eab308]', 'bg-[#ef4444]', 'bg-[#10b981]']
+                const bgColor = colors[idx % colors.length]
+                return (
+                  <div key={item.id} className={`${bgColor} p-6 rounded-[32px] text-white flex items-center justify-between group hover:scale-[1.01] transition-all duration-300 cursor-pointer shadow-lg shadow-black/5`}>
+                    <div className="flex items-center gap-6">
+                      <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center">
+                        <Activity className="w-7 h-7" />
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-bold truncate max-w-[200px] md:max-w-[400px]">{item.kegiatan}</h4>
+                        <p className="text-white/70 text-xs font-semibold uppercase tracking-wider">{item.status} • {new Date(item.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</p>
                       </div>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-[#1A73E8] transition-colors" />
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-[#1d1d1f]">
+                        <span className="text-lg font-black">{new Date(item.tanggal).getDate()}</span>
+                      </div>
+                      <ChevronRight className="w-6 h-6 text-white/50 group-hover:text-white transition-colors" />
+                    </div>
                   </div>
-                ))}
-              </div>
+                )
+              })
             )}
+          </div>
+
+          <Link href="/dashboard/kegiatan" className="mt-8 flex items-center justify-center w-full py-5 border-2 border-dashed border-gray-100 rounded-[32px] text-[#86868b] font-bold hover:border-[#1a73e8] hover:text-[#1a73e8] transition-all">
+            Lihat Semua Aktivitas
+          </Link>
+        </div>
+      </div>
+
+      {/* Right Column: Progress & Stats Style */}
+      <div className="w-full xl:w-[400px] space-y-8">
+        <div>
+          <div className="flex items-center justify-between mb-8">
+             <div className="flex items-center gap-4">
+               <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center border border-gray-100">
+                 <span className="text-lg font-black text-[#1d1d1f]">{profile?.nama_lengkap?.charAt(0) || 'U'}</span>
+               </div>
+               <div>
+                 <h3 className="font-bold text-[#1d1d1f]">{profile?.nama_lengkap || 'User'}</h3>
+                 <p className="text-[#86868b] text-[10px] font-black uppercase tracking-widest">{profile?.nim || 'Mahasiswa'}</p>
+               </div>
+             </div>
           </div>
         </div>
 
-        {/* Sidebar Cards */}
-        <div className="space-y-6">
-          <div className="bg-[#202124] rounded-[40px] p-8 text-white relative overflow-hidden shadow-xl">
-            <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full blur-3xl" />
-            <h3 className="text-lg font-bold mb-4 relative z-10">Laporan Magang</h3>
-            <p className="text-white/60 text-sm mb-8 leading-relaxed relative z-10">Unduh seluruh riwayat kegiatanmu dalam format Excel yang rapi.</p>
-            <button 
-              onClick={handleDownloadExcel}
-              disabled={downloadingExcel}
-              className="w-full py-4 bg-white text-[#202124] rounded-2xl font-bold text-sm shadow-lg hover:bg-[#F8F9FA] transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              <Download className="w-4 h-4" />
-              {downloadingExcel ? 'Menyiapkan...' : 'Unduh Laporan'}
-            </button>
-          </div>
-
-          <div className="bg-white rounded-[40px] p-8 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)]">
-            <h3 className="text-[#202124] font-bold mb-4">Informasi Magang</h3>
-            <div className="space-y-4">
+        {/* Learning Progress Section */}
+        <div className="bg-white rounded-[48px] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.04)] border border-gray-50">
+          <h3 className="text-xl font-black text-[#1d1d1f] mb-8">My Progress</h3>
+          <div className="space-y-8">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-[#5F6368]">
-                  <Activity className="w-5 h-5" />
+                <div className="w-12 h-12 bg-[#E8F0FE] rounded-2xl flex items-center justify-center text-[#1a73e8]">
+                  <Calendar className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-[#9AA0A6] uppercase tracking-wider">Instansi</p>
-                  <p className="text-sm font-bold text-[#202124] truncate max-w-[150px]">{profile?.instansi_magang || '-'}</p>
+                  <p className="font-bold text-[#1d1d1f] text-sm">Kehadiran</p>
+                  <p className="text-[#86868b] text-[10px] font-semibold">Hari ini</p>
                 </div>
               </div>
+              <div className="relative w-12 h-12">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                  <path className="text-gray-100" strokeDasharray="100, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" />
+                  <path className="text-[#1a73e8]" strokeDasharray={`${progressPersen}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+                </svg>
+                <span className="absolute inset-0 flex items-center justify-center text-[8px] font-black">{progressPersen}%</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-[#5F6368]">
-                  <List className="w-5 h-5" />
+                <div className="w-12 h-12 bg-[#FEF7E0] rounded-2xl flex items-center justify-center text-[#eab308]">
+                  <CheckCircle2 className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-[#9AA0A6] uppercase tracking-wider">Unit/Divisi</p>
-                  <p className="text-sm font-bold text-[#202124] truncate max-w-[150px]">{profile?.unit_magang || '-'}</p>
+                  <p className="font-bold text-[#1d1d1f] text-sm">Tugas Selesai</p>
+                  <p className="text-[#86868b] text-[10px] font-semibold">{stats.tugasSelesai} dari {stats.totalKegiatan}</p>
                 </div>
+              </div>
+              <div className="relative w-12 h-12">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                  <path className="text-gray-100" strokeDasharray="100, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" />
+                  <path className="text-[#eab308]" strokeDasharray={`${stats.totalKegiatan > 0 ? (stats.tugasSelesai / stats.totalKegiatan) * 100 : 0}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+                </svg>
+                <span className="absolute inset-0 flex items-center justify-center text-[8px] font-black">{stats.totalKegiatan > 0 ? Math.round((stats.tugasSelesai / stats.totalKegiatan) * 100) : 0}%</span>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
+        {/* Streak Style Card */}
+        <div className="bg-[#eab308] rounded-[48px] p-8 text-white relative overflow-hidden shadow-[0_20px_50px_rgba(234,179,8,0.2)]">
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-4xl font-black">{stats.hadir}</h4>
+              <div className="bg-white/20 backdrop-blur-md p-2 rounded-xl">
+                 <TrendingUp className="w-5 h-5 text-white" />
+              </div>
+            </div>
+            <p className="text-lg font-bold">Streak Days</p>
+            <p className="text-white/70 text-xs font-semibold mt-1">Lanjutkan semangat magangmu!</p>
+          </div>
+          <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+          <div className="absolute top-4 right-8 opacity-20">
+             <Activity className="w-20 h-20" />
+          </div>
+        </div>
+
+        {/* Planning Section Style */}
+        <div className="bg-[#1d1d1f] rounded-[48px] p-8 text-white shadow-xl relative overflow-hidden">
+           <div className="relative z-10">
+             <h4 className="font-bold mb-4">Laporan Excel</h4>
+             <p className="text-white/50 text-xs leading-relaxed mb-8">Download riwayat kegiatan untuk keperluan administrasi kampus.</p>
+             <button 
+               onClick={handleDownloadExcel}
+               disabled={downloadingExcel}
+               className="w-full py-4 bg-white text-[#1d1d1f] rounded-[24px] font-black text-sm flex items-center justify-center gap-2 hover:bg-gray-100 transition-all active:scale-95 disabled:opacity-50"
+             >
+               <Download className="w-4 h-4" />
+               {downloadingExcel ? 'Menyiapkan...' : 'Download Report'}
+             </button>
+           </div>
+           <div className="absolute -top-10 -left-10 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl" />
+        </div>
+      </div>
     </div>
   )
 }

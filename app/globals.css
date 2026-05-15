@@ -1,13 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8f9fc;
-  --foreground: #2d3436;
+  --background: #f0f4f9; /* Softer, slightly blue-tinted background */
+  --foreground: #1a1b1e;
   --primary: #1a73e8;
   --surface: #ffffff;
-  --border: #edf2f7;
-  --text-main: #202124;
-  --text-secondary: #5f6368;
+  --border: #e8eaed;
+  --text-main: #1d1d1f;
+  --text-secondary: #86868b;
+  
+  /* Vibrant Card Colors from Ref */
+  --card-blue: #3b82f6;
+  --card-purple: #a855f7;
+  --card-yellow: #eab308;
+  --card-red: #ef4444;
 }
 
 body {
