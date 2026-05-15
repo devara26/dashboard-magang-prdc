@@ -9,7 +9,7 @@ export async function exportLaporanExcel(user: any) {
 
   // Fetch Absensi
   const { data: absensi } = await supabase.from('absensi').select('*').eq('mahasiswa_id', user.id).order('tanggal', { ascending: true })
-  
+
   // Fetch Kegiatan
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let kegiatan: any[] = []
@@ -110,7 +110,7 @@ export async function exportLaporanExcel(user: any) {
   ]
   const wsProfil = XLSX.utils.json_to_sheet(wsProfilData)
   applyHeaderStyle(wsProfil, 9)
-  wsProfil['!cols'] = [{wch: 25}, {wch: 20}, {wch: 30}, {wch: 25}, {wch: 20}, {wch: 30}, {wch: 20}, {wch: 15}, {wch: 15}]
+  wsProfil['!cols'] = [{ wch: 25 }, { wch: 20 }, { wch: 30 }, { wch: 25 }, { wch: 20 }, { wch: 30 }, { wch: 20 }, { wch: 15 }, { wch: 15 }]
   XLSX.utils.book_append_sheet(wb, wsProfil, "Profil Mahasiswa")
 
   // SHEET 3: Rekap Absensi
@@ -126,7 +126,7 @@ export async function exportLaporanExcel(user: any) {
       "Catatan": a.keterangan || '-'
     }
   })
-  
+
   // Add summary row at the bottom
   wsAbsensiData.push({
     "Tanggal": "SUMMARY",
@@ -139,8 +139,8 @@ export async function exportLaporanExcel(user: any) {
 
   const wsAbsensi = XLSX.utils.json_to_sheet(wsAbsensiData)
   applyHeaderStyle(wsAbsensi, 6)
-  wsAbsensi['!cols'] = [{wch: 15}, {wch: 10}, {wch: 12}, {wch: 12}, {wch: 15}, {wch: 30}]
-  
+  wsAbsensi['!cols'] = [{ wch: 15 }, { wch: 10 }, { wch: 12 }, { wch: 12 }, { wch: 15 }, { wch: 30 }]
+
   // Style summary row
   const summaryRowIndex = wsAbsensiData.length
   for (let c = 0; c < 6; c++) {
@@ -161,7 +161,7 @@ export async function exportLaporanExcel(user: any) {
   }))
   const wsJurnal = XLSX.utils.json_to_sheet(wsJurnalData)
   applyHeaderStyle(wsJurnal, 4)
-  wsJurnal['!cols'] = [{wch: 15}, {wch: 50}, {wch: 15}, {wch: 40}]
+  wsJurnal['!cols'] = [{ wch: 15 }, { wch: 50 }, { wch: 15 }, { wch: 40 }]
   XLSX.utils.book_append_sheet(wb, wsJurnal, "Jurnal Kegiatan")
 
   // SHEET 5: Berkas Magang
@@ -175,7 +175,7 @@ export async function exportLaporanExcel(user: any) {
   }))
   const wsBerkas = XLSX.utils.json_to_sheet(wsBerkasData)
   applyHeaderStyle(wsBerkas, 6)
-  wsBerkas['!cols'] = [{wch: 35}, {wch: 20}, {wch: 30}, {wch: 15}, {wch: 15}, {wch: 50}]
+  wsBerkas['!cols'] = [{ wch: 35 }, { wch: 20 }, { wch: 30 }, { wch: 15 }, { wch: 15 }, { wch: 50 }]
   XLSX.utils.book_append_sheet(wb, wsBerkas, "Berkas Magang")
 
   // Save the file

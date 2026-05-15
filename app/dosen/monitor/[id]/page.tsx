@@ -38,7 +38,7 @@ export default function MahasiswaDetailPage({ params }: { params: Promise<{ id: 
   const router = useRouter()
   const resolvedParams = use(params)
   const id = resolvedParams.id
-  
+
   const [profile, setProfile] = useState<Profile | null>(null)
   const [kegiatan, setKegiatan] = useState<Kegiatan[]>([])
   const [absensiStats, setAbsensiStats] = useState({ hadir: 0, izin: 0, sakit: 0, alpha: 0 })
@@ -62,7 +62,7 @@ export default function MahasiswaDetailPage({ params }: { params: Promise<{ id: 
         .select('*')
         .eq('id', id)
         .single()
-      
+
       if (profileError) throw profileError
       setProfile(profileData)
 
@@ -90,9 +90,9 @@ export default function MahasiswaDetailPage({ params }: { params: Promise<{ id: 
           .select('*')
           .eq('nim', profileData.nim)
           .order('tanggal', { ascending: false })
-        
+
         setKegiatan(kegiatanData || [])
-        
+
         // Init komentar state
         const kom: Record<number, string> = {}
         kegiatanData?.forEach(k => {
@@ -107,7 +107,7 @@ export default function MahasiswaDetailPage({ params }: { params: Promise<{ id: 
         .select('*')
         .eq('mahasiswa_id', id)
         .single()
-      
+
       if (penilaianData) {
         setPenilaian({
           id: penilaianData.id,
@@ -199,15 +199,15 @@ export default function MahasiswaDetailPage({ params }: { params: Promise<{ id: 
     </div>
   )
 
-  const totalHariTarget = profile?.tanggal_mulai && profile?.tanggal_selesai 
-    ? getWorkDays(profile.tanggal_mulai, profile.tanggal_selesai) 
+  const totalHariTarget = profile?.tanggal_mulai && profile?.tanggal_selesai
+    ? getWorkDays(profile.tanggal_mulai, profile.tanggal_selesai)
     : 150
-  
+
   const progressPersen = totalHariTarget > 0 ? Math.min(Math.round((absensiStats.hadir / totalHariTarget) * 100), 100) : 0
 
   return (
     <div className="pb-8 animate-[fade-in_0.7s_ease-out] max-w-lg mx-auto md:max-w-none">
-      
+
       {/* Header */}
       <div className="mb-6">
         <Link href="/dosen/mahasiswa" className="inline-flex items-center text-sm font-medium text-[#5F6368] hover:text-[#1A73E8] mb-4 transition-colors">
@@ -264,7 +264,7 @@ export default function MahasiswaDetailPage({ params }: { params: Promise<{ id: 
               <input
                 type="number" min="0" max="100" required
                 value={penilaian.kedisiplinan || ''}
-                onChange={e => setPenilaian({...penilaian, kedisiplinan: Number(e.target.value)})}
+                onChange={e => setPenilaian({ ...penilaian, kedisiplinan: Number(e.target.value) })}
                 className="w-full bg-[#F8F9FA] text-[#202124] rounded-xl px-4 py-2.5 text-sm border-transparent focus:bg-white focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] transition-all font-medium"
               />
             </div>
@@ -273,7 +273,7 @@ export default function MahasiswaDetailPage({ params }: { params: Promise<{ id: 
               <input
                 type="number" min="0" max="100" required
                 value={penilaian.kompetensi || ''}
-                onChange={e => setPenilaian({...penilaian, kompetensi: Number(e.target.value)})}
+                onChange={e => setPenilaian({ ...penilaian, kompetensi: Number(e.target.value) })}
                 className="w-full bg-[#F8F9FA] text-[#202124] rounded-xl px-4 py-2.5 text-sm border-transparent focus:bg-white focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] transition-all font-medium"
               />
             </div>
@@ -282,7 +282,7 @@ export default function MahasiswaDetailPage({ params }: { params: Promise<{ id: 
               <input
                 type="number" min="0" max="100" required
                 value={penilaian.sikap || ''}
-                onChange={e => setPenilaian({...penilaian, sikap: Number(e.target.value)})}
+                onChange={e => setPenilaian({ ...penilaian, sikap: Number(e.target.value) })}
                 className="w-full bg-[#F8F9FA] text-[#202124] rounded-xl px-4 py-2.5 text-sm border-transparent focus:bg-white focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] transition-all font-medium"
               />
             </div>
@@ -291,7 +291,7 @@ export default function MahasiswaDetailPage({ params }: { params: Promise<{ id: 
               <input
                 type="number" min="0" max="100" required
                 value={penilaian.laporan || ''}
-                onChange={e => setPenilaian({...penilaian, laporan: Number(e.target.value)})}
+                onChange={e => setPenilaian({ ...penilaian, laporan: Number(e.target.value) })}
                 className="w-full bg-[#F8F9FA] text-[#202124] rounded-xl px-4 py-2.5 text-sm border-transparent focus:bg-white focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] transition-all font-medium"
               />
             </div>
@@ -316,7 +316,7 @@ export default function MahasiswaDetailPage({ params }: { params: Promise<{ id: 
             Jurnal Kegiatan
           </h2>
         </div>
-        
+
         {kegiatan.length === 0 ? (
           <div className="p-8 text-center">
             <p className="text-[#5F6368] text-sm">Belum ada kegiatan yang dilaporkan.</p>
@@ -346,7 +346,7 @@ export default function MahasiswaDetailPage({ params }: { params: Promise<{ id: 
                       type="text"
                       placeholder="Tambahkan catatan untuk kegiatan ini..."
                       value={komentar[k.id] || ''}
-                      onChange={e => setKomentar({...komentar, [k.id]: e.target.value})}
+                      onChange={e => setKomentar({ ...komentar, [k.id]: e.target.value })}
                       className="flex-1 bg-white border-transparent rounded-lg px-3 py-2 text-sm focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] transition-all"
                     />
                     <button

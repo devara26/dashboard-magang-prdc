@@ -54,7 +54,7 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
 
   const [activeTab, setActiveTab] = useState<'ringkasan' | 'absensi' | 'jurnal' | 'berkas'>('ringkasan')
   const [loading, setLoading] = useState(true)
-  
+
   const [profile, setProfile] = useState<Profile | null>(null)
   const [kegiatan, setKegiatan] = useState<Kegiatan[]>([])
   const [absensiStats, setAbsensiStats] = useState({ hadir: 0, izin: 0, sakit: 0, alpha: 0 })
@@ -80,7 +80,7 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
         .select('*')
         .eq('id', studentId)
         .single()
-      
+
       if (profileError) throw new Error('Gagal mengambil data profil mahasiswa.')
       setProfile(profileData)
 
@@ -108,7 +108,7 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
           .select('*')
           .eq('nim', profileData.nim)
           .order('tanggal', { ascending: false })
-        
+
         if (kegiatanError) throw new Error('Gagal mengambil data kegiatan mahasiswa.')
         setKegiatan(kegiatanData || [])
 
@@ -124,7 +124,7 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
         .from('berkas')
         .select('*')
         .eq('mahasiswa_id', studentId)
-      
+
       if (berkasError) throw new Error('Gagal mengambil daftar berkas mahasiswa.')
       setBerkas(berkasData || [])
 
@@ -154,7 +154,7 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
 
       setComments(prev => [...prev, data as any])
       setNewComment(prev => ({ ...prev, [kegiatanId]: '' }))
-      
+
       await supabase.from('notifications').insert({
         user_id: studentId,
         message: `Dosen memberikan komentar pada jurnal Anda: "${message.substring(0, 30)}..."`,
@@ -174,7 +174,7 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
     if (kegiatan.length === 0) return
     setIsSummarizing(true)
     setAiSummary(null)
-    
+
     try {
       await new Promise(resolve => setTimeout(resolve, 2000))
       const activitiesCount = kegiatan.length
@@ -214,7 +214,7 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
 
   const totalHariTarget = profile?.tanggal_mulai && profile?.tanggal_selesai ? getWorkDays(profile.tanggal_mulai, profile.tanggal_selesai) : 150
   const progressPersen = totalHariTarget > 0 ? Math.min(Math.round((absensiStats.hadir / totalHariTarget) * 100), 100) : 0
-  
+
   const statCards = [
     { label: 'Hadir', value: absensiStats.hadir, color: 'text-[#137333]', bg: 'bg-[#E6F4EA]' },
     { label: 'Izin', value: absensiStats.izin, color: 'text-[#E37400]', bg: 'bg-[#FEF7E0]' },
@@ -251,11 +251,10 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-6 py-3 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
-              activeTab === tab.id 
-                ? 'border-[#1A73E8] text-[#1A73E8]' 
+            className={`flex items-center gap-2 px-6 py-3 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === tab.id
+                ? 'border-[#1A73E8] text-[#1A73E8]'
                 : 'border-transparent text-[#5F6368] hover:text-[#202124] dark:hover:text-white'
-            }`}
+              }`}
           >
             <tab.icon className="w-4 h-4" /> {tab.label}
           </button>
@@ -263,7 +262,7 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
       </div>
 
       <div className="bg-white dark:bg-[#202124] rounded-[32px] p-8 shadow-sm border border-gray-50 dark:border-[#3C4043] min-h-[400px]">
-        
+
         {activeTab === 'ringkasan' && (
           <div className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -307,7 +306,7 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
                     </div>
                     <h3 className="font-bold text-[#174EA6] dark:text-[#E8F0FE]">AI Journal Insight</h3>
                   </div>
-                  <button 
+                  <button
                     onClick={handleSummarize}
                     disabled={isSummarizing || kegiatan.length === 0}
                     className="px-4 py-2 bg-[#1A73E8] text-white text-xs font-bold rounded-full hover:bg-[#1967D2] transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2"
@@ -394,15 +393,15 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
                             </div>
                           ))}
                           <div className="flex gap-2 pt-2">
-                            <input 
-                              type="text" 
+                            <input
+                              type="text"
                               placeholder="Tambah komentar..."
                               value={newComment[k.id] || ''}
                               onChange={e => setNewComment(prev => ({ ...prev, [k.id]: e.target.value }))}
                               onKeyDown={e => e.key === 'Enter' && handlePostComment(k.id)}
                               className="flex-1 bg-[#F8F9FA] dark:bg-[#202124] border border-gray-200 dark:border-[#3C4043] rounded-full px-4 py-2 text-xs outline-none focus:border-[#1A73E8] transition-colors"
                             />
-                            <button 
+                            <button
                               onClick={() => handlePostComment(k.id)}
                               disabled={isCommenting[k.id] || !newComment[k.id]?.trim()}
                               className="px-4 py-2 bg-[#1A73E8] text-white text-xs font-bold rounded-full disabled:opacity-50"
@@ -443,9 +442,9 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
                         </p>
                       </div>
                     </div>
-                    <a 
-                      href={b.file_url} 
-                      target="_blank" 
+                    <a
+                      href={b.file_url}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="px-4 py-2 bg-[#E8F0FE] dark:bg-[#1A73E8]/20 text-[#1A73E8] hover:bg-[#D2E3FC] dark:hover:bg-[#1A73E8]/30 text-xs font-bold rounded-xl transition-colors"
                     >

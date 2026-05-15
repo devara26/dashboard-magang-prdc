@@ -70,8 +70,8 @@ export default function DosenBeranda() {
       const rataKehadiran = totalTarget > 0 ? Math.round((totalHadir / totalTarget) * 100) : 0
 
       let kegiatanData: any[] = []
-      const { data: kegRes, error: kegErr } = await supabase.from('kegiatan').select('id, nim, tanggal, kegiatan, status, status_persetujuan').order('tanggal', { ascending: false })
-      
+      const { data: kegRes, error: kegErr } = await supabase.from('Kegiatan').select('id, nim, tanggal, kegiatan, status, status_persetujuan').order('tanggal', { ascending: false })
+
       if (kegErr) {
         const { data: kegRes2, error: kegErr2 } = await supabase.from('Kegiatan').select('id, nim, tanggal, kegiatan, status, status_persetujuan').order('tanggal', { ascending: false })
         if (kegErr2) throw new Error('Gagal mengambil data kegiatan terbaru.')
