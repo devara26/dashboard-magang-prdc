@@ -7,7 +7,8 @@ import { User, Mail, CreditCard, Building, Building2, LogOut, ShieldCheck, Chevr
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { exportLaporanExcel } from '@/lib/export-excel'
-type Profile = {
+
+interface Profile {
   id: string
   nama_lengkap: string
   nim: string
@@ -113,7 +114,6 @@ export default function ProfilPage() {
     const file = e.target.files?.[0]
     if (!file || !profile?.id) return
 
-    // Optimistic UI
     const previewUrl = URL.createObjectURL(file)
     const oldAvatarUrl = avatarUrl
     setAvatarUrl(previewUrl)
@@ -144,7 +144,7 @@ export default function ProfilPage() {
       toast.success('Foto profil berhasil diperbarui')
     } catch (error: any) {
       console.error(error)
-      setAvatarUrl(oldAvatarUrl) // Revert on error
+      setAvatarUrl(oldAvatarUrl)
       toast.error('Gagal mengunggah foto: ' + (error.message || 'Error tidak diketahui'))
     } finally {
       setUploadingAvatar(false)
@@ -203,7 +203,6 @@ export default function ProfilPage() {
 
   return (
     <div className="pb-12 animate-[fade-in_0.7s_ease-out] max-w-5xl mx-auto">
-      {/* Header Section */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link href="/dashboard" className="p-2 bg-white rounded-full border border-gray-200 text-[#5F6368] hover:text-[#1A73E8] hover:bg-gray-50 transition-colors shadow-sm">
@@ -229,7 +228,6 @@ export default function ProfilPage() {
               <Edit2 className="w-5 h-5 text-[#FBBC04]" /> Mode Edit Profil
             </h2>
 
-            {/* Avatar Edit */}
             <div className="flex flex-col items-center">
               <div className="relative">
                 <div className="w-24 h-24 rounded-full bg-[#FBBC04] flex-shrink-0 flex items-center justify-center shadow-md border-4 border-white overflow-hidden relative group">
@@ -261,7 +259,6 @@ export default function ProfilPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Data Diri */}
               <div className="space-y-4">
                 <h3 className="text-sm font-medium text-[#1A73E8] uppercase tracking-wider mb-2">Data Pribadi</h3>
                 <div>
@@ -303,7 +300,6 @@ export default function ProfilPage() {
                 </div>
               </div>
 
-              {/* Data Magang */}
               <div className="space-y-4">
                 <h3 className="text-sm font-medium text-[#1A73E8] uppercase tracking-wider mb-2">Data Magang</h3>
                 <div>
@@ -347,7 +343,6 @@ export default function ProfilPage() {
               </div>
             </div>
             
-            {/* Keterangan Lain */}
             <div>
               <h3 className="text-sm font-medium text-[#1A73E8] uppercase tracking-wider mb-4">Informasi Tambahan</h3>
               <div>
@@ -388,9 +383,7 @@ export default function ProfilPage() {
           </div>
         </form>
       ) : (
-        /* Profile View Section */
         <div className="mb-8 relative max-w-2xl mx-auto">
-          {/* Centered Avatar and Name */}
           <div className="relative z-10 flex flex-col items-center mb-10 text-center">
             <div className="relative mb-4">
               <div className="w-28 h-28 rounded-full bg-[#FBBC04] flex-shrink-0 flex items-center justify-center shadow-md border-4 border-white overflow-hidden">
@@ -420,7 +413,7 @@ export default function ProfilPage() {
                 onChange={async (e) => {
                   if (e.target.value === 'dosen') {
                     setShowDosenModal(true)
-                    e.target.value = 'mahasiswa' // reset visual state
+                    e.target.value = 'mahasiswa'
                   }
                 }}
                 className="px-3 py-1.5 bg-white border border-gray-200 rounded-full text-xs font-medium text-[#5F6368] focus:outline-none focus:border-[#1A73E8] shadow-sm cursor-pointer"
@@ -431,7 +424,6 @@ export default function ProfilPage() {
             </div>
           </div>
 
-          {/* Settings-like List Menu */}
           <div className="space-y-6">
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
               <h3 className="px-6 py-4 text-sm font-bold text-[#202124] bg-gray-50/50 border-b border-gray-100">Informasi Pribadi</h3>
@@ -499,7 +491,6 @@ export default function ProfilPage() {
         </div>
       )}
 
-      {/* Actions Section */}
       <div className="mt-8 max-w-2xl mx-auto">
         <button
           onClick={handleLogout}
@@ -510,7 +501,6 @@ export default function ProfilPage() {
         </button>
       </div>
 
-      {/* Dosen Access Modal */}
       {showDosenModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-[fade-in_0.2s_ease-out]">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-[scale-in_0.2s_ease-out]">
