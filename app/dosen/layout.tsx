@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, Users, CheckSquare, LogOut, User, Menu } from 'lucide-react'
+import { Home, Users, CheckSquare, LogOut, User, Menu, LayoutGrid } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import NotificationBell from '@/components/NotificationBell'
@@ -12,6 +12,7 @@ export default function DosenLayout({ children }: { children: React.ReactNode })
   const router = useRouter()
   const [profileName, setProfileName] = useState('Memuat...')
   const [role, setRole] = useState('Dosen')
+  const [nip, setNip] = useState('0000000000')
   const [initial, setInitial] = useState('D')
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
@@ -23,24 +24,22 @@ export default function DosenLayout({ children }: { children: React.ReactNode })
 
       const { data } = await supabase
         .from('profiles')
-        .select('nama_lengkap, role, avatar_url')
+        .select('nama_lengkap, role, avatar_url, nim')
         .eq('id', user.id)
         .single()
 
-      if (data && data.nama_lengkap) {
-        setProfileName(data.nama_lengkap)
-        setInitial(data.nama_lengkap.charAt(0).toUpperCase())
+      if (data) {
+        setProfileName(data.nama_lengkap || 'Dosen Orbit')
+        setInitial((data.nama_lengkap || 'D').charAt(0).toUpperCase())
         setRole(data.role || 'Dosen')
         setAvatarUrl(data.avatar_url)
-      } else {
-        setProfileName('Dosen Orbit')
+        setNip(data.nim || 'Dosen Tetap')
       }
     }
     fetchUser()
   }, [])
 
-  async function handleLogout(e: React.MouseEvent) {
-    e.preventDefault()
+  async function handleLogout() {
     if (confirm('Apakah Anda yakin ingin keluar?')) {
       await supabase.auth.signOut()
       router.push('/login')
@@ -48,124 +47,194 @@ export default function DosenLayout({ children }: { children: React.ReactNode })
   }
 
   const navItems = [
-    { name: 'Beranda Dosen', href: '/dosen', icon: Home },
+    { name: 'Dashboard', href: '/dosen', icon: LayoutGrid },
     { name: 'Monitoring Mahasiswa', href: '/dosen/mahasiswa', icon: Users },
     { name: 'Persetujuan Laporan', href: '/dosen/persetujuan-laporan', icon: CheckSquare },
-  ]
-
-  const bottomNavItems = [
-    { name: 'Beranda', href: '/dosen', icon: Home },
-    { name: 'Monitor', href: '/dosen/mahasiswa', icon: Users },
-    { name: 'Laporan', href: '/dosen/persetujuan-laporan', icon: CheckSquare },
-    { name: 'Profil', href: '/dosen/profil', icon: User },
+    { name: 'Profil Saya', href: '/dosen/profil', icon: User },
   ]
 
   return (
-    <div className="flex flex-col md:flex-row h-screen w-full bg-[#F8F9FA] text-[#202124] overflow-hidden font-sans selection:bg-blue-200">
-
-      {/* Mobile Top Header */}
-      <div className="md:hidden flex items-center justify-center bg-white border-b border-gray-200 px-4 h-14 z-20 shadow-sm relative shrink-0">
-        <img src="/logoorbitsvg.svg" alt="Orbit Logo" className="h-10 w-auto object-contain" />
-      </div>
-
-      {/* Sidebar: Desktop Only (Dark Mode) */}
-      <aside className={`hidden md:flex inset-y-0 left-0 z-40 flex-shrink-0 border-r border-[#3C4043] bg-[#202124] flex-col shadow-lg transition-all duration-300 ${isSidebarOpen ? 'w-64' : 'w-20'}`}>
-        <div className="h-16 flex items-center justify-between px-6 border-b border-[#3C4043]">
-          <div className="flex items-center gap-3 overflow-hidden">
-            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-[#9AA0A6] hover:text-white transition-colors flex-shrink-0">
-              <Menu className="w-6 h-6" />
-            </button>
-            {isSidebarOpen && <img src="/logoorbitsvg.svg" alt="Orbit Logo" className="h-10 w-auto object-contain invert brightness-200" />}
+    <div className="flex h-screen w-full bg-[#F0F2F5] text-[#202124] overflow-hidden font-sans selection:bg-blue-100">
+      
+      {/* Sidebar Desktop */}
+      <aside className={`hidden md:flex flex-col bg-white border-r border-[#E0E4E9] shadow-[10px_0_30px_rgba(0,0,0,0.02)] transition-all duration-500 ease-in-out relative z-30 ${isSidebarOpen ? 'w-72' : 'w-24'}`}>
+        {/* Brand Logo Section */}
+        <div className="h-24 flex items-center px-7 mb-4">
+          <div className="flex items-center gap-4 w-full">
+            <div className="w-10 h-10 bg-[#0066FF] rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-blue-200">
+              <LayoutGrid size={22} className="text-white" />
+            </div>
+            {isSidebarOpen && (
+              <div className="overflow-hidden animate-in fade-in slide-in-from-left-2 duration-500">
+                <h2 className="text-xl font-black tracking-tighter text-[#202124] leading-none">ORBIT</h2>
+                <p className="text-[10px] font-bold text-[#5F6368] uppercase tracking-[0.2em] mt-1">Dosen Portal</p>
+              </div>
+            )}
           </div>
         </div>
 
-        <nav className="flex-1 px-3 py-6 space-y-6 overflow-y-auto overflow-x-hidden">
-          <div>
-            {isSidebarOpen && <p className="px-3 text-[10px] font-bold text-[#9AA0A6] uppercase tracking-widest mb-3">Menu Utama</p>}
-            <div className="space-y-1">
-              {navItems.map((item) => {
-                const active = pathname === item.href || (item.href !== '/dosen' && pathname.startsWith(item.href))
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    title={!isSidebarOpen ? item.name : undefined}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${active
-                        ? 'bg-[#3C4043] text-white'
-                        : 'text-[#9AA0A6] hover:bg-[#303134] hover:text-white'
-                      } ${!isSidebarOpen ? 'justify-center' : ''}`}
-                  >
-                    <item.icon className={`w-5 h-5 flex-shrink-0 ${active ? 'text-white' : 'text-[#9AA0A6]'}`} />
-                    {isSidebarOpen && <span className="text-sm font-medium truncate">{item.name}</span>}
-                  </Link>
-                )
-              })}
-            </div>
-          </div>
+        {/* Navigation Section */}
+        <nav className="flex-1 px-4 space-y-2 overflow-y-auto custom-scrollbar">
+          {navItems.map((item) => {
+            const active = pathname === item.href || (item.href !== '/dosen' && pathname.startsWith(item.href))
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`group relative flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 ${
+                  active 
+                    ? 'bg-[#0066FF] text-white shadow-xl shadow-blue-200 translate-x-1' 
+                    : 'text-[#5F6368] hover:bg-[#F8F9FA] hover:text-[#202124]'
+                }`}
+              >
+                <item.icon size={20} className={`shrink-0 transition-transform duration-300 ${active ? 'scale-110' : 'group-hover:scale-110'}`} />
+                {isSidebarOpen && (
+                  <span className="text-[14px] font-bold tracking-tight animate-in fade-in duration-500">
+                    {item.name}
+                  </span>
+                )}
+                {active && isSidebarOpen && (
+                  <div className="absolute right-4 w-1.5 h-1.5 bg-white rounded-full shadow-glow"></div>
+                )}
+              </Link>
+            )
+          })}
         </nav>
 
-        <div className="p-3 border-t border-[#3C4043] bg-[#202124]">
-          <div className="flex flex-col gap-2">
-            <button onClick={handleLogout} className={`flex items-center ${!isSidebarOpen ? 'justify-center' : 'gap-3'} px-3 py-2.5 rounded-lg hover:bg-[#3C4043] text-[#9AA0A6] hover:text-[#EA4335] transition-colors w-full`} title="Keluar">
-              <LogOut className="w-5 h-5 flex-shrink-0" />
-              {isSidebarOpen && <span className="text-sm font-medium">Keluar</span>}
+        {/* User Profile Section (Bottom) */}
+        <div className="p-4 mt-auto border-t border-[#F0F2F5]">
+          <div className={`p-4 rounded-[24px] bg-[#F8F9FA] transition-all duration-300 ${isSidebarOpen ? 'flex flex-col gap-4' : 'flex flex-col items-center'}`}>
+            <div className={`flex items-center gap-3 ${!isSidebarOpen && 'justify-center'}`}>
+              <div className="w-11 h-11 rounded-full bg-white border-2 border-white shadow-md overflow-hidden shrink-0 flex items-center justify-center font-bold text-[#0066FF]">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-lg tracking-tighter">{initial}</span>
+                )}
+              </div>
+              {isSidebarOpen && (
+                <div className="overflow-hidden min-w-0">
+                  <p className="text-sm font-bold text-[#202124] truncate leading-tight">{profileName}</p>
+                  <p className="text-[11px] font-semibold text-[#5F6368] truncate mt-0.5">{nip}</p>
+                </div>
+              )}
+            </div>
+            
+            <button 
+              onClick={handleLogout}
+              className={`flex items-center gap-3 py-3 px-4 rounded-xl transition-all duration-300 group ${
+                isSidebarOpen 
+                  ? 'bg-white hover:bg-red-50 text-[#5F6368] hover:text-red-600 border border-[#F0F2F5] shadow-sm' 
+                  : 'text-[#5F6368] hover:text-red-600'
+              }`}
+              title="Keluar"
+            >
+              <LogOut size={18} className="shrink-0 group-hover:-translate-x-1 transition-transform" />
+              {isSidebarOpen && <span className="text-xs font-black uppercase tracking-widest">Keluar</span>}
             </button>
           </div>
         </div>
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#F8F9FA] z-10 relative transition-colors">
-        
-        {/* Top Right Profile Header (Desktop) */}
-        <header className="hidden md:flex h-16 items-center justify-end px-8 border-b border-gray-200 bg-white shrink-0 gap-4 transition-colors">
-          <NotificationBell />
-          <Link href="/dosen/profil" className="flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-[#303134] p-1.5 pr-3 rounded-full transition-colors border border-transparent hover:border-gray-200 dark:hover:border-[#3C4043]">
-            <div className="text-right">
-              <p className="text-sm font-bold text-[#202124] dark:text-[#E8EAED]">{profileName}</p>
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+        {/* Header Desktop */}
+        <header className="hidden md:flex h-20 items-center justify-between px-10 bg-transparent shrink-0">
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="w-10 h-10 rounded-xl bg-white border border-[#E0E4E9] flex items-center justify-center text-[#5F6368] hover:text-[#202124] hover:shadow-md transition-all active:scale-95"
+            >
+              <Menu size={20} />
+            </button>
+            <div className="h-4 w-[1px] bg-[#E0E4E9] mx-2"></div>
+            <h1 className="text-lg font-bold text-[#202124] tracking-tight">
+              {navItems.find(item => pathname === item.href || (item.href !== '/dosen' && pathname.startsWith(item.href)))?.name || 'Dashboard'}
+            </h1>
+          </div>
+          
+          <div className="flex items-center gap-6">
+            <div className="w-10 h-10 rounded-xl bg-white border border-[#E0E4E9] flex items-center justify-center text-[#5F6368] shadow-sm">
+              <NotificationBell />
             </div>
-            <div className="relative">
-              <div className="w-9 h-9 rounded-full bg-[#137333] text-white flex items-center justify-center font-bold text-sm shadow-sm overflow-hidden">
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                ) : initial}
-              </div>
-              <div className="absolute -bottom-1 -right-2 bg-[#137333] text-white text-[9px] font-bold px-1.5 py-0.5 rounded border border-white shadow-sm uppercase tracking-wider">
-                DOSEN
+            <div className="h-4 w-[1px] bg-[#E0E4E9]"></div>
+            <div className="flex items-center gap-3 pl-2">
+              <div className="text-right hidden lg:block">
+                <p className="text-sm font-bold text-[#202124] leading-tight">{profileName}</p>
+                <p className="text-[10px] font-black text-[#0066FF] uppercase tracking-widest mt-0.5">{role}</p>
               </div>
             </div>
-          </Link>
+          </div>
         </header>
 
-        {/* Scrollable Page Content */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
-          <div className="max-w-6xl mx-auto">
+        {/* Content Wrapper */}
+        <div className="flex-1 overflow-y-auto p-4 md:p-10 custom-scrollbar">
+          <div className="max-w-7xl mx-auto">
             {children}
           </div>
         </div>
+
+        {/* Mobile Sidebar Overlay/Header */}
+        <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-[#F0F2F5] flex items-center justify-between px-6 z-50">
+           <h2 className="text-lg font-black tracking-tighter text-[#0066FF]">ORBIT</h2>
+           <div className="flex items-center gap-4">
+              <NotificationBell />
+              <div className="w-8 h-8 rounded-full bg-[#0066FF] text-white flex items-center justify-center text-xs font-bold shadow-md">
+                 {initial}
+              </div>
+           </div>
+        </div>
       </main>
 
-      {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-[#202124] border-t border-gray-200 dark:border-[#3C4043] flex items-center justify-around z-40 pb-safe shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
-        {bottomNavItems.map((item) => {
+      {/* Mobile Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#F0F2F5] flex items-center justify-around z-50 px-2 py-3 shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
+        {navItems.map((item) => {
           const active = pathname === item.href || (item.href !== '/dosen' && pathname.startsWith(item.href))
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center justify-center py-3 w-full transition-colors ${
-                active ? 'text-[#137333]' : 'text-[#5F6368] dark:text-[#9AA0A6] hover:text-[#202124] dark:hover:text-white'
+              className={`flex flex-col items-center justify-center gap-1.5 w-full transition-all duration-300 ${
+                active ? 'text-[#0066FF]' : 'text-[#5F6368]'
               }`}
             >
-              <div className={`p-1 rounded-full mb-1 ${active ? 'bg-[#E6F4EA] dark:bg-[#3C4043]' : ''}`}>
-                <item.icon className={`w-5 h-5 ${active ? 'text-[#137333]' : 'text-[#5F6368] dark:text-[#9AA0A6]'}`} />
+              <div className={`p-2 rounded-xl transition-all duration-300 ${active ? 'bg-blue-50' : ''}`}>
+                <item.icon size={20} className={active ? 'animate-pulse' : ''} />
               </div>
-              <span className={`text-[10px] font-medium ${active ? 'text-[#137333]' : 'text-[#5F6368] dark:text-[#9AA0A6]'}`}>{item.name}</span>
+              <span className={`text-[10px] font-black uppercase tracking-widest ${active ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden transition-all'}`}>
+                {item.name.split(' ')[0]}
+              </span>
             </Link>
           )
         })}
+        <button 
+          onClick={handleLogout}
+          className="flex flex-col items-center justify-center gap-1.5 w-full text-[#5F6368]"
+        >
+          <div className="p-2 rounded-xl">
+            <LogOut size={20} />
+          </div>
+        </button>
       </nav>
 
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #E0E4E9;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #D1D5DB;
+        }
+        .shadow-glow {
+          box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+        }
+      `}</style>
     </div>
   )
 }
