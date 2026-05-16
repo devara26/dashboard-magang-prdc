@@ -52,8 +52,7 @@ export default function JurnalPage() {
             kegiatan: combinedKegiatan,
             tanggal: newKegiatan.tanggal,
             status: newKegiatan.status,
-            nim: profile.nim,
-            nama_lengkap: profile.nama_lengkap
+            nim: profile.nim
          }
 
          const { error } = await supabase.from('Kegiatan').insert([payload])
