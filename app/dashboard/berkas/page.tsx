@@ -18,7 +18,7 @@ import {
 type Berkas = {
   id: string
   mahasiswa_id: string
-  file_type: string
+  document_type: string
   file_url: string
   created_at: string
 }
@@ -70,7 +70,6 @@ export default function BerkasPage() {
       const fileName = `${user.id}-${type}-${Math.random()}.${fileExt}`
       const filePath = `${user.id}/${fileName}`
 
-      // PERBAIKAN UTAMA: Mengubah target bucket ke 'berkas' sesuai database Supabase Anda
       const { error: uploadError } = await supabase.storage
         .from('berkas')
         .upload(filePath, file)
@@ -78,16 +77,16 @@ export default function BerkasPage() {
       if (uploadError) throw uploadError
       setUploadingState(prev => ({ ...prev, [type]: 60 }))
 
-      // PERBAIKAN: Mengubah target URL generator ke bucket 'berkas'
       const { data: { publicUrl } } = supabase.storage
         .from('berkas')
         .getPublicUrl(filePath)
 
+      // PERBAIKAN UTAMA: Nama kolom diselaraskan menjadi 'document_type' sesuai batasan skema Supabase Anda
       const { error: dbError } = await supabase
         .from('berkas')
         .insert({
           mahasiswa_id: user.id,
-          file_type: type,
+          document_type: type,
           file_url: publicUrl,
         })
 
@@ -112,10 +111,9 @@ export default function BerkasPage() {
   }
 
   async function handleDelete(file: Berkas) {
-    if (!confirm(`Hapus berkas ${file.file_type}?`)) return
+    if (!confirm(`Hapus berkas ${file.document_type}?`)) return
 
     try {
-      // PERBAIKAN: Pemotongan token URL disesuaikan dengan nama folder bucket 'berkas'
       const path = file.file_url.split('/berkas/')[1]
       if (path) {
         await supabase.storage.from('berkas').remove([path])
@@ -128,7 +126,7 @@ export default function BerkasPage() {
 
       if (error) throw error
 
-      await logAction('Hapus Berkas', `Menghapus berkas: ${file.file_type}`)
+      await logAction('Hapus Berkas', `Menghapus berkas: ${file.document_type}`)
       toast.success('Berkas berhasil dihapus')
       fetchBerkas()
     } catch (error: any) {
@@ -136,6 +134,7 @@ export default function BerkasPage() {
     }
   }
 
+  // Menyesuaikan pemetaan data list dari properti database baru
   const completionPercentage = Math.round((berkas.length / DOCUMENT_TYPES.length) * 100)
 
   if (loading) return null
@@ -178,7 +177,8 @@ export default function BerkasPage() {
       {/* Grid List */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {DOCUMENT_TYPES.map((docType) => {
-          const uploadedFile = berkas.find(b => b.file_type === docType)
+          // Menyesuaikan pencarian data list berdasarkan document_type
+          const uploadedFile = berkas.find(b => b.document_type === docType)
           const isUploading = uploadingState[docType] !== undefined
           const uploadProgress = uploadingState[docType] || 0
 
