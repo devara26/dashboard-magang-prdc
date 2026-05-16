@@ -3,35 +3,34 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { toast } from 'sonner'
-import { exportLaporanExcel } from '@/lib/export-excel'
-import OnboardingWizard from '@/components/OnboardingWizard'
 import { 
-  Download, 
-  Plus, 
+  Bell, 
   Calendar, 
   CheckCircle2, 
-  Zap, 
-  TrendingUp, 
-  BarChart3, 
-  Building2, 
-  Briefcase, 
   FileText, 
+  Plus, 
   ChevronRight,
-  MoreHorizontal,
-  Search,
-  Filter
+  TrendingUp,
+  MapPin,
+  Clock,
+  User
 } from 'lucide-react'
+
+const DOCUMENT_TYPES_COUNT = 5 // Based on berkas page
 
 export default function DashboardPage() {
    const router = useRouter()
    const [profile, setProfile] = useState<any>(null)
    const [kegiatan, setKegiatan] = useState<any[]>([])
-   const [stats, setStats] = useState({ hadir: 0, tugasSelesai: 0, totalKegiatan: 0 })
+   const [stats, setStats] = useState({ 
+      hadir: 0, 
+      tugasSelesai: 0, 
+      totalKegiatan: 0,
+      totalBerkas: 0
+   })
+   const [monthlyAttendance, setMonthlyAttendance] = useState<number[]>(Array(12).fill(0))
    const [loading, setLoading] = useState(true)
-   const [downloadingExcel, setDownloadingExcel] = useState(false)
-   const [showOnboarding, setShowOnboarding] = useState(false)
    const [userId, setUserId] = useState<string | null>(null)
 
    useEffect(() => {
@@ -47,28 +46,51 @@ export default function DashboardPage() {
          const { data: profileData } = await supabase.from('profiles').select('*').eq('id', user.id).single()
          setProfile(profileData)
 
-         if (!profileData?.nim || !profileData?.instansi_magang) setShowOnboarding(true)
+         // Fetch attendance counts and distribution
+         const { data: absensiData } = await supabase
+            .from('absensi')
+            .select('tanggal')
+            .eq('mahasiswa_id', user.id)
+            .eq('status', 'Hadir')
 
-         const { count: countHadir } = await supabase.from('absensi').select('*', { count: 'exact', head: true }).eq('mahasiswa_id', user.id).eq('status', 'Hadir')
+         const hadirCount = absensiData?.length || 0
+         const distribution = Array(12).fill(0)
+         absensiData?.forEach(row => {
+            const month = new Date(row.tanggal).getMonth()
+            distribution[month]++
+         })
+         setMonthlyAttendance(distribution)
 
+         // Fetch journal stats
          let kegiatanData: any[] = []
          let countSelesai = 0
          let countTotal = 0
 
          if (profileData?.nim) {
-            const { data, error } = await supabase.from('Kegiatan').select('*').eq('nim', profileData.nim).order('tanggal', { ascending: false }).limit(6)
+            const { data, error } = await supabase.from('Kegiatan').select('*').eq('nim', profileData.nim).order('tanggal', { ascending: false }).limit(3)
             kegiatanData = data || []
 
             const [selCount, totCount] = await Promise.all([
-               supabase.from('Kegiatan').select('*', { count: 'exact', head: true }).eq('nim', profileData.nim).eq('status', 'Selesai'),
+               supabase.from('Kegiatan').select('*', { count: 'exact', head: true }).eq('nim', profileData.nim).eq('status_persetujuan', 'Disetujui'),
                supabase.from('Kegiatan').select('*', { count: 'exact', head: true }).eq('nim', profileData.nim)
             ])
             countSelesai = selCount.count || 0
             countTotal = totCount.count || 0
          }
 
+         // Fetch berkas stats
+         const { count: berkasCount } = await supabase
+            .from('berkas')
+            .select('*', { count: 'exact', head: true })
+            .eq('mahasiswa_id', user.id)
+
          setKegiatan(kegiatanData)
-         setStats({ hadir: countHadir || 0, tugasSelesai: countSelesai, totalKegiatan: countTotal })
+         setStats({ 
+            hadir: hadirCount, 
+            tugasSelesai: countSelesai, 
+            totalKegiatan: countTotal,
+            totalBerkas: berkasCount || 0
+         })
       } catch (error) {
          console.error(error)
       } finally {
@@ -78,234 +100,206 @@ export default function DashboardPage() {
 
    const totalHariTarget = 150
    const progressPersen = Math.min(Math.round((stats.hadir / totalHariTarget) * 100), 100)
+   const currentMonth = new Date().getMonth()
 
    if (loading) return null
 
    return (
-      <div className="space-y-10 pb-20 animate-in fade-in duration-700">
-         {showOnboarding && userId && (
-            <OnboardingWizard userId={userId} onComplete={() => { setShowOnboarding(false); fetchData(); }} />
-         )}
-
-         {/* Hero Header */}
-         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div>
-               <h1 className="text-[32px] font-black tracking-tight text-[#1A1A1A] mb-1">Morning, {profile?.nama_lengkap?.split(' ')[0]}</h1>
-               <p className="text-[14px] font-bold text-[#666666] tracking-tight">Here's a summary of your internship progress</p>
+      <div className="space-y-12 pb-24 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+         {/* Header Area */}
+         <div className="flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+            <div className="flex flex-col md:flex-row items-center gap-6">
+               <div className="w-20 h-20 rounded-full accent-gradient flex items-center justify-center text-white text-3xl font-bold shadow-xl border-4 border-white">
+                  {profile?.nama_lengkap?.charAt(0) || 'U'}
+               </div>
+               <div>
+                  <h1 className="h1-orbit text-[var(--text-main)]">Halo, {profile?.nama_lengkap?.split(' ')[0]}</h1>
+                  <p className="subtitle-orbit text-[var(--text-muted)] mt-1">Selamat datang kembali di platform monitoring ORBIT.</p>
+               </div>
             </div>
-            <div className="flex items-center gap-3">
-               <button
-                  onClick={() => { setDownloadingExcel(true); exportLaporanExcel(profile).finally(() => setDownloadingExcel(false)); }}
-                  className="flex items-center gap-2.5 px-6 py-3 bg-white border border-[#E8E8E8] rounded-2xl text-[13px] font-bold text-[#1A1A1A] hover:bg-gray-50 hover:shadow-sm transition-all"
-               >
-                  <Download size={16} strokeWidth={2.5} />
-                  Export Data
-               </button>
-               <button
-                  onClick={() => router.push('/dashboard/kegiatan')}
-                  className="flex items-center gap-2.5 px-6 py-3 bg-[#0066FF] text-white rounded-2xl text-[13px] font-black hover:bg-[#0052CC] shadow-lg shadow-blue-200 transition-all active:scale-95"
-               >
-                  <Plus size={16} strokeWidth={3} />
-                  New Activity
-               </button>
+            <button className="neumorphic-button relative w-14 h-14 flex items-center justify-center text-[var(--text-main)]">
+               <Bell size={24} />
+               <span className="absolute top-4 right-4 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>
+            </button>
+         </div>
+
+         {/* Stats Row */}
+         <div className="grid grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
+            <div className="neumorphic-card p-8 flex flex-col items-center text-center">
+               <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-[var(--accent-blue)] mb-6">
+                  <Calendar size={28} />
+               </div>
+               <p className="label-orbit text-[var(--text-muted)] mb-1">Kehadiran</p>
+               <h3 className="h3-orbit text-[var(--text-main)]">{stats.hadir} Hari</h3>
+               <p className="caption-orbit text-[var(--text-light)] mt-2">Target: {totalHariTarget} Hari</p>
+            </div>
+
+            <div className="neumorphic-card p-8 flex flex-col items-center text-center">
+               <div className="w-14 h-14 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-600 mb-6">
+                  <CheckCircle2 size={28} />
+               </div>
+               <p className="label-orbit text-[var(--text-muted)] mb-1">Jurnal</p>
+               <h3 className="h3-orbit text-[var(--text-main)]">{stats.tugasSelesai} Log</h3>
+               <p className="caption-orbit text-[var(--text-light)] mt-2">{Math.round((stats.tugasSelesai / Math.max(1, stats.totalKegiatan)) * 100)}% Disetujui</p>
+            </div>
+
+            <div className="neumorphic-card p-8 flex flex-col items-center text-center col-span-2 md:col-span-1">
+               <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 mb-6">
+                  <FileText size={28} />
+               </div>
+               <p className="label-orbit text-[var(--text-muted)] mb-1">Berkas</p>
+               <h3 className="h3-orbit text-[var(--text-main)]">{stats.totalBerkas} Dokumen</h3>
+               <p className="caption-orbit text-[var(--text-light)] mt-2">{stats.totalBerkas}/{DOCUMENT_TYPES_COUNT} Selesai</p>
             </div>
          </div>
 
-         {/* Bento Grid Layer 1: Premium Stats */}
-         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Presence Card */}
-            <div className="bg-white rounded-[32px] p-8 border border-[#E8E8E8] shadow-sm relative overflow-hidden group hover:border-[#0066FF]/20 transition-all">
-               <div className="flex justify-between items-start mb-8">
-                  <div className="w-12 h-12 bg-[#0066FF] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-100">
-                     <Calendar size={22} strokeWidth={2.5} />
+         {/* Progress Section */}
+         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
+            {/* Circular Progress */}
+            <div className="neumorphic-card p-10 flex flex-col items-center">
+               <h4 className="h4-orbit text-[var(--text-main)] mb-10">Progres Magang</h4>
+               <div className="relative w-64 h-64 flex items-center justify-center">
+                  <svg className="w-full h-full -rotate-90">
+                     <circle className="text-gray-100" cx="128" cy="128" r="110" fill="transparent" stroke="currentColor" strokeWidth="24" />
+                     <circle 
+                        className="text-[var(--accent-blue)]" 
+                        cx="128" cy="128" r="110" 
+                        fill="transparent" 
+                        stroke="currentColor" 
+                        strokeWidth="24" 
+                        strokeDasharray="691.15" 
+                        strokeDashoffset={691.15 - (691.15 * progressPersen / 100)} 
+                        strokeLinecap="round"
+                        style={{ transition: 'stroke-dashoffset 2s ease-in-out' }}
+                     />
+                  </svg>
+                  <div className="absolute flex flex-col items-center">
+                     <span className="h1-orbit text-[var(--text-main)] leading-none">{progressPersen}%</span>
+                     <span className="caption-orbit font-bold text-[var(--text-light)] uppercase tracking-widest mt-2">Selesai</span>
                   </div>
-                  <button className="text-[#A0A0A0] hover:text-[#1A1A1A] transition-colors"><MoreHorizontal size={20} /></button>
                </div>
-               <div>
-                  <p className="text-[11px] font-black text-[#A0A0A0] uppercase tracking-[0.1em] mb-2">Presence Total</p>
-                  <div className="flex items-center gap-3">
-                     <h3 className="text-[36px] font-black tracking-tighter text-[#1A1A1A]">{stats.hadir}</h3>
-                     <div className="flex items-center gap-1 text-[11px] font-black text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
-                        <TrendingUp size={12} strokeWidth={3} />
-                        2.4%
-                     </div>
+               <div className="mt-10 grid grid-cols-2 gap-10 w-full">
+                  <div className="text-center">
+                     <p className="h5-orbit text-[var(--text-main)]">{stats.hadir}</p>
+                     <p className="caption-orbit text-[var(--text-light)]">Hadir</p>
                   </div>
-                  <p className="text-[12px] font-bold text-[#666666] mt-3">Target: {totalHariTarget} working days</p>
-               </div>
-               <div className="absolute right-0 bottom-0 w-32 h-32 bg-[#0066FF]/5 rounded-tl-[100px] -mr-10 -mb-10 group-hover:scale-110 transition-transform"></div>
-            </div>
-
-            {/* Tasks Card */}
-            <div className="bg-white rounded-[32px] p-8 border border-[#E8E8E8] shadow-sm relative overflow-hidden group hover:border-[#0066FF]/20 transition-all">
-               <div className="flex justify-between items-start mb-8">
-                  <div className="w-12 h-12 bg-orange-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-orange-100">
-                     <CheckCircle2 size={22} strokeWidth={2.5} />
+                  <div className="text-center">
+                     <p className="h5-orbit text-[var(--text-main)]">{totalHariTarget}</p>
+                     <p className="caption-orbit text-[var(--text-light)]">Target</p>
                   </div>
-                  <button className="text-[#A0A0A0] hover:text-[#1A1A1A] transition-colors"><MoreHorizontal size={20} /></button>
-               </div>
-               <div>
-                  <p className="text-[11px] font-black text-[#A0A0A0] uppercase tracking-[0.1em] mb-2">Verified Logs</p>
-                  <div className="flex items-center gap-3">
-                     <h3 className="text-[36px] font-black tracking-tighter text-[#1A1A1A]">{stats.tugasSelesai}</h3>
-                     <div className="text-[11px] font-black text-[#666666] bg-[#F4F4F4] px-2.5 py-1 rounded-full">
-                        {Math.round(stats.tugasSelesai / Math.max(1, stats.totalKegiatan) * 100)}% Verified
-                     </div>
-                  </div>
-                  <p className="text-[12px] font-bold text-[#666666] mt-3">Approved by supervisor</p>
                </div>
             </div>
 
-            {/* Performance Card - High Contrast Dark */}
-            <div className="bg-[#1A1A1A] rounded-[32px] p-8 shadow-2xl relative overflow-hidden group border border-transparent">
-               <div className="flex justify-between items-start mb-8">
-                  <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-white backdrop-blur-sm">
-                     <Zap size={22} strokeWidth={2.5} fill="currentColor" />
+            {/* Vertical Bar Chart */}
+            <div className="neumorphic-card p-10 flex flex-col">
+               <div className="flex justify-between items-center mb-10">
+                  <h4 className="h4-orbit text-[var(--text-main)]">Kehadiran Bulanan</h4>
+                  <div className="px-4 py-2 bg-gray-50 rounded-full flex items-center gap-2">
+                     <TrendingUp size={16} className="text-[var(--accent-blue)]" />
+                     <span className="caption-orbit font-bold">2026</span>
                   </div>
-                  <button className="text-white/30 hover:text-white transition-colors"><MoreHorizontal size={20} /></button>
                </div>
-               <div>
-                  <p className="text-[11px] font-black text-white/40 uppercase tracking-[0.1em] mb-2">Consistency Streak</p>
-                  <div className="flex items-center gap-3">
-                     <h3 className="text-[36px] font-black tracking-tighter text-white">{stats.hadir}</h3>
-                     <div className="text-[11px] font-black text-blue-400 bg-white/10 px-2.5 py-1 rounded-full border border-white/5">
-                        Elite Tier
-                     </div>
-                  </div>
-                  <p className="text-[12px] font-bold text-white/40 mt-3">Active for {stats.hadir} consecutive days</p>
+               <div className="flex-1 flex items-end justify-between h-[300px] px-2 gap-4">
+                  {['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'].map((label, i) => {
+                     const val = monthlyAttendance[i]
+                     const maxVal = Math.max(...monthlyAttendance, 1)
+                     const height = (val / maxVal) * 100
+                     return (
+                        <div key={i} className="flex-1 flex flex-col items-center gap-4">
+                           <div className="w-full bg-gray-100 rounded-full h-[240px] flex flex-col justify-end overflow-hidden p-1.5">
+                              <div 
+                                 className={`w-full rounded-full transition-all duration-1000 ease-out ${i === currentMonth ? 'accent-gradient' : 'bg-gray-200'}`}
+                                 style={{ height: `${Math.max(10, height)}%` }}
+                              />
+                           </div>
+                           <span className={`caption-orbit font-bold ${i === currentMonth ? 'text-[var(--accent-blue)]' : 'text-[var(--text-light)]'}`}>{label}</span>
+                        </div>
+                     )
+                  })}
                </div>
-               <div className="absolute right-0 bottom-0 w-40 h-40 bg-[#0066FF]/10 rounded-full blur-[60px] pointer-events-none"></div>
+               <p className="caption-orbit text-[var(--text-muted)] text-center mt-8 italic">Data kehadiran diambil dari rekap harian yang telah diverifikasi.</p>
             </div>
          </div>
 
-         {/* Bento Grid Layer 2: Analytics & Info */}
-         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Chart Section */}
-            <div className="lg:col-span-2 bg-white rounded-[32px] p-10 border border-[#E8E8E8] shadow-sm flex flex-col">
-               <div className="flex justify-between items-center mb-12">
-                  <div>
-                     <h4 className="text-[20px] font-black tracking-tight text-[#1A1A1A]">Activity Analytics</h4>
-                     <p className="text-[13px] font-bold text-[#A0A0A0] mt-0.5">Your daily distribution this year</p>
-                  </div>
-                  <div className="flex gap-2 bg-[#F4F4F4] p-1.5 rounded-2xl">
-                     <button className="px-4 py-2 bg-white text-[11px] font-black rounded-xl shadow-sm text-[#1A1A1A]">Monthly</button>
-                     <button className="px-4 py-2 text-[11px] font-black text-[#A0A0A0] hover:text-[#1A1A1A] transition-colors">Weekly</button>
-                  </div>
-               </div>
-               <div className="flex-1 flex items-end justify-between h-[240px] px-2 gap-3">
-                  {[40, 70, 45, 90, 65, 80, 50, 85, 60, 95, 75, 85].map((h, i) => (
-                     <div key={i} className="group relative flex flex-col items-center gap-4 w-full max-w-[40px]">
-                        <div className="absolute -top-12 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 bg-[#1A1A1A] text-white px-3 py-1.5 rounded-xl text-[11px] font-black shadow-xl z-10">
-                           {h}%
-                        </div>
-                        <div className="w-full bg-[#F4F4F4] rounded-full overflow-hidden h-[180px] flex flex-col justify-end p-1">
-                           <div
-                              className={`w-full rounded-full transition-all duration-1000 ease-out ${i === 9 ? 'bg-[#0066FF] shadow-lg shadow-blue-200' : 'bg-[#1A1A1A]/5 group-hover:bg-[#1A1A1A]/10'}`}
-                              style={{ height: `${h}%` }}
-                           />
-                        </div>
-                        <span className="text-[11px] font-black text-[#A0A0A0] group-hover:text-[#1A1A1A] uppercase tracking-wider transition-colors">{['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'][i]}</span>
-                     </div>
-                  ))}
-               </div>
-            </div>
-
-            {/* Placement Details */}
-            <div className="bg-white rounded-[32px] p-10 border border-[#E8E8E8] shadow-sm flex flex-col">
-               <h4 className="text-[18px] font-black tracking-tight text-[#1A1A1A] mb-8">My Placement</h4>
-               <div className="space-y-6 flex-1">
-                  <div className="flex items-center gap-4 p-5 bg-[#F4F4F4] rounded-[24px] group hover:bg-white hover:border-[#E8E8E8] border border-transparent transition-all">
-                     <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-[#0066FF] shadow-sm border border-[#E8E8E8]">
-                        <Building2 size={20} strokeWidth={2.5} />
-                     </div>
-                     <div className="min-w-0">
-                        <p className="text-[14px] font-black text-[#1A1A1A] truncate tracking-tight">{profile?.instansi_magang || 'Unassigned'}</p>
-                        <p className="text-[11px] font-bold text-[#A0A0A0] uppercase tracking-wider mt-0.5">Corporate Agency</p>
-                     </div>
-                  </div>
-                  <div className="flex items-center gap-4 p-5 bg-[#F4F4F4] rounded-[24px] group hover:bg-white hover:border-[#E8E8E8] border border-transparent transition-all">
-                     <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-orange-500 shadow-sm border border-[#E8E8E8]">
-                        <Briefcase size={20} strokeWidth={2.5} />
-                     </div>
-                     <div className="min-w-0">
-                        <p className="text-[14px] font-black text-[#1A1A1A] truncate tracking-tight">{profile?.unit_magang || 'No Unit Selected'}</p>
-                        <p className="text-[11px] font-bold text-[#A0A0A0] uppercase tracking-wider mt-0.5">Assigned Position</p>
-                     </div>
-                  </div>
-
-                  <div className="pt-8 flex flex-col items-center">
-                     <div className="relative w-36 h-36 flex items-center justify-center">
-                        <svg className="w-full h-full -rotate-90">
-                           <circle className="text-[#F4F4F4]" cx="72" cy="72" r="62" fill="transparent" stroke="currentColor" strokeWidth="12" />
-                           <circle className="text-[#0066FF]" cx="72" cy="72" r="62" fill="transparent" stroke="currentColor" strokeWidth="12" strokeDasharray="389.5" strokeDashoffset={389.5 - (389.5 * progressPersen / 100)} strokeLinecap="round" />
-                        </svg>
-                        <div className="absolute flex flex-col items-center">
-                           <span className="text-[28px] font-black leading-none text-[#1A1A1A] tracking-tighter">{progressPersen}%</span>
-                           <span className="text-[10px] font-black text-[#A0A0A0] uppercase tracking-[0.2em] mt-2">Complete</span>
-                        </div>
-                     </div>
-                  </div>
-               </div>
-            </div>
-         </div>
-
-         {/* Bento Grid Layer 3: Modern Table */}
-         <div className="bg-white rounded-[32px] p-8 border border-[#E8E8E8] shadow-sm">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 px-2">
-               <div>
-                  <h4 className="text-[20px] font-black tracking-tight text-[#1A1A1A]">Recent Activity Logs</h4>
-                  <p className="text-[13px] font-bold text-[#A0A0A0]">Your latest contributions and updates</p>
-               </div>
-               <div className="flex items-center gap-3">
-                  <div className="relative flex-1 md:w-64">
-                     <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#A0A0A0]" />
-                     <input placeholder="Search journals..." className="w-full pl-11 pr-4 py-3 bg-[#F4F4F4] border-transparent rounded-2xl text-[13px] font-bold outline-none focus:bg-white focus:ring-2 focus:ring-[#0066FF]/20 transition-all" />
-                  </div>
-                  <button className="flex items-center gap-2 px-5 py-3 border border-[#E8E8E8] rounded-2xl text-[13px] font-black text-[#666666] hover:bg-[#F4F4F4] transition-all">
-                     <Filter size={16} />
-                     Filter
+         {/* Recent Activity & Quick Actions */}
+         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+            {/* Journal List */}
+            <div className="lg:col-span-2 space-y-6">
+               <div className="flex items-center justify-between px-4">
+                  <h4 className="h4-orbit text-[var(--text-main)]">Jurnal Terbaru</h4>
+                  <button onClick={() => router.push('/dashboard/kegiatan')} className="flex items-center gap-2 text-[var(--accent-blue)] font-bold caption-orbit hover:underline">
+                     Lihat Semua <ChevronRight size={16} />
                   </button>
                </div>
+               <div className="space-y-4">
+                  {kegiatan.length > 0 ? kegiatan.map((item, idx) => (
+                     <div key={idx} className="neumorphic-card p-6 flex items-center justify-between group hover:scale-[1.01] transition-transform">
+                        <div className="flex items-center gap-6">
+                           <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-[var(--accent-blue)]">
+                              <FileText size={24} />
+                           </div>
+                           <div>
+                              <p className="body2-orbit font-bold text-[var(--text-main)] truncate max-w-[200px] md:max-w-md">{item.kegiatan}</p>
+                              <div className="flex items-center gap-4 mt-1">
+                                 <span className="caption-orbit text-[var(--text-light)] flex items-center gap-1.5">
+                                    <Clock size={12} /> {new Date(item.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                                 </span>
+                                 <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${item.status === 'Disetujui' ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-50 text-orange-600'}`}>
+                                    {item.status}
+                                 </span>
+                              </div>
+                           </div>
+                        </div>
+                        <button className="w-10 h-10 flex items-center justify-center rounded-full text-[var(--text-light)] hover:text-[var(--accent-blue)] hover:bg-white shadow-sm border border-transparent hover:border-gray-200 transition-all">
+                           <ChevronRight size={20} />
+                        </button>
+                     </div>
+                  )) : (
+                     <div className="neumorphic-card p-12 text-center text-[var(--text-light)] body2-orbit">
+                        Belum ada log kegiatan jurnal.
+                     </div>
+                  )}
+               </div>
             </div>
 
-            <div className="overflow-x-auto">
-               <table className="w-full">
-                  <thead>
-                     <tr className="border-b border-[#F4F4F4]">
-                        <th className="text-left py-5 px-4 text-[11px] font-black text-[#A0A0A0] uppercase tracking-[0.15em]">Log Description</th>
-                        <th className="text-left py-5 px-4 text-[11px] font-black text-[#A0A0A0] uppercase tracking-[0.15em]">Timestamp</th>
-                        <th className="text-left py-5 px-4 text-[11px] font-black text-[#A0A0A0] uppercase tracking-[0.15em]">Status</th>
-                        <th className="text-right py-5 px-4 text-[11px] font-black text-[#A0A0A0] uppercase tracking-[0.15em]">Action</th>
-                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#F4F4F4]">
-                     {kegiatan.map((item, idx) => (
-                        <tr key={idx} className="group hover:bg-[#F4F4F4]/50 transition-colors">
-                           <td className="py-5 px-4">
-                              <div className="flex items-center gap-4">
-                                 <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-white shadow-sm ${idx % 2 === 0 ? 'bg-[#0066FF]' : 'bg-indigo-600'}`}>
-                                    <FileText size={18} />
-                                 </div>
-                                 <p className="text-[14px] font-bold text-[#1A1A1A] truncate max-w-[280px] tracking-tight">{item.kegiatan}</p>
-                              </div>
-                           </td>
-                           <td className="py-5 px-4">
-                              <p className="text-[13px] font-bold text-[#666666]">{new Date(item.tanggal).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
-                           </td>
-                           <td className="py-5 px-4">
-                              <span className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider ${item.status === 'Selesai' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-orange-50 text-orange-600 border border-orange-100'}`}>
-                                 <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>
-                                 {item.status}
-                              </span>
-                           </td>
-                           <td className="py-5 px-4 text-right">
-                              <button className="w-10 h-10 flex items-center justify-center rounded-full text-[#A0A0A0] hover:text-[#0066FF] hover:bg-white hover:shadow-sm transition-all border border-transparent hover:border-[#E8E8E8]">
-                                 <ChevronRight size={18} />
-                              </button>
-                           </td>
-                        </tr>
-                     ))}
-                  </tbody>
-               </table>
+            {/* Quick Actions */}
+            <div className="space-y-6">
+               <h4 className="h4-orbit text-[var(--text-main)] px-4">Aksi Cepat</h4>
+               <div className="space-y-4">
+                  <button 
+                     onClick={() => router.push('/dashboard/absensi')}
+                     className="neumorphic-button w-full flex items-center justify-center gap-4 accent-gradient text-white !shadow-none py-5"
+                  >
+                     <Plus size={20} />
+                     <span className="label-orbit font-bold">Absen Hari Ini</span>
+                  </button>
+                  <button 
+                     onClick={() => router.push('/dashboard/kegiatan')}
+                     className="neumorphic-button w-full flex items-center justify-center gap-4 bg-white text-[var(--text-main)] py-5"
+                  >
+                     <FileText size={20} className="text-[var(--accent-blue)]" />
+                     <span className="label-orbit font-bold">Tulis Jurnal</span>
+                  </button>
+                  <button 
+                     onClick={() => router.push('/dashboard/berkas')}
+                     className="neumorphic-button w-full flex items-center justify-center gap-4 bg-white text-[var(--text-main)] py-5"
+                  >
+                     <CheckCircle2 size={20} className="text-emerald-600" />
+                     <span className="label-orbit font-bold">Upload Berkas</span>
+                  </button>
+               </div>
+
+               {/* Location Card */}
+               <div className="neumorphic-card p-6 accent-gradient text-white mt-10">
+                  <div className="flex items-center gap-4 mb-4">
+                     <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-sm">
+                        <MapPin size={20} />
+                     </div>
+                     <p className="label-orbit font-bold">Lokasi Magang</p>
+                  </div>
+                  <p className="body2-orbit font-medium opacity-90">{profile?.instansi_magang || 'Belum Ditentukan'}</p>
+                  <p className="caption-orbit mt-1 opacity-60 uppercase tracking-widest">{profile?.unit_magang || 'Unit Tidak Tersedia'}</p>
+               </div>
             </div>
          </div>
       </div>

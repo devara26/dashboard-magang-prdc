@@ -2,7 +2,21 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Users, CheckCircle2, Clock, Download, Check, X } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { 
+  Users, 
+  CheckCircle2, 
+  Clock, 
+  Download, 
+  Check, 
+  X,
+  Bell,
+  Search,
+  MoreHorizontal,
+  ChevronRight,
+  TrendingUp,
+  User as UserIcon
+} from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function DosenBeranda() {
@@ -69,16 +83,12 @@ export default function DosenBeranda() {
 
       const rataKehadiran = totalTarget > 0 ? Math.round((totalHadir / totalTarget) * 100) : 0
 
-      let kegiatanData: any[] = []
-      const { data: kegRes, error: kegErr } = await supabase.from('Kegiatan').select('id, nim, tanggal, kegiatan, status, status_persetujuan').order('tanggal', { ascending: false })
+      const { data: kegiatanData, error: kegErr } = await supabase
+        .from('Kegiatan')
+        .select('id, nim, tanggal, kegiatan, status, status_persetujuan')
+        .order('tanggal', { ascending: false })
 
-      if (kegErr) {
-        const { data: kegRes2, error: kegErr2 } = await supabase.from('Kegiatan').select('id, nim, tanggal, kegiatan, status, status_persetujuan').order('tanggal', { ascending: false })
-        if (kegErr2) throw new Error('Gagal mengambil data kegiatan terbaru.')
-        kegiatanData = kegRes2 || []
-      } else {
-        kegiatanData = kegRes || []
-      }
+      if (kegErr) throw new Error('Gagal mengambil data kegiatan terbaru.')
 
       const menungguCount = kegiatanData.filter(k => k.status_persetujuan === 'Menunggu' || !k.status_persetujuan).length
 
@@ -144,116 +154,177 @@ export default function DosenBeranda() {
     document.body.removeChild(link)
   }
 
-  if (loading) return (
-    <div className="flex h-[80vh] items-center justify-center">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-10 h-10 border-4 border-gray-200 border-t-[#1A73E8] rounded-full animate-spin"></div>
-        <p className="text-[#5F6368] text-sm font-medium animate-pulse">Memuat dashboard...</p>
-      </div>
-    </div>
-  )
+  if (loading) return null
 
   return (
-    <div className="pb-8 animate-[fade-in_0.7s_ease-out] max-w-lg mx-auto md:max-w-none">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#202124]">Selamat datang, {profileName}</h1>
-        <p className="text-[#5F6368] text-sm mt-1">Berikut adalah ringkasan aktivitas mahasiswa bimbingan Anda.</p>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-[#E8F0FE] rounded-full flex items-center justify-center">
-              <Users className="w-6 h-6 text-[#1A73E8]" />
+    <div className="space-y-12 pb-24 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+      {/* Header Area */}
+      <div className="flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+        <div className="flex flex-col md:flex-row items-center gap-6">
+          <div className="w-20 h-20 rounded-full accent-gradient flex items-center justify-center text-white text-3xl font-bold shadow-xl border-4 border-white">
+            {profileName.charAt(0)}
+          </div>
+          <div>
+            <div className="flex flex-col md:flex-row items-center gap-3">
+              <h1 className="h1-orbit text-[var(--text-main)]">Halo, {profileName.split(' ')[0]}</h1>
+              <span className="px-4 py-1 bg-blue-50 text-[var(--accent-blue)] text-[10px] font-bold uppercase tracking-widest rounded-full border border-blue-100">
+                Dosen Pembimbing
+              </span>
             </div>
-            <div>
-              <p className="text-sm font-medium text-[#5F6368]">Total Mahasiswa</p>
-              <h2 className="text-3xl font-bold text-[#202124]">{stats.totalMahasiswa}</h2>
-            </div>
+            <p className="subtitle-orbit text-[var(--text-muted)] mt-1">Pantau progres dan aktivitas mahasiswa bimbingan Anda hari ini.</p>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-[#FEF7E0] rounded-full flex items-center justify-center">
-              <Clock className="w-6 h-6 text-[#E37400]" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-[#5F6368]">Menunggu Persetujuan</p>
-              <h2 className="text-3xl font-bold text-[#202124]">{stats.menunggu}</h2>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-[#E6F4EA] rounded-full flex items-center justify-center">
-              <CheckCircle2 className="w-6 h-6 text-[#137333]" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-[#5F6368]">Rata-rata Kehadiran</p>
-              <h2 className="text-3xl font-bold text-[#202124]">{stats.rataKehadiran}%</h2>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-6 py-5 border-b border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <h3 className="text-[#202124] text-lg font-bold">Status Mahasiswa & Jurnal Terakhir</h3>
-          <button onClick={downloadCSV} className="flex items-center justify-center gap-2 bg-white border border-gray-300 text-[#5F6368] hover:bg-gray-50 px-4 py-2 rounded-full text-sm font-medium transition-colors w-full md:w-auto">
-            <Download className="w-4 h-4" />
-            Download CSV
+        <div className="flex items-center gap-4">
+          <button onClick={downloadCSV} className="neumorphic-button flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--accent-blue)] transition-colors">
+            <Download size={20} />
+            <span className="label-orbit font-bold">Ekspor Data</span>
+          </button>
+          <button className="neumorphic-button relative w-14 h-14 flex items-center justify-center text-[var(--text-main)]">
+            <Bell size={24} />
+            <span className="absolute top-4 right-4 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>
           </button>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-[#F8F9FA] text-[#5F6368] font-medium border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-4">Nama Mahasiswa</th>
-                <th className="px-6 py-4">Kehadiran</th>
-                <th className="px-6 py-4">Status Jurnal Terakhir</th>
-                <th className="px-6 py-4 text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {tableData.length === 0 ? (
-                <tr><td colSpan={4} className="px-6 py-8 text-center text-[#5F6368]">Belum ada data mahasiswa</td></tr>
-              ) : (
-                tableData.map(row => (
-                  <tr key={row.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <p className="font-bold text-[#202124]">{row.nama}</p>
-                      <p className="text-xs text-[#5F6368]">{row.nim}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
-                          <div className={`h-full ${row.attendance >= 80 ? 'bg-[#137333]' : row.attendance >= 50 ? 'bg-[#FBBC04]' : 'bg-[#EA4335]'}`} style={{ width: `${row.attendance}%` }} />
-                        </div>
-                        <span className="font-medium text-[#202124]">{row.attendance}%</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      {row.journalId ? (
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${row.journalStatus === 'Disetujui' ? 'bg-[#E6F4EA] text-[#137333]' : row.journalStatus === 'Ditolak' ? 'bg-[#FCE8E6] text-[#C5221F]' : 'bg-[#FEF7E0] text-[#E37400]'}`}>
-                          {row.journalStatus || 'Menunggu'}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400 text-xs italic">Belum ada jurnal</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      {(row.journalId && (!row.journalStatus || row.journalStatus === 'Menunggu')) ? (
-                        <div className="flex items-center justify-end gap-2">
-                          <button onClick={() => handleApprove(row.journalId, row.id)} className="p-1.5 bg-[#E6F4EA] text-[#137333] hover:bg-[#CEEAD6] rounded-md transition-colors" title="Setujui"><Check className="w-4 h-4" /></button>
-                          <button onClick={() => handleReject(row.journalId, row.id)} className="p-1.5 bg-[#FCE8E6] text-[#C5221F] hover:bg-[#FAD2CF] rounded-md transition-colors" title="Tolak"><X className="w-4 h-4" /></button>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-gray-400">-</span>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      </div>
+
+      {/* Stats Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="neumorphic-card p-8 flex flex-col items-center text-center">
+          <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center text-[var(--accent-blue)] mb-6 shadow-sm">
+            <Users size={32} />
+          </div>
+          <p className="label-orbit text-[var(--text-muted)] mb-1">Total Mahasiswa</p>
+          <h3 className="h3-orbit text-[var(--text-main)]">{stats.totalMahasiswa} Orang</h3>
+          <p className="caption-orbit text-[var(--text-light)] mt-2 flex items-center gap-1.5">
+            <TrendingUp size={14} className="text-emerald-500" /> Aktif dalam program
+          </p>
+        </div>
+
+        <div className="neumorphic-card p-8 flex flex-col items-center text-center">
+          <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-600 mb-6 shadow-sm">
+            <Clock size={32} />
+          </div>
+          <p className="label-orbit text-[var(--text-muted)] mb-1">Menunggu Persetujuan</p>
+          <h3 className="h3-orbit text-[var(--text-main)]">{stats.menunggu} Jurnal</h3>
+          <p className="caption-orbit text-[var(--text-light)] mt-2 italic text-orange-600 font-bold animate-pulse">Membutuhkan tindakan segera</p>
+        </div>
+
+        <div className="neumorphic-card p-8 flex flex-col items-center text-center">
+          <div className="w-16 h-16 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 mb-6 shadow-sm">
+            <CheckCircle2 size={32} />
+          </div>
+          <p className="label-orbit text-[var(--text-muted)] mb-1">Rata-rata Kehadiran</p>
+          <h3 className="h3-orbit text-[var(--text-main)]">{stats.rataKehadiran}%</h3>
+          <p className="caption-orbit text-[var(--text-light)] mt-2">Seluruh mahasiswa bimbingan</p>
+        </div>
+      </div>
+
+      {/* Main Content: Progress & Table */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        {/* Attendance Summary */}
+        <div className="neumorphic-card p-10 flex flex-col items-center justify-center lg:h-full">
+           <h4 className="h4-orbit text-[var(--text-main)] mb-10">Rerata Kehadiran</h4>
+           <div className="relative w-56 h-56 flex items-center justify-center">
+              <svg className="w-full h-full -rotate-90">
+                 <circle className="text-gray-100" cx="112" cy="112" r="95" fill="transparent" stroke="currentColor" strokeWidth="20" />
+                 <circle 
+                    className="text-[var(--accent-blue)]" 
+                    cx="112" cy="112" r="95" 
+                    fill="transparent" 
+                    stroke="currentColor" 
+                    strokeWidth="20" 
+                    strokeDasharray="596.9" 
+                    strokeDashoffset={596.9 - (596.9 * stats.rataKehadiran / 100)} 
+                    strokeLinecap="round"
+                    style={{ transition: 'stroke-dashoffset 2s ease-in-out' }}
+                 />
+              </svg>
+              <div className="absolute flex flex-col items-center">
+                 <span className="h1-orbit text-[var(--text-main)] leading-none">{stats.rataKehadiran}%</span>
+                 <span className="caption-orbit font-bold text-[var(--text-light)] uppercase tracking-widest mt-2">Keseluruhan</span>
+              </div>
+           </div>
+           <p className="body2-orbit text-[var(--text-muted)] text-center mt-10">
+              Statistik kehadiran dihitung berdasarkan total hari magang yang telah dilalui.
+           </p>
+        </div>
+
+        {/* Student Table */}
+        <div className="lg:col-span-2 space-y-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-4">
+             <h4 className="h4-orbit text-[var(--text-main)]">Daftar Mahasiswa Bimbingan</h4>
+             <div className="relative md:w-64">
+                <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-light)]" />
+                <input placeholder="Cari nama/NIM..." className="w-full pl-12 pr-6 py-3 bg-white rounded-full border border-gray-100 text-[14px] font-medium outline-none focus:ring-2 focus:ring-[var(--accent-blue)]/20 transition-all shadow-sm" />
+             </div>
+          </div>
+
+          <div className="neumorphic-card overflow-hidden">
+            <div className="overflow-x-auto">
+               <table className="w-full text-left">
+                  <thead className="bg-gray-50/50 border-b border-gray-100">
+                    <tr>
+                       <th className="px-8 py-5 caption-orbit font-bold text-[var(--text-light)] uppercase tracking-widest">Mahasiswa</th>
+                       <th className="px-8 py-5 caption-orbit font-bold text-[var(--text-light)] uppercase tracking-widest">Progres Kehadiran</th>
+                       <th className="px-8 py-5 caption-orbit font-bold text-[var(--text-light)] uppercase tracking-widest">Status Jurnal</th>
+                       <th className="px-8 py-5 caption-orbit font-bold text-[var(--text-light)] uppercase tracking-widest text-right">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {tableData.length === 0 ? (
+                       <tr><td colSpan={4} className="px-8 py-20 text-center text-[var(--text-light)] body2-orbit">Belum ada mahasiswa yang terdaftar dalam bimbingan Anda.</td></tr>
+                    ) : (
+                       tableData.map(row => (
+                         <tr key={row.id} className="group hover:bg-gray-50/50 transition-colors">
+                           <td className="px-8 py-6">
+                              <div className="flex items-center gap-4">
+                                 <div className="w-12 h-12 rounded-full accent-gradient flex items-center justify-center text-white font-bold text-sm shadow-sm border-2 border-white">
+                                    {row.nama.charAt(0)}
+                                 </div>
+                                 <div className="min-w-0">
+                                    <p className="body2-orbit font-bold text-[var(--text-main)] truncate">{row.nama}</p>
+                                    <p className="caption-orbit text-[var(--text-light)] font-medium uppercase tracking-wider">{row.nim}</p>
+                                 </div>
+                              </div>
+                           </td>
+                           <td className="px-8 py-6">
+                              <div className="flex items-center gap-4">
+                                 <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                                    <div 
+                                       className={`h-full rounded-full transition-all duration-1000 ${row.attendance >= 80 ? 'bg-emerald-500' : row.attendance >= 50 ? 'bg-orange-500' : 'bg-red-500'}`} 
+                                       style={{ width: `${row.attendance}%` }} 
+                                    />
+                                 </div>
+                                 <span className="caption-orbit font-bold text-[var(--text-main)]">{row.attendance}%</span>
+                              </div>
+                           </td>
+                           <td className="px-8 py-6">
+                              {row.journalId ? (
+                                <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest ${row.journalStatus === 'Disetujui' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : row.journalStatus === 'Ditolak' ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-orange-50 text-orange-600 border border-orange-100'}`}>
+                                  {row.journalStatus || 'Menunggu'}
+                                </span>
+                              ) : (
+                                <span className="caption-orbit text-[var(--text-light)] italic">Belum ada jurnal</span>
+                              )}
+                           </td>
+                           <td className="px-8 py-6 text-right">
+                              {(row.journalId && (!row.journalStatus || row.journalStatus === 'Menunggu')) ? (
+                                <div className="flex items-center justify-end gap-3">
+                                  <button onClick={() => handleApprove(row.journalId, row.id)} className="w-10 h-10 flex items-center justify-center bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-xl transition-all shadow-sm" title="Setujui"><Check size={18} /></button>
+                                  <button onClick={() => handleReject(row.journalId, row.id)} className="w-10 h-10 flex items-center justify-center bg-red-50 text-red-600 hover:bg-red-500 hover:text-white rounded-xl transition-all shadow-sm" title="Tolak"><X size={18} /></button>
+                                </div>
+                              ) : (
+                                <button className="w-10 h-10 flex items-center justify-center rounded-full text-[var(--text-light)] hover:text-[var(--accent-blue)] hover:bg-white shadow-sm border border-transparent hover:border-gray-100 transition-all">
+                                   <ChevronRight size={20} />
+                                </button>
+                              )}
+                           </td>
+                         </tr>
+                       ))
+                    )}
+                  </tbody>
+               </table>
+            </div>
+          </div>
         </div>
       </div>
     </div>
