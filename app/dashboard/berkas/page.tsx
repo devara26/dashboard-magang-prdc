@@ -70,15 +70,17 @@ export default function BerkasPage() {
       const fileName = `${user.id}-${type}-${Math.random()}.${fileExt}`
       const filePath = `${user.id}/${fileName}`
 
+      // PERBAIKAN UTAMA: Mengubah target bucket ke 'berkas' sesuai database Supabase Anda
       const { error: uploadError } = await supabase.storage
-        .from('documents')
+        .from('berkas')
         .upload(filePath, file)
 
       if (uploadError) throw uploadError
       setUploadingState(prev => ({ ...prev, [type]: 60 }))
 
+      // PERBAIKAN: Mengubah target URL generator ke bucket 'berkas'
       const { data: { publicUrl } } = supabase.storage
-        .from('documents')
+        .from('berkas')
         .getPublicUrl(filePath)
 
       const { error: dbError } = await supabase
@@ -113,9 +115,10 @@ export default function BerkasPage() {
     if (!confirm(`Hapus berkas ${file.file_type}?`)) return
 
     try {
-      const path = file.file_url.split('/documents/')[1]
+      // PERBAIKAN: Pemotongan token URL disesuaikan dengan nama folder bucket 'berkas'
+      const path = file.file_url.split('/berkas/')[1]
       if (path) {
-        await supabase.storage.from('documents').remove([path])
+        await supabase.storage.from('berkas').remove([path])
       }
 
       const { error } = await supabase
