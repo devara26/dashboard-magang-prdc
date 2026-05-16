@@ -2,33 +2,34 @@
 @import "tailwindcss";
 
 :root {
-  /* Bento SaaS Design System - Premium Light Theme */
-  --bg-app: #f4f7fa;
-  --bg-card: #ffffff;
-  --accent: #2563eb; /* Strong Blue Accent */
-  --accent-soft: #eff6ff;
+  /* Financial Dashboard Design System */
+  --bg-app: #F4F4F4;
+  --bg-card: #FFFFFF;
+  --accent: #0066FF; /* Royal Blue */
+  --accent-hover: #0052CC;
   
-  --text-main: #0f172a;
-  --text-muted: #64748b;
-  --text-light: #94a3b8;
+  --text-main: #1A1A1A; /* Charcoal */
+  --text-muted: #666666;
+  --text-light: #A0A0A0;
   
-  --border: #e2e8f0;
-  --border-light: #f1f5f9;
+  --border: #E8E8E8;
+  --border-strong: #DCDCDC;
   
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.03), 0 4px 6px -4px rgb(0 0 0 / 0.03);
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.04);
   
   --radius-sm: 8px;
-  --radius-md: 12px;
+  --radius-md: 14px;
   --radius-lg: 20px;
-  --radius-xl: 28px;
+  --radius-xl: 32px; /* Extra large for capsules and cards */
 }
 
 @layer base {
   body {
     @apply bg-[var(--bg-app)] text-[var(--text-main)] antialiased;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    letter-spacing: -0.01em;
   }
 }
 
