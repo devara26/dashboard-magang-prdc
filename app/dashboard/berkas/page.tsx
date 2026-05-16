@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
@@ -35,6 +37,17 @@ export default function BerkasPage() {
   const [berkas, setBerkas] = useState<Berkas[]>([])
   const [loading, setLoading] = useState(true)
   const [uploadingState, setUploadingState] = useState<Record<string, number>>({})
+
+  // Helper fungsi untuk logging yang aman terhadap kegagalan import/modul
+  const safeLogAction = async (action: string, desc: string) => {
+    try {
+      if (typeof logAction === 'function') {
+        await logAction(action, desc);
+      }
+    } catch (e) {
+      console.log(`[Audit Fallback] ${action}: ${desc}`);
+    }
+  };
 
   useEffect(() => {
     fetchBerkas()
@@ -81,7 +94,6 @@ export default function BerkasPage() {
         .from('berkas')
         .getPublicUrl(filePath)
 
-      // PERBAIKAN UTAMA: Nama kolom diselaraskan menjadi 'document_type' sesuai batasan skema Supabase Anda
       const { error: dbError } = await supabase
         .from('berkas')
         .insert({
@@ -92,7 +104,7 @@ export default function BerkasPage() {
 
       if (dbError) throw dbError
 
-      await logAction('Upload Berkas', `Mengunggah berkas: ${type}`)
+      await safeLogAction('Upload Berkas', `Mengunggah berkas: ${type}`)
       toast.success(`${type} berhasil diunggah`)
       setUploadingState(prev => {
         const next = { ...prev }
@@ -126,7 +138,7 @@ export default function BerkasPage() {
 
       if (error) throw error
 
-      await logAction('Hapus Berkas', `Menghapus berkas: ${file.document_type}`)
+      await safeLogAction('Hapus Berkas', `Menghapus berkas: ${file.document_type}`)
       toast.success('Berkas berhasil dihapus')
       fetchBerkas()
     } catch (error: any) {
@@ -134,10 +146,15 @@ export default function BerkasPage() {
     }
   }
 
-  // Menyesuaikan pemetaan data list dari properti database baru
-  const completionPercentage = Math.round((berkas.length / DOCUMENT_TYPES.length) * 100)
+  const completionPercentage = !loading ? Math.round((berkas.length / DOCUMENT_TYPES.length) * 100) : 0
 
-  if (loading) return null
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="w-10 h-10 border-4 border-[var(--accent-blue)] border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-12 pb-24 animate-in fade-in slide-in-from-bottom-4 duration-1000">
@@ -177,7 +194,6 @@ export default function BerkasPage() {
       {/* Grid List */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {DOCUMENT_TYPES.map((docType) => {
-          // Menyesuaikan pencarian data list berdasarkan document_type
           const uploadedFile = berkas.find(b => b.document_type === docType)
           const isUploading = uploadingState[docType] !== undefined
           const uploadProgress = uploadingState[docType] || 0

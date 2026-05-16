@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
@@ -34,6 +36,17 @@ export default function JurnalPage() {
       status: 'Proses'
    })
 
+   // Helper fungsi untuk logging yang aman terhadap kegagalan import/modul
+   const safeLogAction = async (action: string, desc: string) => {
+      try {
+         if (typeof logAction === 'function') {
+            await logAction(action, desc);
+         }
+      } catch (e) {
+         console.log(`[Audit Fallback] ${action}: ${desc}`);
+      }
+   };
+
    useEffect(() => {
       fetchData()
    }, [])
@@ -55,7 +68,7 @@ export default function JurnalPage() {
             setKegiatan(data || [])
          }
       } catch (error) {
-         console.error(error)
+         console.error('Fetch error:', error)
       } finally {
          setLoading(false)
       }
@@ -64,7 +77,6 @@ export default function JurnalPage() {
    async function handleSubmit(e: React.FormEvent) {
       e.preventDefault()
 
-      // Guard condition to check if profile and NIM are loaded
       if (!profile || !profile.nim) {
          toast.error('Data profil atau NIM Anda belum dimuat sempurna. Silakan muat ulang halaman.');
          return;
@@ -86,14 +98,14 @@ export default function JurnalPage() {
                .update(payload)
                .eq('id', editingId)
             if (error) throw error
-            await logAction('Edit Jurnal', `Mengubah kegiatan: ${newKegiatan.kegiatan.substring(0, 30)}...`)
+            await safeLogAction('Edit Jurnal', `Mengubah kegiatan: ${newKegiatan.kegiatan.substring(0, 30)}...`)
             toast.success('Jurnal berhasil diperbarui')
          } else {
             const { error } = await supabase
                .from('Kegiatan')
                .insert([payload])
             if (error) throw error
-            await logAction('Tambah Jurnal', `Menambahkan kegiatan: ${newKegiatan.kegiatan.substring(0, 30)}...`)
+            await safeLogAction('Tambah Jurnal', `Menambahkan kegiatan: ${newKegiatan.kegiatan.substring(0, 30)}...`)
             toast.success('Jurnal berhasil ditambahkan')
          }
 
@@ -138,11 +150,18 @@ export default function JurnalPage() {
       setShowModal(true)
    }
 
-   const filteredKegiatan = kegiatan.filter(k => 
+   // Loading Guard untuk data array
+   const filteredKegiatan = !loading ? kegiatan.filter(k => 
       k.kegiatan.toLowerCase().includes(searchQuery.toLowerCase())
-   )
+   ) : []
 
-   if (loading) return null
+   if (loading) {
+      return (
+         <div className="flex items-center justify-center min-h-[400px]">
+            <div className="w-10 h-10 border-4 border-[var(--accent-blue)] border-t-transparent rounded-full animate-spin"></div>
+         </div>
+      )
+   }
 
    return (
       <div className="space-y-12 pb-24 animate-in fade-in slide-in-from-bottom-4 duration-1000">
@@ -283,7 +302,7 @@ export default function JurnalPage() {
          {/* Write/Edit Entry Modal */}
          {showModal && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
-               <div className="neumorphic-card w-full max-w-2xl p-10 relative z-10 animate-in zoom-in-95 duration-300">
+               <div className="neumorphic-card w-full max-w-2xl p-10 relative z-10 animate-in zoom-in-95 duration-300 shadow-2xl">
                   <form onSubmit={handleSubmit} className="space-y-10">
                      <div className="flex justify-between items-start">
                         <div>
