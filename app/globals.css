@@ -145,3 +145,35 @@ div[class*="bg-blue-"] svg,
 ::-webkit-scrollbar-thumb:hover {
   background: #94A3B8;
 }
+
+/* --- Perbaikan Sidebar Responsif --- */
+
+/* Menargetkan kontainer sidebar navigasi kiri */
+aside,
+div[class*="w-64"],
+div[class*="border-r"] {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  height: 100vh !important;
+  /* Memaksa tinggi sidebar selalu pas setinggi layar browser */
+  padding-bottom: 24px !important;
+  /* Memberikan ruang aman di bawah tombol keluar */
+}
+
+/* Memastikan area menu utama di atas memiliki pembatas otomatis jika layar terlalu pendek */
+aside>div:first-child,
+div[class*="w-64"]>div:first-child {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  /* Menu utama bisa di-scroll jika layar sangat pendek */
+}
+
+/* Memaksa tombol Keluar/Log Out tetap melekat di posisi bawah yang aman */
+aside button:last-child,
+aside a:last-child,
+div[class*="w-64"] button:last-child,
+div[class*="w-64"] a:last-child {
+  margin-top: auto !important;
+  padding-top: 16px !important;
+}
