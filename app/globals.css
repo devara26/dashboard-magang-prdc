@@ -1,90 +1,136 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-@import "tailwindcss";
 
+/* Setup Variabel Warna Premium Modern */
 :root {
-  --background: #F0F2F5;
+  --background: #F8FAFC;
   --card-bg: #FFFFFF;
   --accent-blue: #1A73E8;
   --accent-dark: #0D47A1;
-  --text-main: #1A1A1A;
-  --text-muted: #666666;
-  --text-light: #A0A0A0;
-
-  --neumorphic-shadow: 6px 6px 12px #d1d5db, -6px -6px 12px #ffffff;
-  --neumorphic-inset: inset 6px 6px 12px #d1d5db, inset -6px -6px 12px #ffffff;
+  --text-main: #0F172A;
+  --text-muted: #475569;
+  --text-light: #94A3B8;
+  --modern-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.03), 0 10px 15px -3px rgba(15, 23, 42, 0.05), 0 0 0 1px rgba(15, 23, 42, 0.04);
 }
 
-@layer base {
-  body {
-    @apply bg-[var(--background)] text-[var(--text-main)] antialiased;
-    font-family: var(--font-inter), system-ui, sans-serif;
-  }
+/* Reset Base Style */
+body {
+  background-color: var(--background) !important;
+  color: var(--text-main) !important;
+  font-family: 'Inter', system-ui, sans-serif !important;
+  -webkit-font-smoothing: antialiased;
 }
 
-@layer components {
-  .neumorphic-card {
-    @apply bg-[var(--card-bg)] rounded-[24px];
-    box-shadow: var(--neumorphic-shadow);
-  }
-
-  .neumorphic-button {
-    @apply bg-[var(--card-bg)] rounded-[16px] px-6 py-3 transition-all active:scale-95;
-    box-shadow: var(--neumorphic-shadow);
-  }
-
-  .neumorphic-button:active {
-    box-shadow: var(--neumorphic-inset);
-  }
-
-  .accent-gradient {
-    background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-dark) 100%);
-  }
-
-  /* Typography Utilities */
-  .h1-orbit {
-    @apply font-bold tracking-[-2px] text-[40px] md:text-[60px];
-  }
-
-  .h2-orbit {
-    @apply font-bold tracking-[-2px] text-[32px] md:text-[48px];
-  }
-
-  .h3-orbit {
-    @apply font-bold tracking-[-2px] text-[24px] md:text-[40px];
-  }
-
-  .h4-orbit {
-    @apply font-medium text-[20px] md:text-[32px];
-  }
-
-  .h5-orbit {
-    @apply font-bold text-[24px];
-  }
-
-  .subtitle-orbit {
-    @apply font-medium text-[20px];
-  }
-
-  .label-orbit {
-    @apply font-medium text-[16px];
-  }
-
-  .body1-orbit {
-    @apply font-normal text-[20px] leading-[150%];
-  }
-
-  .body2-orbit {
-    @apply font-normal text-[16px] leading-[140%];
-  }
-
-  .caption-orbit {
-    @apply font-normal text-[13px];
-  }
+/* Override Utility Classes Secara Global & Massal */
+.bg-\[var\(--background\)\] {
+  background-color: var(--background) !important;
 }
 
-/* Scrollbar */
+.text-\[var\(--text-main\)\] {
+  color: var(--text-main) !important;
+}
+
+/* Mengubah Semua Komponen Card Lama Menjadi Smooth Premium */
+.neumorphic-card,
+.bg-white.border.border-gray-200.rounded-2xl {
+  background-color: var(--card-bg) !important;
+  border-radius: 20px !important;
+  border: 1px solid #E2E8F0 !important;
+  box-shadow: var(--modern-shadow) !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.neumorphic-card:hover,
+.bg-white.border.border-gray-200.rounded-2xl:hover {
+  box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.05) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* Mengubah Semua Komponen Button Lama Menjadi Clean Interactive */
+.neumorphic-button {
+  background-color: #FFFFFF !important;
+  color: #1E293B !important;
+  font-weight: 600 !important;
+  border-radius: 12px !important;
+  padding: 10px 20px !important;
+  border: 1px solid #E2E8F0 !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.2s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.neumorphic-button:hover {
+  background-color: #F8FAFC !important;
+}
+
+.accent-gradient {
+  background: linear-gradient(135deg, #1A73E8 0%, #0D47A1 100%) !important;
+}
+
+/* Pembenahan Tipografi Masif */
+.h1-orbit {
+  font-size: 36px !important;
+  font-weight: 800 !important;
+  tracking-spacing: -0.02em !important;
+  color: #0F172A !important;
+}
+
+.h2-orbit {
+  font-size: 28px !important;
+  font-weight: 700 !important;
+  tracking-spacing: -0.02em !important;
+  color: #0F172A !important;
+}
+
+.h3-orbit {
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  color: #0F172A !important;
+}
+
+.h4-orbit {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  color: #1E293B !important;
+}
+
+.subtitle-orbit {
+  font-size: 16px !important;
+  font-weight: 500 !important;
+  color: #475569 !important;
+}
+
+.label-orbit {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  uppercase: true !important;
+  tracking-spacing: 0.05em !important;
+  color: #64748B !important;
+}
+
+.body1-orbit {
+  font-size: 16px !important;
+  color: #334155 !important;
+  line-height: 1.6 !important;
+}
+
+.body2-orbit {
+  font-size: 14px !important;
+  color: #475569 !important;
+  line-height: 1.6 !important;
+}
+
+.caption-orbit {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: #94A3B8 !important;
+}
+
+/* Scrollbar Minimalis */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -92,6 +138,10 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #d1d5db;
+  background: #CBD5E1;
   border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
 }

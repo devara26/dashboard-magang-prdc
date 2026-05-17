@@ -72,7 +72,6 @@ export default function DosenProfilPage() {
         setAvatarUrl(data.avatar_url)
       }
 
-      // Fetch Mahasiswa Bimbingan
       await fetchMahasiswa(user.id)
 
     } catch (error: any) {
@@ -186,7 +185,7 @@ export default function DosenProfilPage() {
     try {
       if (!profile?.id) throw new Error('Profil tidak ditemukan')
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('profiles')
         .update({
           nama_lengkap: form.nama_lengkap,
@@ -197,7 +196,6 @@ export default function DosenProfilPage() {
           max_mahasiswa: form.max_mahasiswa,
         })
         .eq('id', profile.id)
-        .select()
 
       if (error) throw error
       setProfile({ ...profile, ...form } as DosenProfile)
@@ -215,7 +213,6 @@ export default function DosenProfilPage() {
     const file = e.target.files?.[0]
     if (!file || !profile?.id) return
 
-    // Optimistic UI
     const previewUrl = URL.createObjectURL(file)
     const oldAvatarUrl = avatarUrl
     setAvatarUrl(previewUrl)
@@ -246,7 +243,7 @@ export default function DosenProfilPage() {
       toast.success('Foto profil berhasil diperbarui')
     } catch (error: any) {
       console.error(error)
-      setAvatarUrl(oldAvatarUrl) // Revert on error
+      setAvatarUrl(oldAvatarUrl)
       toast.error('Gagal mengunggah foto: ' + (error.message || 'Error tidak diketahui'))
     } finally {
       setUploadingAvatar(false)
@@ -264,7 +261,6 @@ export default function DosenProfilPage() {
 
   return (
     <div className="pb-12 animate-[fade-in_0.7s_ease-out] max-w-5xl mx-auto">
-      {/* Header Section */}
       <div className="mb-6">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold text-[#202124]">Profil Dosen</h1>
@@ -278,7 +274,6 @@ export default function DosenProfilPage() {
               <Edit2 className="w-5 h-5 text-[#137333]" /> Edit Profil Dosen
             </h2>
 
-            {/* Avatar Edit */}
             <div className="flex flex-col items-center">
               <div className="relative">
                 <div className="w-24 h-24 rounded-full bg-[#137333] flex-shrink-0 flex items-center justify-center shadow-md border-4 border-white overflow-hidden relative group">
@@ -361,7 +356,7 @@ export default function DosenProfilPage() {
                   type="number"
                   min="1"
                   value={form.max_mahasiswa || 10}
-                  onChange={e => setForm({ ...form, max_mahasiswa: parseInt(e.target.value) })}
+                  onChange={e => setForm({ ...form, max_mahasiswa: parseInt(e.target.value) || 10 })}
                   className="w-full bg-white text-[#202124] rounded-lg px-4 py-3 text-sm border border-gray-300 focus:outline-none focus:border-[#137333] focus:ring-1 focus:ring-[#137333]"
                 />
               </div>
@@ -443,7 +438,6 @@ export default function DosenProfilPage() {
             </div>
           </div>
 
-          {/* Mahasiswa Bimbingan Section */}
           <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-6 py-4 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between">
               <h3 className="text-sm font-bold text-[#202124] flex items-center gap-2">
@@ -514,7 +508,6 @@ export default function DosenProfilPage() {
         </div>
       )}
 
-      {/* Logout */}
       <div className="mt-8 max-w-3xl mx-auto">
         <button
           onClick={handleLogout}
@@ -524,7 +517,6 @@ export default function DosenProfilPage() {
         </button>
       </div>
 
-      {/* Tambah Mahasiswa Modal */}
       {showTambahModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-[fade-in_0.2s_ease-out]">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[80vh] animate-[scale-in_0.2s_ease-out]">

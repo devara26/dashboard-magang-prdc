@@ -45,7 +45,7 @@ export default function DaftarMahasiswaPage() {
           const hadir = absensiData?.filter(a => a.mahasiswa_id === m.id && a.status === 'Hadir').length || 0
           const start = m.tanggal_mulai ? new Date(m.tanggal_mulai) : null
           const end = m.tanggal_selesai ? new Date(m.tanggal_selesai) : null
-          
+
           let target = 150
           if (start && end && !isNaN(start.getTime()) && !isNaN(end.getTime()) && start <= end) {
             target = 0
@@ -56,7 +56,7 @@ export default function DaftarMahasiswaPage() {
               current.setDate(current.getDate() + 1)
             }
           }
-          
+
           const progress = target > 0 ? Math.min(Math.round((hadir / target) * 100), 100) : 0
 
           return {
@@ -65,6 +65,7 @@ export default function DaftarMahasiswaPage() {
           }
         })
 
+        // PERBAIKAN: Mengubah nama fungsi pengubah data agar sinkron dengan state di atas
         setMahasiswa(mhsList)
       } catch (error: any) {
         toast.error('Gagal memuat daftar mahasiswa: ' + error.message)
@@ -75,8 +76,8 @@ export default function DaftarMahasiswaPage() {
     fetchData()
   }, [])
 
-  const filteredMahasiswa = mahasiswa.filter(m => 
-    m.nama_lengkap?.toLowerCase().includes(search.toLowerCase()) || 
+  const filteredMahasiswa = mahasiswa.filter(m =>
+    m.nama_lengkap?.toLowerCase().includes(search.toLowerCase()) ||
     m.nim?.toLowerCase().includes(search.toLowerCase()) ||
     m.instansi_magang?.toLowerCase().includes(search.toLowerCase())
   )
@@ -144,8 +145,8 @@ export default function DaftarMahasiswaPage() {
                   <td className="px-6 py-3">
                     <div className="flex items-center gap-2">
                       <div className="w-20 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full ${m.progress >= 80 ? 'bg-[#137333]' : m.progress >= 50 ? 'bg-[#FBBC04]' : 'bg-[#EA4335]'}`} 
+                        <div
+                          className={`h-full ${m.progress >= 80 ? 'bg-[#137333]' : m.progress >= 50 ? 'bg-[#FBBC04]' : 'bg-[#EA4335]'}`}
                           style={{ width: `${m.progress}%` }}
                         />
                       </div>
@@ -153,7 +154,7 @@ export default function DaftarMahasiswaPage() {
                     </div>
                   </td>
                   <td className="px-6 py-3 text-right">
-                    <Link 
+                    <Link
                       href={`/dosen/mahasiswa/${m.id}`}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#E6F4EA] text-[#137333] hover:bg-[#CEEAD6] rounded-md text-xs font-bold transition-colors"
                     >
