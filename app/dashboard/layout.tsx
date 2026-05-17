@@ -19,12 +19,14 @@ import {
 } from 'lucide-react'
 import NotificationBell from '@/components/NotificationBell'
 
+export const dynamic = 'force-dynamic'
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false) // PERBAIKAN: State untuk mobile hamburger toggle
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
 
   useEffect(() => {
     async function checkUser() {
@@ -41,7 +43,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         if (error) console.error('Layout Profile Error:', error)
 
         if (!data) {
-          console.warn('Profile not found for user:', user.id)
           setProfile({ id: user.id, nama_lengkap: 'Pengguna ORBIT', role: 'mahasiswa' })
         } else {
           if (data.role === 'dosen') {
@@ -58,7 +59,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     checkUser()
   }, [router])
 
-  // Menutup mobile sidebar otomatis setiap kali rute halaman berpindah
   useEffect(() => {
     setIsMobileSidebarOpen(false)
   }, [pathname])
@@ -82,51 +82,47 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   ]
 
   return (
-    <div className="flex min-h-screen bg-[var(--background)] text-[var(--text-main)] font-sans antialiased overflow-x-hidden">
+    <div className="flex min-h-screen bg-[var(--background)] text-[var(--text-main)] font-sans antialiased">
 
-      {/* Backdrop Hitam Transparan khusus ketika sidebar seluler diaktifkan */}
+      {/* Backdrop Hitam Transparan Mobile */}
       {isMobileSidebarOpen && (
         <div
           onClick={() => setIsMobileSidebarOpen(false)}
-          className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-40 lg:hidden transition-all duration-300"
+          className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-40 lg:hidden"
         />
       )}
 
-      {/* Sidebar - Responsif Desktop (Sifat Permanen) & Mobile (Sifat Slider Berbasis State) */}
-      <aside className={`fixed inset-y-0 z-50 w-[300px] h-screen bg-white border-r border-gray-200/50 px-8 py-12 flex flex-col justify-between transition-all duration-300 ease-in-out lg:left-0 ${isMobileSidebarOpen ? 'left-0 shadow-2xl' : '-left-full'}`}>
+      {/* FIXED SIDEBAR CONTAINER - Dikunci permanen agar tidak ikut tergulung */}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-[300px] h-screen bg-white border-r border-gray-200/50 px-8 py-12 flex flex-col justify-between transition-all duration-300 ease-in-out lg:translate-x-0 ${isMobileSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'
+        }`}>
         <div>
           <div className="px-4 mb-14 flex items-center justify-between">
             <img src="/logoorbitsvg.svg" alt="Orbit Logo" className="h-10 w-auto object-contain" />
-            {/* Tombol X untuk menutup sidebar di layar mobile */}
             <button onClick={() => setIsMobileSidebarOpen(false)} className="p-2 text-gray-400 hover:text-gray-600 lg:hidden">
               <X size={20} />
             </button>
           </div>
 
-          <div className="space-y-12">
-            <div>
-              <p className="caption-orbit font-bold text-[var(--text-light)] uppercase tracking-[0.2em] mb-8 px-4">Menu Utama</p>
-              <nav className="space-y-3">
-                {menuItems.map((item) => {
-                  const isActive = pathname === item.href
-                  const Icon = item.icon
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={`flex items-center gap-4 px-6 py-4 rounded-[16px] transition-all duration-300 group ${isActive
-                        ? 'accent-gradient text-white shadow-lg'
-                        : 'text-[var(--text-muted)] hover:bg-gray-100 hover:text-[var(--text-main)]'
-                        }`}
-                    >
-                      <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className={isActive ? 'text-white' : 'text-[var(--text-light)] group-hover:text-[var(--accent-blue)]'} />
-                      <span className="label-orbit font-bold">{item.name}</span>
-                    </Link>
-                  )
-                })}
-              </nav>
-            </div>
-          </div>
+          <p className="caption-orbit font-bold text-[var(--text-light)] uppercase tracking-[0.2em] mb-8 px-4">Menu Utama</p>
+          <nav className="space-y-3">
+            {menuItems.map((item) => {
+              const isActive = pathname === item.href
+              const Icon = item.icon
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-4 px-6 py-4 rounded-[16px] transition-all duration-300 group ${isActive
+                    ? 'accent-gradient text-white shadow-lg'
+                    : 'text-[var(--text-muted)] hover:bg-gray-100 hover:text-[var(--text-main)]'
+                    }`}
+                >
+                  <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className={isActive ? 'text-white' : 'text-[var(--text-light)] group-hover:text-[var(--accent-blue)]'} />
+                  <span className="label-orbit font-bold">{item.name}</span>
+                </Link>
+              )
+            })}
+          </nav>
         </div>
 
         <div className="pt-10 border-t border-gray-100 space-y-6">
@@ -156,16 +152,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      {/* Main Area Container */}
-      <div className="flex-1 flex flex-col min-w-0 w-full">
-        {/* Top Navbar dengan Fungsionalitas Hamburger Toggle */}
-        <header className="h-[90px] bg-white/80 backdrop-blur-xl border-b border-gray-100 sticky top-0 z-40 px-6 md:px-8 lg:px-12 flex items-center justify-between w-full">
+      {/* MAIN VIEWPORT WRAPPER - Diberikan margin kiri pl-[300px] untuk mengimbangi sidebar yang fixed */}
+      <div className="flex-1 min-w-0 flex flex-col min-h-screen lg:pl-[300px]">
+        {/* Top Navbar */}
+        <header className="h-[90px] bg-white/80 backdrop-blur-xl border-b border-gray-100 sticky top-0 z-30 px-6 md:px-8 lg:px-12 flex items-center justify-between w-full">
           <div className="flex items-center gap-4 md:gap-6">
-            {/* PERBAIKAN: Tombol Hamburger sekarang mengubah state untuk membuka sidebar seluler */}
             <button
               onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
               className="lg:hidden w-12 h-12 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors text-[var(--text-main)] active:scale-95"
-              title="Buka Menu"
             >
               <Menu size={24} />
             </button>
@@ -177,32 +171,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           <div className="flex items-center gap-4 md:gap-6">
-            {/* Search Input Area */}
             <div className="hidden md:flex items-center gap-3 bg-gray-100 rounded-full px-6 py-3 w-60 lg:w-72 group focus-within:bg-white focus-within:ring-2 focus-within:ring-[var(--accent-blue)]/20 transition-all border border-transparent focus-within:border-[var(--accent-blue)]/30">
               <Search size={18} className="text-[var(--text-light)]" />
               <input placeholder="Cari data..." className="bg-transparent border-none outline-none body2-orbit font-semibold w-full placeholder:text-[var(--text-light)] text-[var(--text-main)]" />
             </div>
 
-            {/* Notification Bell Components */}
             <div className="flex items-center">
               <NotificationBell />
             </div>
 
-            {/* Mobile Corner Avatar Indicator */}
             <div className="lg:hidden w-10 h-10 rounded-full overflow-hidden accent-gradient shadow-lg flex items-center justify-center text-white text-sm font-bold border border-white">
               {profile?.nama_lengkap?.charAt(0) || 'U'}
             </div>
           </div>
         </header>
 
-        {/* Content View wrapper area */}
-        <div className="flex-1 overflow-y-auto p-6 md:p-8 lg:p-12 w-full">
+        {/* Content Area - Area ini yang akan mengontrol scroll secara aman */}
+        <div className="flex-1 p-6 md:p-8 lg:p-12 w-full overflow-y-auto">
           <div className="max-w-[1600px] mx-auto w-full">
             {children}
           </div>
         </div>
 
-        {/* Mobile Floating Action Nav Bar View - Dipakai untuk akses cepat */}
+        {/* Mobile Navigation */}
         <nav className="lg:hidden fixed bottom-8 left-6 right-6 bg-white/90 backdrop-blur-xl border border-gray-100 h-20 rounded-[24px] flex justify-around items-center z-40 shadow-2xl">
           {menuItems.slice(0, 4).map((item) => {
             const isActive = pathname === item.href

@@ -5,7 +5,6 @@ import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import {
-   Bell,
    Calendar,
    CheckCircle2,
    FileText,
@@ -131,7 +130,7 @@ export default function DashboardPage() {
       } catch (error) {
          console.error('Critical runtime dashboard error:', error)
          setKegiatan([])
-      } {
+      } finally {
          setLoading(false)
       }
    }
