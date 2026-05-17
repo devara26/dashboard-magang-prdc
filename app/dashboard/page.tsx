@@ -160,59 +160,59 @@ export default function DashboardPage() {
    const safeMaxVal = maxAttendanceVal > 0 ? maxAttendanceVal : 1
 
    return (
-      <div className="space-y-12 pb-24 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+      <div className="space-y-8 pb-24 animate-in fade-in slide-in-from-bottom-4 duration-1000">
          {/* Header Area */}
          <div className="flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
-            <div className="flex flex-col md:flex-row items-center gap-6">
-               <div className="w-20 h-20 rounded-full accent-gradient flex items-center justify-center text-white text-3xl font-bold shadow-xl border-4 border-white">
+            <div className="flex flex-col md:flex-row items-center gap-5">
+               <div className="w-16 h-16 rounded-full accent-gradient flex items-center justify-center text-white text-2xl font-bold shadow-xl border-4 border-white">
                   {profile?.nama_lengkap?.charAt(0) || 'U'}
                </div>
                <div>
-                  <h1 className="h1-orbit text-[var(--text-main)]">Halo, {(profile?.nama_lengkap ?? 'Pengguna').split(' ')[0]}</h1>
-                  <p className="subtitle-orbit text-[var(--text-muted)] mt-1">Selamat datang kembali di platform monitoring ORBIT.</p>
+                  <h2 className="h2-orbit text-[var(--text-main)]">Halo, {(profile?.nama_lengkap ?? 'Pengguna').split(' ')[0]}</h2>
+                  <p className="body2-orbit text-[var(--text-muted)] mt-1">Selamat datang kembali di platform monitoring ORBIT.</p>
                </div>
             </div>
             <NotificationBell />
          </div>
 
          {/* Stats Row */}
-         <div className="grid grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
-            <div className="neumorphic-card p-8 flex flex-col items-center text-center shadow-sm">
-               <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-[var(--accent-blue)] mb-6 shadow-inner">
-                  <Calendar size={28} />
+         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+            <div className="neumorphic-card p-6 flex flex-col items-center text-center shadow-sm">
+               <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-[var(--accent-blue)] mb-4 shadow-inner">
+                  <Calendar size={24} />
                </div>
                <p className="label-orbit text-[var(--text-muted)] mb-1">Kehadiran</p>
-               <h3 className="h3-orbit text-[var(--text-main)]">{stats.hadir ?? 0} Hari</h3>
+               <h4 className="h4-orbit text-[var(--text-main)]">{stats.hadir ?? 0} Hari</h4>
                <p className="caption-orbit text-[var(--text-light)] mt-2 font-medium">Target: {totalHariTarget} Hari</p>
             </div>
 
-            <div className="neumorphic-card p-8 flex flex-col items-center text-center shadow-sm">
-               <div className="w-14 h-14 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-600 mb-6 shadow-inner">
-                  <CheckCircle2 size={28} />
+            <div className="neumorphic-card p-6 flex flex-col items-center text-center shadow-sm">
+               <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-600 mb-4 shadow-inner">
+                  <CheckCircle2 size={24} />
                </div>
                <p className="label-orbit text-[var(--text-muted)] mb-1">Jurnal Disetujui</p>
-               <h3 className="h3-orbit text-[var(--text-main)]">{stats.tugasSelesai ?? 0} Log</h3>
+               <h4 className="h4-orbit text-[var(--text-main)]">{stats.tugasSelesai ?? 0} Log</h4>
                <p className="caption-orbit text-[var(--text-light)] mt-2 font-medium">
                   {Math.round(((stats.tugasSelesai ?? 0) / Math.max(1, stats.totalKegiatan ?? 1)) * 100)}% Rasio
                </p>
             </div>
 
-            <div className="neumorphic-card p-8 flex flex-col items-center text-center col-span-2 md:col-span-1 shadow-sm">
-               <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 mb-6 shadow-inner">
-                  <FileText size={28} />
+            <div className="neumorphic-card p-6 flex flex-col items-center text-center col-span-2 md:col-span-1 shadow-sm">
+               <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 mb-4 shadow-inner">
+                  <FileText size={24} />
                </div>
                <p className="label-orbit text-[var(--text-muted)] mb-1">Kelengkapan Berkas</p>
-               <h3 className="h3-orbit text-[var(--text-main)]">{stats.totalBerkas ?? 0} Dokumen</h3>
+               <h4 className="h4-orbit text-[var(--text-main)]">{stats.totalBerkas ?? 0} Dokumen</h4>
                <p className="caption-orbit text-[var(--text-light)] mt-2 font-medium">{stats.totalBerkas}/{DOCUMENT_TYPES_COUNT} Terunggah</p>
             </div>
          </div>
 
          {/* Progress Section */}
-         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
-            <div className="neumorphic-card p-10 flex flex-col items-center shadow-sm">
-               <h4 className="h4-orbit text-[var(--text-main)] mb-10">Progres Magang Efektif</h4>
-               <div className="relative w-64 h-64 flex items-center justify-center">
-                  <svg className="w-full h-full -rotate-90">
+         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            <div className="neumorphic-card p-8 flex flex-col items-center shadow-sm">
+               <h5 className="h5-orbit text-[var(--text-main)] mb-8">Progres Magang Efektif</h5>
+               <div className="relative w-48 h-48 md:w-56 md:h-56 flex items-center justify-center">
+                  <svg className="w-full h-full -rotate-90" viewBox="0 0 256 256">
                      <circle className="text-gray-100" cx="128" cy="128" r="110" fill="transparent" stroke="currentColor" strokeWidth="24" />
                      <circle
                         className="text-[var(--accent-blue)]"
@@ -227,11 +227,11 @@ export default function DashboardPage() {
                      />
                   </svg>
                   <div className="absolute flex flex-col items-center">
-                     <span className="h1-orbit text-[var(--text-main)] leading-none">{progressPersen}%</span>
+                     <span className="h2-orbit text-[var(--text-main)] leading-none">{progressPersen}%</span>
                      <span className="caption-orbit font-bold text-[var(--text-light)] uppercase tracking-widest mt-2">Selesai</span>
                   </div>
                </div>
-               <div className="mt-10 grid grid-cols-2 gap-10 w-full">
+               <div className="mt-8 grid grid-cols-2 gap-6 w-full">
                   <div className="text-center">
                      <p className="h5-orbit text-[var(--text-main)]">{stats.hadir ?? 0}</p>
                      <p className="caption-orbit font-bold text-[var(--text-light)] uppercase">Hadir</p>
@@ -243,9 +243,9 @@ export default function DashboardPage() {
                </div>
             </div>
 
-            <div className="neumorphic-card p-10 flex flex-col shadow-sm">
-               <div className="flex justify-between items-center mb-10">
-                  <h4 className="h4-orbit text-[var(--text-main)]">Aktivitas Kehadiran</h4>
+            <div className="neumorphic-card p-8 flex flex-col shadow-sm">
+               <div className="flex justify-between items-center mb-8">
+                  <h5 className="h5-orbit text-[var(--text-main)]">Aktivitas Kehadiran</h5>
                   <div className="px-4 py-2 bg-gray-50 rounded-full flex items-center gap-2 border border-gray-100">
                      <TrendingUp size={16} className="text-[var(--accent-blue)]" />
                      <span className="caption-orbit font-bold">TA 2026</span>
@@ -272,10 +272,10 @@ export default function DashboardPage() {
          </div>
 
          {/* Recent Activity */}
-         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
-               <div className="flex items-center justify-between px-4">
-                  <h4 className="h4-orbit text-[var(--text-main)]">Jurnal Terakhir</h4>
+               <div className="flex items-center justify-between px-2">
+                  <h5 className="h5-orbit text-[var(--text-main)]">Jurnal Terakhir</h5>
                   <button onClick={() => router.push('/dashboard/kegiatan')} className="flex items-center gap-2 text-[var(--accent-blue)] font-bold caption-orbit hover:opacity-70 transition-opacity">
                      Riwayat Lengkap <ChevronRight size={16} />
                   </button>
@@ -314,7 +314,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="space-y-6">
-               <h4 className="h4-orbit text-[var(--text-main)] px-4">Menu Pintas</h4>
+               <h5 className="h5-orbit text-[var(--text-main)] px-2">Menu Pintas</h5>
                <div className="space-y-4">
                   <button onClick={() => router.push('/dashboard/absensi')} className="neumorphic-button w-full flex items-center justify-center gap-4 accent-gradient text-white py-5 shadow-lg shadow-blue-200/50 active:scale-[0.98] transition-all">
                      <Plus size={20} />
