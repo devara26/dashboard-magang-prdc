@@ -1,6 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
-/* Setup Variabel Warna Premium Modern */
 :root {
   --background: #F8FAFC;
   --card-bg: #FFFFFF;
@@ -12,119 +11,104 @@
   --modern-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.03), 0 10px 15px -3px rgba(15, 23, 42, 0.05), 0 0 0 1px rgba(15, 23, 42, 0.04);
 }
 
-/* Reset Base Style */
 body {
-  background-color: var(--background) !important;
-  color: var(--text-main) !important;
-  font-family: 'Inter', system-ui, sans-serif !important;
+  background-color: var(--background);
+  color: var(--text-main);
+  font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Override Utility Classes Secara Global & Massal */
-.bg-\[var\(--background\)\] {
-  background-color: var(--background) !important;
+/* Mengubah Komponen Card Menjadi Modern Tanpa Merusak Layout */
+.neumorphic-card {
+  background-color: var(--card-bg);
+  border-radius: 20px;
+  border: 1px solid #E2E8F0;
+  box-shadow: var(--modern-shadow);
+  transition: all 0.2s ease-in-out;
 }
 
-.text-\[var\(--text-main\)\] {
-  color: var(--text-main) !important;
+.neumorphic-card:hover {
+  box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.05);
+  transform: translateY(-2px);
 }
 
-/* Mengubah Semua Komponen Card Lama Menjadi Smooth Premium */
-.neumorphic-card,
-.bg-white.border.border-gray-200.rounded-2xl {
-  background-color: var(--card-bg) !important;
-  border-radius: 20px !important;
-  border: 1px solid #E2E8F0 !important;
-  box-shadow: var(--modern-shadow) !important;
-  transition: all 0.2s ease-in-out !important;
-}
-
-.neumorphic-card:hover,
-.bg-white.border.border-gray-200.rounded-2xl:hover {
-  box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.05) !important;
-  transform: translateY(-2px) !important;
-}
-
-/* Mengubah Semua Komponen Button Lama Menjadi Clean Interactive */
+/* Mengubah Komponen Button Menjadi Modern */
 .neumorphic-button {
-  background-color: #FFFFFF !important;
-  color: #1E293B !important;
-  font-weight: 600 !important;
-  border-radius: 12px !important;
-  padding: 10px 20px !important;
-  border: 1px solid #E2E8F0 !important;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
-  transition: all 0.2s ease !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 8px !important;
+  background-color: #FFFFFF;
+  color: #1E293B;
+  font-weight: 600;
+  border-radius: 12px;
+  padding: 10px 20px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .neumorphic-button:hover {
-  background-color: #F8FAFC !important;
+  background-color: #F8FAFC;
 }
 
 .accent-gradient {
-  background: linear-gradient(135deg, #1A73E8 0%, #0D47A1 100%) !important;
+  background: linear-gradient(135deg, #1A73E8 0%, #0D47A1 100%);
 }
 
-/* Pembenahan Tipografi Masif */
+/* Pembenahan Gaya Tulisan */
 .h1-orbit {
-  font-size: 36px !important;
-  font-weight: 800 !important;
-  tracking-spacing: -0.02em !important;
-  color: #0F172A !important;
+  font-size: 36px;
+  font-weight: 800;
+  color: #0F172A;
 }
 
 .h2-orbit {
-  font-size: 28px !important;
-  font-weight: 700 !important;
-  tracking-spacing: -0.02em !important;
-  color: #0F172A !important;
+  font-size: 28px;
+  font-weight: 700;
+  color: #0F172A;
 }
 
 .h3-orbit {
-  font-size: 22px !important;
-  font-weight: 700 !important;
-  color: #0F172A !important;
+  font-size: 22px;
+  font-weight: 700;
+  color: #0F172A;
 }
 
 .h4-orbit {
-  font-size: 18px !important;
-  font-weight: 600 !important;
-  color: #1E293B !important;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1E293B;
 }
 
 .subtitle-orbit {
-  font-size: 16px !important;
-  font-weight: 500 !important;
-  color: #475569 !important;
+  font-size: 16px;
+  font-weight: 500;
+  color: #475569;
 }
 
 .label-orbit {
-  font-size: 12px !important;
-  font-weight: 600 !important;
-  uppercase: true !important;
-  tracking-spacing: 0.05em !important;
-  color: #64748B !important;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #64748B;
 }
 
 .body1-orbit {
-  font-size: 16px !important;
-  color: #334155 !important;
-  line-height: 1.6 !important;
+  font-size: 16px;
+  color: #334155;
+  line-height: 1.6;
 }
 
 .body2-orbit {
-  font-size: 14px !important;
-  color: #475569 !important;
-  line-height: 1.6 !important;
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.6;
 }
 
 .caption-orbit {
-  font-size: 12px !important;
-  font-weight: 500 !important;
-  color: #94A3B8 !important;
+  font-size: 12px;
+  font-weight: 500;
+  color: #94A3B8;
 }
 
 /* Scrollbar Minimalis */
