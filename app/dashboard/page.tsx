@@ -16,10 +16,9 @@ import {
 } from 'lucide-react'
 import NotificationBell from '@/components/NotificationBell'
 
-// Memaksa Vercel agar tidak melakukan optimasi statis yang merusak pembacaan cookie Supabase auth
 export const dynamic = 'force-dynamic'
 
-const DOCUMENT_TYPES_COUNT = 5 // Based on berkas page
+const DOCUMENT_TYPES_COUNT = 5
 
 export default function DashboardPage() {
    const router = useRouter()
@@ -58,7 +57,6 @@ export default function DashboardPage() {
          const activeProfile = profileData || { id: user.id, nama_lengkap: 'Pengguna ORBIT', nim: '' }
          setProfile(activeProfile)
 
-         // Fetch attendance counts and distribution safely
          const { data: absensiData, error: absensiError } = await supabase
             .from('absensi')
             .select('tanggal')
@@ -82,7 +80,6 @@ export default function DashboardPage() {
          })
          setMonthlyAttendance(distribution)
 
-         // Fetch journal stats safely without crashing on null keys
          let kegiatanData: any[] = []
          let countSelesai = 0
          let countTotal = 0
@@ -93,26 +90,13 @@ export default function DashboardPage() {
                .select('*')
                .eq('nim', activeProfile.nim)
                .order('tanggal', { ascending: false })
-               .limit(3)
 
-            kegiatanData = Array.isArray(data) ? data : []
-
-            const { count: selCount } = await supabase
-               .from('Kegiatan')
-               .select('*', { count: 'exact', head: true })
-               .eq('nim', activeProfile.nim)
-               .eq('status_persetujuan', 'Disetujui')
-
-            const { count: totCount } = await supabase
-               .from('Kegiatan')
-               .select('*', { count: 'exact', head: true })
-               .eq('nim', activeProfile.nim)
-
-            countSelesai = selCount || 0
-            countTotal = totCount || 0
+            const safeJurnal = Array.isArray(data) ? data : []
+            countTotal = safeJurnal.length
+            countSelesai = safeJurnal.filter((k: any) => k.status_persetujuan === 'Disetujui' || k.status === 'Disetujui').length
+            kegiatanData = safeJurnal.slice(0, 3)
          }
 
-         // Fetch berkas stats
          const { count: berkasCount, error: berkasError } = await supabase
             .from('berkas')
             .select('*', { count: 'exact', head: true })
@@ -139,7 +123,6 @@ export default function DashboardPage() {
    const progressPersen = Math.min(Math.round(((stats.hadir || 0) / totalHariTarget) * 100), 100)
    const currentMonth = new Date().getMonth()
 
-   // Strict Loading Boundary to fully prevent layout calculation flashes
    if (loading) {
       return (
          <div className="fixed inset-0 z-[999] bg-[#F8F9FA] flex items-center justify-center">
@@ -154,13 +137,11 @@ export default function DashboardPage() {
    const safeKegiatan = Array.isArray(kegiatan) ? kegiatan : []
    const safeMonthlyAttendance = Array.isArray(monthlyAttendance) ? monthlyAttendance : Array(12).fill(0)
 
-   // Menghitung nilai tertinggi grafik secara aman tanpa math scope crash
    const maxAttendanceVal = safeMonthlyAttendance.length > 0 ? Math.max(...safeMonthlyAttendance) : 0
    const safeMaxVal = maxAttendanceVal > 0 ? maxAttendanceVal : 1
 
    return (
       <div className="space-y-8 pb-24 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-         {/* Header Area */}
          <div className="flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
             <div className="flex flex-col md:flex-row items-center gap-5">
                <div className="w-16 h-16 rounded-full accent-gradient flex items-center justify-center text-white text-2xl font-bold shadow-xl border-4 border-white">
@@ -174,7 +155,6 @@ export default function DashboardPage() {
             <NotificationBell />
          </div>
 
-         {/* Stats Row */}
          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
             <div className="neumorphic-card p-6 flex flex-col items-center text-center shadow-sm">
                <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-[var(--accent-blue)] mb-4 shadow-inner">
@@ -206,7 +186,6 @@ export default function DashboardPage() {
             </div>
          </div>
 
-         {/* Progress Section */}
          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
             <div className="neumorphic-card p-8 flex flex-col items-center shadow-sm">
                <h5 className="h5-orbit text-[var(--text-main)] mb-8">Progres Magang Efektif</h5>
@@ -270,7 +249,6 @@ export default function DashboardPage() {
             </div>
          </div>
 
-         {/* Recent Activity */}
          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
                <div className="flex items-center justify-between px-2">
