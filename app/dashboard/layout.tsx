@@ -17,7 +17,6 @@ import {
   X,
   Search
 } from 'lucide-react'
-import NotificationBell from '@/components/NotificationBell'
 
 export const dynamic = 'force-dynamic'
 
@@ -84,7 +83,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex min-h-screen bg-[var(--background)] text-[var(--text-main)] font-sans antialiased">
 
-      {/* Backdrop Hitam Transparan Mobile */}
       {isMobileSidebarOpen && (
         <div
           onClick={() => setIsMobileSidebarOpen(false)}
@@ -92,7 +90,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         />
       )}
 
-      {/* FIXED SIDEBAR CONTAINER - Dikunci permanen agar tidak ikut tergulung */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-[300px] h-screen bg-white border-r border-gray-200/50 px-8 py-12 flex flex-col justify-between transition-all duration-300 ease-in-out lg:translate-x-0 ${isMobileSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'
         }`}>
         <div>
@@ -137,8 +134,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               )}
             </div>
             <div className="min-w-0">
-              <p className="body2-orbit font-bold text-[var(--text-main)] truncate">{profile?.nama_lengkap?.split(' ')[0]}</p>
-              <p className="caption-orbit font-bold text-[var(--text-light)] uppercase tracking-wider truncate">{profile?.nim || 'Mahasiswa'}</p>
+              <p className="body2-orbit font-bold text-[#202124] truncate">{profile?.nama_lengkap?.split(' ')[0]}</p>
+              <p className="caption-orbit font-bold text-gray-400 uppercase tracking-wider truncate">{profile?.nim || 'Mahasiswa'}</p>
             </div>
           </Link>
 
@@ -152,9 +149,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      {/* MAIN VIEWPORT WRAPPER - Diberikan margin kiri pl-[300px] untuk mengimbangi sidebar yang fixed */}
       <div className="flex-1 min-w-0 flex flex-col min-h-screen lg:pl-[300px]">
-        {/* Top Navbar */}
         <header className="h-[90px] bg-white/80 backdrop-blur-xl border-b border-gray-100 sticky top-0 z-30 px-6 md:px-8 lg:px-12 flex items-center justify-between w-full">
           <div className="flex items-center gap-4 md:gap-6">
             <button
@@ -176,31 +171,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <input placeholder="Cari data..." className="bg-transparent border-none outline-none body2-orbit font-semibold w-full placeholder:text-[var(--text-light)] text-[var(--text-main)]" />
             </div>
 
-            <div className="flex items-center">
-              <NotificationBell />
-            </div>
-
-            <div className="lg:hidden w-10 h-10 rounded-full overflow-hidden accent-gradient shadow-lg flex items-center justify-center text-white text-sm font-bold border border-white">
+            <div className="w-10 h-10 rounded-full overflow-hidden accent-gradient shadow-lg flex items-center justify-center text-white text-sm font-bold border border-white">
               {profile?.nama_lengkap?.charAt(0) || 'U'}
             </div>
           </div>
         </header>
 
-        {/* Content Area - Area ini yang akan mengontrol scroll secara aman */}
         <div className="flex-1 p-6 md:p-8 lg:p-12 w-full overflow-y-auto">
           <div className="max-w-[1600px] mx-auto w-full">
             {children}
           </div>
         </div>
 
-        {/* Mobile Navigation */}
-        <nav className="lg:hidden fixed bottom-8 left-6 right-6 bg-white/90 backdrop-blur-xl border border-gray-100 h-20 rounded-[24px] flex justify-around items-center z-40 shadow-2xl">
-          {menuItems.slice(0, 4).map((item) => {
+        <nav className="lg:hidden fixed bottom-6 left-6 right-6 bg-white border border-gray-100 h-16 rounded-2xl flex justify-around items-center z-40 shadow-xl">
+          {menuItems.map((item) => {
             const isActive = pathname === item.href
             const Icon = item.icon
             return (
-              <Link key={item.href} href={item.href} className={`flex flex-col items-center justify-center w-14 h-14 rounded-[16px] transition-all ${isActive ? 'accent-gradient text-white shadow-lg' : 'text-[var(--text-light)] hover:text-[var(--text-main)]'}`}>
-                <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+              <Link key={item.href} href={item.href} className={`flex flex-col items-center justify-center p-2 rounded-xl ${isActive ? 'text-blue-600' : 'text-gray-400'}`}>
+                <Icon size={20} strokeWidth={2} />
               </Link>
             )
           })}
