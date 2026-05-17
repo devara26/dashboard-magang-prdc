@@ -55,38 +55,25 @@ export default function JurnalPage() {
             .eq('id', user.id)
             .maybeSingle()
 
-         if (profileError) {
-            console.error('Error fetching profile:', profileError)
-         }
+         if (profileError) console.error('Error profile:', profileError)
+         setProfile(profileData || { id: user.id, nama_lengkap: 'User' })
 
-         const activeProfile = profileData || { id: user.id, nama_lengkap: 'Pengguna ORBIT', role: 'mahasiswa' }
-         setProfile(activeProfile)
+         const nimFilter = profileData?.nim || ''
 
-         // Menarik data kegiatan secara aman
-         const nimFilter = activeProfile?.nim || ''
-         const nameFilter = activeProfile?.nama_lengkap || ''
+         // Ambil data dari tabel Kegiatan berdasarkan NIM mahasiswa aktif
+         const { data: kegiatanData, error: kegiatanError } = await supabase
+            .from('Kegiatan')
+            .select('*')
+            .eq('nim', nimFilter)
+            .order('tanggal', { ascending: false })
 
-         let query = supabase.from('Kegiatan').select('*')
+         if (kegiatanError) console.error('Error kegiatan:', kegiatanError)
 
-         if (nimFilter) {
-            query = query.eq('nim', nimFilter)
-         } else if (nameFilter && nameFilter !== 'Pengguna ORBIT') {
-            query = query.eq('nama_lengkap', nameFilter)
-         } else {
-            // Fallback jika tidak ada identifier, query record yang tidak ada
-            query = query.eq('id', '00000000-0000-0000-0000-000000000000')
-         }
+         // PERBAIKAN: Gunakan setKegiatan (bukan setStats) sesuai state asli halaman ini
+         setKegiatan(kegiatanData || [])
 
-         const { data: kegiatanData, error: kegiatanError } = await query.order('tanggal', { ascending: false })
-
-         if (kegiatanError) {
-            console.error('Error fetching kegiatan:', kegiatanError)
-         }
-
-         setKegiatan(Array.isArray(kegiatanData) ? kegiatanData : [])
       } catch (error) {
-         console.error('Critical runtime fetch error:', error)
-         setKegiatan([])
+         console.error('Runtime fetch error:', error)
       } finally {
          setLoading(false)
       }
@@ -275,12 +262,11 @@ export default function JurnalPage() {
                            </div>
                            <div className="space-y-4">
                               <div className="flex flex-wrap items-center gap-3">
-                                 <span className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border ${
-                                    item?.status_persetujuan === 'Disetujui'
-                                       ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                                       : item?.status_persetujuan === 'Ditolak'
-                                          ? 'bg-red-50 text-red-600 border-red-100'
-                                          : 'bg-orange-50 text-orange-600 border-orange-100'
+                                 <span className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border ${item?.status_persetujuan === 'Disetujui'
+                                    ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                                    : item?.status_persetujuan === 'Ditolak'
+                                       ? 'bg-red-50 text-red-600 border-red-100'
+                                       : 'bg-orange-50 text-orange-600 border-orange-100'
                                     }`}>
                                     {item?.status_persetujuan ?? 'Menunggu'}
                                  </span>
@@ -335,8 +321,8 @@ export default function JurnalPage() {
                            Belum ada catatan jurnal yang sesuai dengan pencarian Anda.
                         </p>
                      </div>
-                     <button 
-                        onClick={() => { resetForm(); setShowModal(true); }} 
+                     <button
+                        onClick={() => { resetForm(); setShowModal(true); }}
                         className="neumorphic-button accent-gradient text-white border-none px-12 shadow-blue-200"
                      >
                         Tulis Jurnal Sekarang
