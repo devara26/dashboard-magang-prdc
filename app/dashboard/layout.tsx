@@ -93,8 +93,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       )}
 
       {/* Sidebar - Responsif Desktop (Sifat Permanen) & Mobile (Sifat Slider Berbasis State) */}
-      <aside className={`fixed inset-y-0 z-50 w-[300px] bg-white border-r border-gray-200/50 px-8 py-12 flex flex-col justify-between transition-all duration-300 ease-in-out lg:sticky lg:top-0 lg:h-screen lg:flex ${isMobileSidebarOpen ? 'left-0 shadow-2xl' : '-left-full lg:left-0'
-        }`}>
+      <aside className={`fixed inset-y-0 z-50 w-[300px] h-screen bg-white border-r border-gray-200/50 px-8 py-12 flex flex-col justify-between transition-all duration-300 ease-in-out lg:left-0 ${isMobileSidebarOpen ? 'left-0 shadow-2xl' : '-left-full'}`}>
         <div>
           <div className="px-4 mb-14 flex items-center justify-between">
             <img src="/logoorbitsvg.svg" alt="Orbit Logo" className="h-10 w-auto object-contain" />
