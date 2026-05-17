@@ -14,7 +14,6 @@ import {
    MapPin,
    Clock
 } from 'lucide-react'
-import NotificationBell from '@/components/NotificationBell'
 
 export const dynamic = 'force-dynamic'
 
@@ -152,7 +151,6 @@ export default function DashboardPage() {
                   <p className="body2-orbit text-[var(--text-muted)] mt-1">Selamat datang kembali di platform monitoring ORBIT.</p>
                </div>
             </div>
-            <NotificationBell />
          </div>
 
          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
