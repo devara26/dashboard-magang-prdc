@@ -5,7 +5,12 @@
 :root {
   --background: #F8FAFC;
   --card-bg: #FFFFFF;
+  --accent-blue: #1A73E8;
+  --accent-dark: #0D47A1;
   --text-main: #0F172A;
+  --text-muted: #475569;
+  --text-light: #94A3B8;
+  --modern-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.03), 0 10px 15px -3px rgba(15, 23, 42, 0.05), 0 0 0 1px rgba(15, 23, 42, 0.04);
 }
 
 body {
@@ -13,4 +18,130 @@ body {
   color: var(--text-main);
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* --- PERBAIKAN KONTRAS MASAL (ANTI-TENGGELAM) --- */
+
+/* 1. Paksa semua teks di dalam kartu berwarna biru (bg-blue-600, dll) menjadi putih murni */
+div[class*="bg-blue-"],
+div[class*="bg-indigo-"],
+.accent-gradient {
+  color: #FFFFFF !important;
+}
+
+/* 2. Jinakkan class warna bawaan Tailwind di dalam kartu biru agar ikut menjadi putih */
+div[class*="bg-blue-"] [class*="text-slate-"],
+div[class*="bg-blue-"] [class*="text-gray-"],
+div[class*="bg-blue-"] [class*="text-zinc-"],
+.accent-gradient [class*="text-slate-"],
+.accent-gradient [class*="text-gray-"] {
+  color: #FFFFFF !important;
+}
+
+/* 3. Berikan sedikit opasitas (transparansi) untuk teks label/keterangan kecil agar tetap estetis tapi terbaca */
+div[class*="bg-blue-"] p[class*="text-light"],
+div[class*="bg-blue-"] span[class*="text-xs"],
+.accent-gradient p[class*="text-sm"] {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* 4. Pastikan ikon SVG di dalam kartu berwarna ikut menjadi putih bersih */
+div[class*="bg-blue-"] svg,
+.accent-gradient svg {
+  stroke: #FFFFFF !important;
+  color: #FFFFFF !important;
+}
+
+/* --- KUSTOMISASI KOMPONEN UTAMA ORBIT --- */
+
+.neumorphic-card {
+  background-color: var(--card-bg);
+  border-radius: 20px;
+  border: 1px solid #E2E8F0;
+  box-shadow: var(--modern-shadow);
+  transition: all 0.2s ease-in-out;
+}
+
+.neumorphic-card:hover {
+  box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.05);
+  transform: translateY(-2px);
+}
+
+.neumorphic-button {
+  background-color: #FFFFFF;
+  color: #1E293B;
+  font-weight: 600;
+  border-radius: 12px;
+  padding: 10px 20px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.neumorphic-button:hover {
+  background-color: #F8FAFC;
+}
+
+.accent-gradient {
+  background: linear-gradient(135deg, #1A73E8 0%, #0D47A1 100%);
+}
+
+/* GAYA TIPOGRAFI ORBIT */
+.h1-orbit {
+  font-size: 36px;
+  font-weight: 800;
+  color: #0F172A;
+}
+
+.h2-orbit {
+  font-size: 28px;
+  font-weight: 700;
+  color: #0F172A;
+}
+
+.h3-orbit {
+  font-size: 22px;
+  font-weight: 700;
+  color: #0F172A;
+}
+
+.h4-orbit {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1E293B;
+}
+
+.subtitle-orbit {
+  font-size: 16px;
+  font-weight: 500;
+  color: #475569;
+}
+
+.label-orbit {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #64748B;
+}
+
+/* MINIMALIS SCROLLBAR */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
 }
