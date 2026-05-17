@@ -20,24 +20,45 @@ export default function NotificationBell() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    fetchNotifications()
-    
-    // Realtime subscription
-    const channel = supabase
-      .channel('notifications_changes')
-      .on('postgres_changes', { 
-        event: 'INSERT', 
-        schema: 'public', 
-        table: 'notifications' 
-      }, (payload) => {
-        setNotifications(prev => [payload.new as Notification, ...prev])
-        setUnreadCount(prev => prev + 1)
-        toast.info('Notifikasi baru diterima')
-      })
-      .subscribe()
+    let channel: any
+    let isMounted = true
+
+    async function setupRealtime() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user || !isMounted) return
+
+      fetchNotifications()
+
+      const channelName = `notifications_user_${user.id}_${Math.random().toString(36).substring(7)}`
+      
+      // Realtime subscription dengan urutan yang benar
+      channel = supabase
+        .channel(channelName)
+        .on(
+          'postgres_changes', 
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'notifications',
+            filter: `user_id=eq.${user.id}`
+          }, 
+          (payload) => {
+            if (isMounted) {
+              console.log('Perubahan data real-time:', payload)
+              fetchNotifications()
+            }
+          }
+        )
+        .subscribe()
+    }
+
+    setupRealtime()
 
     return () => {
-      supabase.removeChannel(channel)
+      isMounted = false
+      if (channel) {
+        supabase.removeChannel(channel)
+      }
     }
   }, [])
 

@@ -34,60 +34,32 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   const isProtected = request.nextUrl.pathname.startsWith('/dashboard') || request.nextUrl.pathname.startsWith('/dosen')
-  const isAuth = request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/register'
+  const isAuthPage = request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/register'
 
-  // Gunakan clone() agar lebih stabil di Edge Runtime
+  // Proteksi dasar: Jika tidak ada user dan mencoba akses halaman terproteksi
   if (!user && isProtected) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
 
-  if (user) {
-    if (isProtected || isAuth) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single()
-
-      const role = profile?.role || 'mahasiswa'
-
-      if (isAuth) {
-        const url = request.nextUrl.clone()
-        url.pathname = role === 'dosen' ? '/dosen' : '/dashboard'
-        return NextResponse.redirect(url)
-      }
-
-      if (request.nextUrl.pathname.startsWith('/dashboard') && role === 'dosen') {
-        const url = request.nextUrl.clone()
-        url.pathname = '/dosen'
-        return NextResponse.redirect(url)
-      }
-
-      if (request.nextUrl.pathname.startsWith('/dosen') && role === 'mahasiswa') {
-        const url = request.nextUrl.clone()
-        url.pathname = '/dashboard'
-        return NextResponse.redirect(url)
-      }
-    }
+  // Jika sudah login dan mencoba akses login/register, lempar ke root (yang akan meneruskan ke dashboard/dosen)
+  if (user && isAuthPage) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/'
+    return NextResponse.redirect(url)
   }
 
-  // Redirect root to dashboard (or dosen)
+  // Handle Root Path Redirect secara aman
   if (request.nextUrl.pathname === '/') {
     if (user) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single()
-      const role = profile?.role || 'mahasiswa'
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
       const url = request.nextUrl.clone()
-      url.pathname = role === 'dosen' ? '/dosen' : '/dashboard'
+      url.pathname = profile?.role === 'dosen' ? '/dosen' : '/dashboard'
       return NextResponse.redirect(url)
     } else {
       const url = request.nextUrl.clone()
-      url.pathname = '/dashboard'
+      url.pathname = '/login'
       return NextResponse.redirect(url)
     }
   }

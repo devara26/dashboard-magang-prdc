@@ -10,30 +10,43 @@ import NotificationBell from '@/components/NotificationBell'
 export default function DosenLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
-  const [profileName, setProfileName] = useState('Memuat...')
+  const [profileName, setProfileName] = useState('Dosen Orbit')
   const [role, setRole] = useState('Dosen')
-  const [nip, setNip] = useState('0000000000')
+  const [nip, setNip] = useState('---')
   const [initial, setInitial] = useState('D')
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function fetchUser() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      try {
+        setLoading(true)
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
+        if (authError || !user) {
+          setLoading(false)
+          return
+        }
 
-      const { data } = await supabase
-        .from('profiles')
-        .select('nama_lengkap, role, avatar_url, nim')
-        .eq('id', user.id)
-        .single()
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('nama_lengkap, role, avatar_url, nim')
+          .eq('id', user.id)
+          .maybeSingle()
 
-      if (data) {
-        setProfileName(data.nama_lengkap || 'Dosen Orbit')
-        setInitial((data.nama_lengkap || 'D').charAt(0).toUpperCase())
-        setRole(data.role || 'Dosen')
-        setAvatarUrl(data.avatar_url)
-        setNip(data.nim || 'Dosen Tetap')
+        if (error) console.error('Dosen Layout Error:', error)
+
+        if (data) {
+          setProfileName(data.nama_lengkap || 'Dosen Orbit')
+          setInitial((data.nama_lengkap || 'D').charAt(0).toUpperCase())
+          setRole(data.role || 'Dosen')
+          setAvatarUrl(data.avatar_url)
+          setNip(data.nim || 'Dosen Tetap')
+        }
+      } catch (err) {
+        console.error('Runtime FetchUser Error:', err)
+      } finally {
+        setLoading(false)
       }
     }
     fetchUser()
@@ -52,6 +65,14 @@ export default function DosenLayout({ children }: { children: React.ReactNode })
     { name: 'Persetujuan Laporan', href: '/dosen/persetujuan-laporan', icon: CheckSquare },
     { name: 'Profil Saya', href: '/dosen/profil', icon: User },
   ]
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 z-[999] bg-[#F0F2F5] flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-[#0066FF] border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-screen w-full bg-[#F0F2F5] text-[#202124] overflow-hidden font-sans selection:bg-blue-100">

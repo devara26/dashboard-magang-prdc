@@ -15,6 +15,7 @@ import {
    MapPin,
    Clock
 } from 'lucide-react'
+import NotificationBell from '@/components/NotificationBell'
 
 // Memaksa Vercel agar tidak melakukan optimasi statis yang merusak pembacaan cookie Supabase auth
 export const dynamic = 'force-dynamic'
@@ -171,10 +172,7 @@ export default function DashboardPage() {
                   <p className="subtitle-orbit text-[var(--text-muted)] mt-1">Selamat datang kembali di platform monitoring ORBIT.</p>
                </div>
             </div>
-            <button className="neumorphic-button relative w-14 h-14 flex items-center justify-center text-[var(--text-main)]">
-               <Bell size={24} />
-               <span className="absolute top-4 right-4 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>
-            </button>
+            <NotificationBell />
          </div>
 
          {/* Stats Row */}

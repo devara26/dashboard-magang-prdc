@@ -21,6 +21,9 @@ import {
   ChevronRight
 } from 'lucide-react'
 
+// Memaksa Vercel agar tidak melakukan optimasi statis yang merusak pembacaan cookie Supabase auth
+export const dynamic = 'force-dynamic'
+
 interface Profile {
   id: string
   nama_lengkap: string
@@ -55,13 +58,33 @@ export default function ProfilPage() {
 
   async function fetchUser() {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return router.push('/login')
-      setEmail(user.email || '')
-      const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-      if (data) { setProfile(data); setForm(data); setAvatarUrl(data.avatar_url); }
+      setLoading(true)
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      if (authError || !user) {
+        setLoading(false)
+        return router.push('/login')
+      }
+      setEmail(user?.email || '')
+      
+      const { data, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      if (profileError) console.error('Error fetching profile:', profileError)
+
+      if (data) { 
+        setProfile(data)
+        setForm(data)
+        setAvatarUrl(data?.avatar_url || null)
+      } else {
+        const fallback = { id: user.id, nama_lengkap: 'Pengguna ORBIT' }
+        setProfile(fallback as any)
+        setForm(fallback as any)
+      }
     } catch (error) {
-      console.error(error)
+      console.error('Runtime profile fetch error:', error)
     } finally {
       setLoading(false)
     }
@@ -69,22 +92,23 @@ export default function ProfilPage() {
 
   async function handleLogout() {
     if (confirm('Keluar dari aplikasi?')) { 
-       await supabase.auth.signOut(); 
-       router.push('/login'); 
+       await supabase.auth.signOut()
+       router.push('/login')
     }
   }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
+    if (!profile?.id) return
     setSaving(true)
     try {
-      const { data, error } = await supabase.from('profiles').update({ ...form }).eq('id', profile?.id).select()
-      if (error || !data?.length) throw new Error('Gagal update.')
+      const { data, error } = await supabase.from('profiles').update({ ...form }).eq('id', profile.id).select()
+      if (error || !data?.length) throw new Error('Gagal update data profil.')
       setProfile({ ...profile, ...form } as Profile)
       setIsEditing(false)
       toast.success('Profil berhasil diperbarui')
-    } catch (error) {
-      toast.error('Gagal memperbarui profil')
+    } catch (error: any) {
+      toast.error('Gagal memperbarui: ' + error.message)
     } finally {
       setSaving(false)
     }
@@ -113,9 +137,10 @@ export default function ProfilPage() {
   }
 
   async function handleDownloadExcel() {
+    if (!profile) return
     try {
       setDownloadingExcel(true)
-      await exportLaporanExcel(profile).finally(() => setDownloadingExcel(false))
+      await exportLaporanExcel(profile)
       toast.success('Laporan berhasil diunduh')
     } catch (error: any) {
       toast.error('Gagal mengunduh: ' + error.message)
@@ -129,15 +154,27 @@ export default function ProfilPage() {
     setModalLoading(true)
     if (dosenCode === '123') {
       const { data: { user } } = await supabase.auth.getUser()
-      await supabase.from('profiles').update({ role: 'dosen' }).eq('id', user?.id)
-      window.location.href = '/dosen'
+      if (user) {
+        await supabase.from('profiles').update({ role: 'dosen' }).eq('id', user.id)
+        window.location.href = '/dosen'
+      }
     } else {
       setModalError('Kode akses salah!'); 
       setModalLoading(false);
     }
   }
 
-  if (loading) return null
+  // Strict Loading Boundary
+  if (loading) {
+    return (
+      <div className="fixed inset-0 z-[999] bg-[#F8F9FA] flex items-center justify-center">
+        <div className="text-center space-y-6">
+          <div className="w-16 h-16 border-4 border-[var(--accent-blue)] border-t-transparent rounded-full animate-spin mx-auto shadow-sm"></div>
+          <p className="text-[var(--text-main)] font-bold text-lg tracking-tight">Menyelaraskan Profil ORBIT...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-12 pb-24 max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-1000">
@@ -150,7 +187,8 @@ export default function ProfilPage() {
         <div className="flex items-center gap-4">
            <button 
               onClick={handleDownloadExcel} 
-              className="neumorphic-button flex items-center gap-2 bg-white text-[var(--text-main)]"
+              disabled={downloadingExcel}
+              className="neumorphic-button flex items-center gap-2 bg-white text-[var(--text-main)] shadow-sm active:scale-95 transition-all"
            >
               <Download size={20} className="text-[var(--accent-blue)]" />
               <span className="label-orbit font-bold">{downloadingExcel ? 'Memproses...' : 'Ekspor Info'}</span>
@@ -158,7 +196,7 @@ export default function ProfilPage() {
            {!isEditing && (
              <button 
                 onClick={() => setIsEditing(true)} 
-                className="neumorphic-button flex items-center gap-2 accent-gradient text-white border-none shadow-xl shadow-blue-100"
+                className="neumorphic-button flex items-center gap-2 accent-gradient text-white border-none shadow-xl shadow-blue-100 active:scale-95 transition-all"
              >
                 <Edit size={20} />
                 <span className="label-orbit font-bold">Edit Profil</span>
@@ -168,14 +206,14 @@ export default function ProfilPage() {
       </div>
 
       {isEditing ? (
-        <form onSubmit={handleSave} className="neumorphic-card p-10 md:p-14 space-y-14">
+        <form onSubmit={handleSave} className="neumorphic-card p-10 md:p-14 space-y-14 shadow-sm">
            <div className="flex flex-col items-center">
               <div className="relative group">
                  <div className="w-40 h-40 rounded-[40px] accent-gradient border-4 border-white shadow-2xl flex items-center justify-center overflow-hidden">
                     {avatarUrl ? (
                        <img src={avatarUrl} className="w-full h-full object-cover" />
                     ) : (
-                       <span className="text-6xl font-bold text-white">{profile?.nama_lengkap?.charAt(0)}</span>
+                       <span className="text-6xl font-bold text-white">{(profile?.nama_lengkap ?? 'P').charAt(0)}</span>
                     )}
                     {uploadingAvatar && (
                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-sm">
@@ -199,7 +237,7 @@ export default function ProfilPage() {
                     <div className="space-y-2">
                        <label className="caption-orbit font-bold text-[var(--text-light)] uppercase tracking-widest ml-1">Nama Lengkap</label>
                        <input 
-                          value={form.nama_lengkap || ''} 
+                          value={form?.nama_lengkap || ''} 
                           onChange={e => setForm({...form, nama_lengkap: e.target.value})} 
                           className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 body2-orbit font-semibold outline-none focus:ring-4 focus:ring-[var(--accent-blue)]/10 focus:bg-white transition-all shadow-inner" 
                        />
@@ -207,7 +245,7 @@ export default function ProfilPage() {
                     <div className="space-y-2">
                        <label className="caption-orbit font-bold text-[var(--text-light)] uppercase tracking-widest ml-1">Nomor Induk Mahasiswa (NIM)</label>
                        <input 
-                          value={form.nim || ''} 
+                          value={form?.nim || ''} 
                           onChange={e => setForm({...form, nim: e.target.value})} 
                           className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 body2-orbit font-semibold outline-none focus:ring-4 focus:ring-[var(--accent-blue)]/10 focus:bg-white transition-all shadow-inner" 
                        />
@@ -223,7 +261,7 @@ export default function ProfilPage() {
                     <div className="space-y-2">
                        <label className="caption-orbit font-bold text-[var(--text-light)] uppercase tracking-widest ml-1">Instansi / Perusahaan</label>
                        <input 
-                          value={form.instansi_magang || ''} 
+                          value={form?.instansi_magang || ''} 
                           onChange={e => setForm({...form, instansi_magang: e.target.value})} 
                           className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 body2-orbit font-semibold outline-none focus:ring-4 focus:ring-[var(--accent-blue)]/10 focus:bg-white transition-all shadow-inner" 
                        />
@@ -231,7 +269,7 @@ export default function ProfilPage() {
                     <div className="space-y-2">
                        <label className="caption-orbit font-bold text-[var(--text-light)] uppercase tracking-widest ml-1">Unit / Divisi</label>
                        <input 
-                          value={form.unit_magang || ''} 
+                          value={form?.unit_magang || ''} 
                           onChange={e => setForm({...form, unit_magang: e.target.value})} 
                           className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 body2-orbit font-semibold outline-none focus:ring-4 focus:ring-[var(--accent-blue)]/10 focus:bg-white transition-all shadow-inner" 
                        />
@@ -244,7 +282,7 @@ export default function ProfilPage() {
               <button 
                  type="button" 
                  onClick={() => setIsEditing(false)} 
-                 className="px-10 py-5 body2-orbit font-bold text-[var(--text-muted)] hover:bg-gray-100 rounded-2xl transition-all flex items-center justify-center gap-2"
+                 className="px-10 py-5 body2-orbit font-bold text-[var(--text-muted)] hover:bg-gray-100 rounded-2xl transition-all flex items-center justify-center gap-2 active:scale-95"
               >
                  <X size={18} />
                  Batal
@@ -262,13 +300,13 @@ export default function ProfilPage() {
       ) : (
         <div className="space-y-10">
            {/* Profile Header Card */}
-           <section className="neumorphic-card p-10 md:p-14 flex flex-col md:flex-row items-center gap-12 text-center md:text-left relative overflow-hidden">
+           <section className="neumorphic-card p-10 md:p-14 flex flex-col md:flex-row items-center gap-12 text-center md:text-left relative overflow-hidden shadow-sm">
               <div className="absolute right-0 top-0 w-80 h-80 bg-blue-50 rounded-full -mr-40 -mt-40 opacity-50"></div>
               <div className="w-44 h-44 rounded-[48px] accent-gradient border-4 border-white shadow-2xl flex items-center justify-center overflow-hidden flex-shrink-0 relative group">
                  {avatarUrl ? (
                     <img src={avatarUrl} className="w-full h-full object-cover" />
                  ) : (
-                    <span className="text-7xl font-bold text-white">{profile?.nama_lengkap?.charAt(0)}</span>
+                    <span className="text-7xl font-bold text-white">{(profile?.nama_lengkap ?? 'P').charAt(0)}</span>
                  )}
                  <button 
                     onClick={() => setIsEditing(true)} 
@@ -279,75 +317,75 @@ export default function ProfilPage() {
               </div>
               <div className="flex-1 space-y-6 relative z-10">
                  <div>
-                    <h2 className="h2-orbit text-[var(--text-main)] leading-tight">{profile?.nama_lengkap}</h2>
+                    <h2 className="h2-orbit text-[var(--text-main)] leading-tight">{profile?.nama_lengkap ?? 'Pengguna ORBIT'}</h2>
                     <div className="flex flex-wrap gap-4 mt-4 justify-center md:justify-start">
-                       <span className="px-5 py-2 bg-emerald-50 text-emerald-600 rounded-full caption-orbit font-bold uppercase tracking-widest border border-emerald-100 flex items-center gap-2">
+                       <span className="px-5 py-2 bg-emerald-50 text-emerald-600 rounded-full caption-orbit font-bold uppercase tracking-widest border border-emerald-100 flex items-center gap-2 shadow-sm">
                           <ShieldCheck size={14} />
                           Mahasiswa Aktif
                        </span>
-                       <span className="px-5 py-2 bg-gray-50 text-[var(--text-muted)] rounded-full caption-orbit font-bold uppercase tracking-widest border border-gray-100 flex items-center gap-2">
+                       <span className="px-5 py-2 bg-gray-50 text-[var(--text-muted)] rounded-full caption-orbit font-bold uppercase tracking-widest border border-gray-100 flex items-center gap-2 shadow-inner">
                           <User size={14} />
-                          {profile?.nim || 'NIM Tidak Tersedia'}
+                          {profile?.nim ?? 'NIM ---'}
                        </span>
                     </div>
                  </div>
                  <p className="body1-orbit text-[var(--text-muted)] max-w-2xl leading-relaxed italic">
-                    "{profile?.bio || 'Mendokumentasikan perjalanan magang luar biasa melalui platform monitoring ORBIT.'}"
+                    "{profile?.bio || 'Mendokumentasikan perjalanan magang melalui platform monitoring ORBIT.'}"
                  </p>
               </div>
            </section>
 
            {/* Bento Info Grid */}
            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-              <div className="neumorphic-card p-10 space-y-10">
+              <div className="neumorphic-card p-10 space-y-10 shadow-sm">
                  <div className="flex items-center justify-between">
-                    <h3 className="caption-orbit font-bold text-[var(--text-light)] uppercase tracking-[2px]">Informasi Akun</h3>
+                    <h3 className="caption-orbit font-bold text-[var(--text-light)] uppercase tracking-[2px]">Akses Akun</h3>
                     <User size={20} className="text-[var(--accent-blue)] opacity-50" />
                  </div>
                  <div className="space-y-6">
-                    <div className="flex items-center gap-6 p-6 bg-gray-50 rounded-[24px] border border-gray-100 transition-all hover:bg-white hover:shadow-md group">
+                    <div className="flex items-center gap-6 p-6 bg-gray-50 rounded-[24px] border border-gray-100 transition-all hover:bg-white hover:shadow-md group shadow-inner">
                        <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-[var(--accent-blue)] shadow-sm group-hover:scale-110 transition-transform">
                           <Mail size={24} />
                        </div>
                        <div>
-                          <p className="caption-orbit font-bold text-[var(--text-light)] uppercase tracking-widest">Alamat Email</p>
-                          <p className="body2-orbit font-bold text-[var(--text-main)] mt-1">{email}</p>
+                          <p className="caption-orbit font-bold text-[var(--text-light)] uppercase tracking-widest">Email Terdaftar</p>
+                          <p className="body2-orbit font-bold text-[var(--text-main)] mt-1">{email || '---'}</p>
                        </div>
                     </div>
-                    <div className="flex items-center gap-6 p-6 bg-gray-50 rounded-[24px] border border-gray-100 transition-all hover:bg-white hover:shadow-md group">
+                    <div className="flex items-center gap-6 p-6 bg-gray-50 rounded-[24px] border border-gray-100 transition-all hover:bg-white hover:shadow-md group shadow-inner">
                        <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-orange-500 shadow-sm group-hover:scale-110 transition-transform">
                           <School size={24} />
                        </div>
                        <div>
-                          <p className="caption-orbit font-bold text-[var(--text-light)] uppercase tracking-widest">Institusi Pendidikan</p>
-                          <p className="body2-orbit font-bold text-[var(--text-main)] mt-1">{profile?.universitas} • {profile?.prodi}</p>
+                          <p className="caption-orbit font-bold text-[var(--text-light)] uppercase tracking-widest">Instansi Pendidikan</p>
+                          <p className="body2-orbit font-bold text-[var(--text-main)] mt-1">{profile?.universitas ?? '---'} • {profile?.prodi ?? '---'}</p>
                        </div>
                     </div>
                  </div>
               </div>
 
-              <div className="neumorphic-card p-10 space-y-10">
+              <div className="neumorphic-card p-10 space-y-10 shadow-sm">
                  <div className="flex items-center justify-between">
-                    <h3 className="caption-orbit font-bold text-[var(--text-light)] uppercase tracking-[2px]">Penempatan Magang</h3>
+                    <h3 className="caption-orbit font-bold text-[var(--text-light)] uppercase tracking-[2px]">Data Magang</h3>
                     <Building size={20} className="text-orange-500 opacity-50" />
                  </div>
                  <div className="space-y-6">
-                    <div className="flex items-center gap-6 p-6 bg-gray-50 rounded-[24px] border border-gray-100 transition-all hover:bg-white hover:shadow-md group">
+                    <div className="flex items-center gap-6 p-6 bg-gray-50 rounded-[24px] border border-gray-100 transition-all hover:bg-white hover:shadow-md group shadow-inner">
                        <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-blue-600 shadow-sm group-hover:scale-110 transition-transform">
                           <Building size={24} />
                        </div>
                        <div>
-                          <p className="caption-orbit font-bold text-[var(--text-light)] uppercase tracking-widest">Instansi & Unit</p>
-                          <p className="body2-orbit font-bold text-[var(--text-main)] mt-1">{profile?.instansi_magang} — {profile?.unit_magang}</p>
+                          <p className="caption-orbit font-bold text-[var(--text-light)] uppercase tracking-widest">Penempatan Unit</p>
+                          <p className="body2-orbit font-bold text-[var(--text-main)] mt-1">{profile?.instansi_magang ?? '---'} — {profile?.unit_magang ?? '---'}</p>
                        </div>
                     </div>
-                    <div className="flex items-center gap-6 p-6 bg-gray-50 rounded-[24px] border border-gray-100 transition-all hover:bg-white hover:shadow-md group">
+                    <div className="flex items-center gap-6 p-6 bg-gray-50 rounded-[24px] border border-gray-100 transition-all hover:bg-white hover:shadow-md group shadow-inner">
                        <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-emerald-500 shadow-sm group-hover:scale-110 transition-transform">
                           <Calendar size={24} />
                        </div>
                        <div>
-                          <p className="caption-orbit font-bold text-[var(--text-light)] uppercase tracking-widest">Periode Magang</p>
-                          <p className="body2-orbit font-bold text-[var(--text-main)] mt-1">{profile?.tanggal_mulai} s/d {profile?.tanggal_selesai}</p>
+                          <p className="caption-orbit font-bold text-[var(--text-light)] uppercase tracking-widest">Durasi Kontrak</p>
+                          <p className="body2-orbit font-bold text-[var(--text-main)] mt-1">{profile?.tanggal_mulai ?? '---'} s/d {profile?.tanggal_selesai ?? '---'}</p>
                        </div>
                     </div>
                  </div>
@@ -358,10 +396,10 @@ export default function ProfilPage() {
            <div className="flex flex-col md:flex-row gap-8">
               <button 
                  onClick={() => setShowDosenModal(true)} 
-                 className="flex-1 p-8 bg-[var(--text-main)] rounded-[32px] text-white label-orbit font-bold uppercase tracking-widest flex items-center justify-center gap-4 hover:bg-[var(--accent-blue)] transition-all shadow-xl shadow-slate-200 group active:scale-95"
+                 className="flex-1 p-8 bg-[var(--text-main)] rounded-[32px] text-white label-orbit font-bold uppercase tracking-widest flex items-center justify-center gap-4 hover:bg-[var(--accent-blue)] transition-all shadow-xl active:scale-95 group shadow-slate-100"
               >
                  <ShieldCheck size={24} className="group-hover:rotate-12 transition-transform" />
-                 Beralih ke Role Dosen
+                 Akses Koordinator Dosen
                  <ChevronRight size={20} className="opacity-50" />
               </button>
               <button 
@@ -375,39 +413,39 @@ export default function ProfilPage() {
         </div>
       )}
 
-      {/* Modal Verifikasi - Neumorphic */}
+      {/* Modal Verifikasi */}
       {showDosenModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="neumorphic-card w-full max-w-md p-10 space-y-10 text-center animate-in zoom-in-95 duration-300">
-            <div className="w-24 h-24 bg-blue-50 text-[var(--accent-blue)] rounded-[32px] flex items-center justify-center mx-auto shadow-sm">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="neumorphic-card w-full max-w-md p-10 space-y-10 text-center animate-in zoom-in-95 duration-300 shadow-2xl">
+            <div className="w-24 h-24 bg-blue-50 text-[var(--accent-blue)] rounded-[32px] flex items-center justify-center mx-auto shadow-inner">
                <ShieldCheck size={48} />
             </div>
             <div>
-              <h3 className="h4-orbit text-[var(--text-main)]">Verifikasi Akses</h3>
-              <p className="body2-orbit text-[var(--text-muted)] mt-2">Masukkan kode otoritas untuk beralih ke akses dosen pembimbing.</p>
+              <h3 className="h4-orbit text-[var(--text-main)]">Otorisasi Dosen</h3>
+              <p className="body2-orbit text-[var(--text-muted)] mt-2 font-medium leading-relaxed">Gunakan kode akses khusus untuk beralih ke dashboard pembimbing.</p>
             </div>
             <form onSubmit={handleDosenCodeSubmit} className="space-y-8">
                <input 
                   type="password" 
                   value={dosenCode} 
                   onChange={e => setDosenCode(e.target.value)} 
-                  placeholder="••••••" 
+                  placeholder="••••" 
                   className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-8 py-6 text-center font-bold tracking-[12px] text-2xl outline-none focus:ring-4 focus:ring-[var(--accent-blue)]/10 focus:bg-white transition-all shadow-inner" 
                   autoFocus 
                />
-               {modalError && <p className="caption-orbit font-bold text-red-500 uppercase tracking-widest">{modalError}</p>}
+               {modalError && <p className="caption-orbit font-bold text-red-500 uppercase tracking-widest text-xs">{modalError}</p>}
                <div className="flex gap-4">
                   <button 
                      type="button" 
                      onClick={() => { setShowDosenModal(false); setModalError(''); }} 
-                     className="flex-1 py-5 body2-orbit font-bold text-[var(--text-muted)] bg-gray-50 hover:bg-gray-100 rounded-2xl transition-all"
+                     className="flex-1 py-5 body2-orbit font-bold text-[var(--text-muted)] bg-gray-50 hover:bg-gray-100 rounded-2xl transition-all shadow-sm active:scale-95"
                   >
                      Tutup
                   </button>
                   <button 
                      type="submit" 
                      disabled={modalLoading} 
-                     className="flex-1 py-5 accent-gradient text-white label-orbit font-bold uppercase tracking-widest rounded-2xl shadow-lg shadow-blue-100 active:scale-95"
+                     className="flex-1 py-5 accent-gradient text-white label-orbit font-bold uppercase tracking-widest rounded-2xl shadow-lg shadow-blue-100 active:scale-95 transition-all"
                   >
                      Verifikasi
                   </button>

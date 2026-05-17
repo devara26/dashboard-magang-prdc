@@ -17,6 +17,7 @@ import {
   ChevronRight, 
   Menu 
 } from 'lucide-react'
+import NotificationBell from '@/components/NotificationBell'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -30,12 +31,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return router.push('/login')
 
-        const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-        if (!data || data.role !== 'mahasiswa') return router.push('/login')
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle()
 
-        setProfile(data)
+        if (error) console.error('Layout Profile Error:', error)
+
+        if (!data) {
+          console.warn('Profile not found for user:', user.id)
+          setProfile({ id: user.id, nama_lengkap: 'Pengguna ORBIT', role: 'mahasiswa' })
+        } else {
+          if (data.role === 'dosen') {
+            return router.push('/dosen')
+          }
+          setProfile(data)
+        }
       } catch (err) {
-        router.push('/login')
+        console.error('Runtime CheckUser Error:', err)
       } finally {
         setLoading(false)
       }
@@ -44,8 +58,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [router])
 
   if (loading) return (
-    <div className="flex h-screen items-center justify-center bg-[#F4F4F4]">
-      <div className="w-10 h-10 border-4 border-gray-200 border-t-[#0066FF] rounded-full animate-spin" />
+    <div className="fixed inset-0 z-[999] bg-[#F8F9FA] flex items-center justify-center">
+      <div className="text-center space-y-6">
+        <div className="w-16 h-16 border-4 border-[#0066FF] border-t-transparent rounded-full animate-spin mx-auto shadow-sm"></div>
+        <p className="text-[#202124] font-bold text-lg tracking-tight">Menyelaraskan Dashboard...</p>
+      </div>
     </div>
   )
 
@@ -140,10 +157,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <input placeholder="Cari data..." className="bg-transparent border-none outline-none body2-orbit font-semibold w-full placeholder:text-[var(--text-light)] text-[var(--text-main)]" />
              </div>
              
-             <button className="w-12 h-12 flex items-center justify-center text-[var(--text-muted)] bg-gray-100 hover:bg-white hover:shadow-sm border border-transparent hover:border-gray-200 rounded-full relative transition-all group">
-                <Bell size={20} className="group-hover:text-[var(--accent-blue)] transition-colors" />
-                <span className="absolute top-3 right-3 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
-             </button>
+             <div className="flex items-center">
+                <NotificationBell />
+             </div>
              
              <div className="lg:hidden w-10 h-10 rounded-full overflow-hidden accent-gradient shadow-lg flex items-center justify-center text-white text-sm font-bold">
                 {profile?.nama_lengkap?.charAt(0)}

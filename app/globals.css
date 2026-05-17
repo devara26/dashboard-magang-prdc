@@ -9,7 +9,7 @@
   --text-main: #1A1A1A;
   --text-muted: #666666;
   --text-light: #A0A0A0;
-  
+
   --neumorphic-shadow: 6px 6px 12px #d1d5db, -6px -6px 12px #ffffff;
   --neumorphic-inset: inset 6px 6px 12px #d1d5db, inset -6px -6px 12px #ffffff;
 }
@@ -44,30 +44,39 @@
   .h1-orbit {
     @apply font-bold tracking-[-2px] text-[40px] md:text-[60px];
   }
+
   .h2-orbit {
     @apply font-bold tracking-[-2px] text-[32px] md:text-[48px];
   }
+
   .h3-orbit {
     @apply font-bold tracking-[-2px] text-[24px] md:text-[40px];
   }
+
   .h4-orbit {
     @apply font-medium text-[20px] md:text-[32px];
   }
+
   .h5-orbit {
     @apply font-bold text-[24px];
   }
+
   .subtitle-orbit {
     @apply font-medium text-[20px];
   }
+
   .label-orbit {
     @apply font-medium text-[16px];
   }
+
   .body1-orbit {
     @apply font-normal text-[20px] leading-[150%];
   }
+
   .body2-orbit {
     @apply font-normal text-[16px] leading-[140%];
   }
+
   .caption-orbit {
     @apply font-normal text-[13px];
   }
@@ -77,9 +86,11 @@
 ::-webkit-scrollbar {
   width: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   background: #d1d5db;
   border-radius: 10px;
