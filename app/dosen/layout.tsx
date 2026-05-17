@@ -169,8 +169,14 @@ export default function DosenLayout({ children }: { children: React.ReactNode })
               <input placeholder="Cari mahasiswa..." className="bg-transparent border-none outline-none body2-orbit font-semibold w-full placeholder:text-[var(--text-light)] text-[var(--text-main)]" />
             </div>
 
-            <div className="w-10 h-10 rounded-full overflow-hidden accent-gradient shadow-lg flex items-center justify-center text-white text-sm font-bold border border-white">
-              {profile?.nama_lengkap?.charAt(0) || 'D'}
+            <div className="w-10 h-10 rounded-full overflow-hidden bg-white border border-gray-200 shadow-md flex items-center justify-center">
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full accent-gradient flex items-center justify-center text-white text-sm font-bold">
+                  {profile?.nama_lengkap?.charAt(0) || 'D'}
+                </div>
+              )}
             </div>
           </div>
         </header>
