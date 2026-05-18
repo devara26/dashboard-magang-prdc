@@ -78,7 +78,7 @@ export default function AbsensiPage() {
     setSubmitting(true)
     try {
       const today = new Date().toISOString().split('T')[0]
-      const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false })
+      const now = new Date().toTimeString().split(' ')[0].slice(0, 5)
 
       const { error } = await supabase
         .from('absensi')

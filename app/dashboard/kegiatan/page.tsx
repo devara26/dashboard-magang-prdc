@@ -60,11 +60,18 @@ export default function JurnalPage() {
 
          const nimFilter = profileData?.nim || ''
 
-         // Ambil data dari tabel Kegiatan berdasarkan NIM mahasiswa aktif
-         const { data: kegiatanData, error: kegiatanError } = await supabase
+         let query = supabase
             .from('Kegiatan')
-            .select('*')
-            .eq('nim', nimFilter)
+            .select('*');
+
+         if (nimFilter) {
+            query = query.or(`nim.eq.${nimFilter},mahasiswa_id.eq.${user.id}`);
+         } else {
+            query = query.eq('mahasiswa_id', user.id);
+         }
+
+         // Ambil data dari tabel Kegiatan berdasarkan NIM mahasiswa aktif atau ID mahasiswa
+         const { data: kegiatanData, error: kegiatanError } = await query
             .order('tanggal', { ascending: false })
 
          if (kegiatanError) console.error('Error kegiatan:', kegiatanError)
@@ -89,13 +96,13 @@ export default function JurnalPage() {
 
       setSubmitting(true)
       try {
-         const userIdentifier = profile?.nim || profile?.id || ''
          const payload = {
             kegiatan: newKegiatan.kegiatan,
             tanggal: newKegiatan.tanggal,
             status: newKegiatan.status,
-            nim: userIdentifier,
-            nama_lengkap: profile?.nama_lengkap || 'Pengguna'
+            nim: profile?.nim || '',
+            nama_mahasiswa: profile?.nama_lengkap || 'Pengguna',
+            mahasiswa_id: profile?.id || null
          }
 
          if (editingId) {

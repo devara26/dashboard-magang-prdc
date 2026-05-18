@@ -83,18 +83,26 @@ export default function DashboardPage() {
          let countSelesai = 0
          let countTotal = 0
 
-         if (activeProfile?.nim) {
-            const { data, error } = await supabase
-               .from('Kegiatan')
-               .select('*')
-               .eq('nim', activeProfile.nim)
-               .order('tanggal', { ascending: false })
+         let query = supabase
+            .from('Kegiatan')
+            .select('*');
 
-            const safeJurnal = Array.isArray(data) ? data : []
-            countTotal = safeJurnal.length
-            countSelesai = safeJurnal.filter((k: any) => k.status_persetujuan === 'Disetujui' || k.status === 'Disetujui').length
-            kegiatanData = safeJurnal.slice(0, 3)
+         const nimFilter = activeProfile?.nim || '';
+         if (nimFilter) {
+            query = query.or(`nim.eq.${nimFilter},mahasiswa_id.eq.${user.id}`);
+         } else {
+            query = query.eq('mahasiswa_id', user.id);
          }
+
+         const { data: queryData, error: queryError } = await query
+            .order('tanggal', { ascending: false })
+
+         if (queryError) console.error('Error fetching dashboard kegiatan:', queryError)
+
+         const safeJurnal = Array.isArray(queryData) ? queryData : []
+         countTotal = safeJurnal.length
+         countSelesai = safeJurnal.filter((k: any) => k.status_persetujuan === 'Disetujui' || k.status === 'Disetujui').length
+         kegiatanData = safeJurnal.slice(0, 3)
 
          const { count: berkasCount, error: berkasError } = await supabase
             .from('berkas')
