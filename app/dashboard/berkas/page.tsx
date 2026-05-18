@@ -93,12 +93,12 @@ export default function BerkasPage() {
         .from('berkas')
         .upsert({
           mahasiswa_id: profile.id,
-          nama_berkas: type,
+          document_type: type,
           file_url: publicUrl,
-          status: 'Menunggu Verifikasi',
-          tipe_berkas: file.type,
-          ukuran: file.size
-        }, { onConflict: 'mahasiswa_id, nama_berkas' })
+          file_name: file.name,
+          file_type: file.type,
+          file_size: file.size
+        }, { onConflict: 'mahasiswa_id, document_type' })
 
       if (dbError) throw dbError
 
@@ -171,7 +171,7 @@ export default function BerkasPage() {
       {/* Grid Bento Dokumen */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {documentTypes.map((type) => {
-          const fileData = safeBerkas.find(b => b && b.nama_berkas === type.name)
+          const fileData = safeBerkas.find(b => b && b.document_type === type.name)
           const isUploading = uploading === type.name
           const Icon = type.icon
 
