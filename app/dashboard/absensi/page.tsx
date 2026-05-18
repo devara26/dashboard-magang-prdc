@@ -85,7 +85,7 @@ export default function AbsensiPage() {
         .insert([{
           mahasiswa_id: profile.id,
           tanggal: today,
-          waktu: now,
+          check_in: now,
           status: 'Hadir',
           keterangan: 'Hadir tepat waktu melalui portal ORBIT'
         }])
@@ -151,7 +151,7 @@ export default function AbsensiPage() {
                     <div className="max-w-md mx-auto p-6 bg-emerald-50 border border-emerald-100 rounded-3xl space-y-2 animate-in zoom-in duration-500">
                        <CheckCircle2 className="text-emerald-600 mx-auto" size={32} />
                        <p className="body1-orbit font-bold text-emerald-800">Anda Sudah Presensi</p>
-                       <p className="caption-orbit text-emerald-600 font-bold uppercase tracking-widest">Pukul {todayPresence.waktu || '--:--'} WIB</p>
+                       <p className="caption-orbit text-emerald-600 font-bold uppercase tracking-widest">Pukul {todayPresence.check_in || '--:--'} WIB</p>
                     </div>
                  ) : (
                     <button 
@@ -212,7 +212,7 @@ export default function AbsensiPage() {
                        </div>
                        <div>
                           <p className="body2-orbit font-bold text-[var(--text-main)]">{item?.tanggal ? new Date(item.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '--'}</p>
-                          <p className="caption-orbit text-[var(--text-light)] font-medium">{item?.waktu || '--:--'} WIB</p>
+                          <p className="caption-orbit text-[var(--text-light)] font-medium">{item?.check_in || '--:--'} WIB</p>
                        </div>
                     </div>
                     <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${item?.status === 'Hadir' ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-50 text-gray-400'}`}>
@@ -239,3 +239,4 @@ export default function AbsensiPage() {
     </div>
   )
 }
+
