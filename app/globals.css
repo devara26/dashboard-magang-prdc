@@ -22,44 +22,66 @@ body {
 
 /* --- PERBAIKAN KONTRAS MASAL (ANTI-TENGGELAM) --- */
 
-/* 1. Paksa semua teks di dalam kartu berwarna biru (bg-blue-600, dll) menjadi putih murni */
-div[class*="bg-blue-"],
-div[class*="bg-indigo-"],
+/* 1. Paksa semua teks di dalam kartu berwarna biru/indigo gelap menjadi putih murni */
+.bg-blue-500, .bg-blue-600, .bg-blue-700, .bg-blue-800, .bg-blue-900,
+.bg-indigo-500, .bg-indigo-600, .bg-indigo-700, .bg-indigo-800, .bg-indigo-900,
 .accent-gradient {
   color: #FFFFFF !important;
 }
 
-/* 2. Jinakkan class warna bawaan Tailwind di dalam kartu biru agar ikut menjadi putih */
-div[class*="bg-blue-"] [class*="text-slate-"],
-div[class*="bg-blue-"] [class*="text-gray-"],
-div[class*="bg-blue-"] [class*="text-zinc-"],
+/* 2. Jinakkan class warna bawaan Tailwind di dalam kartu agar ikut menjadi putih */
+.bg-blue-500 [class*="text-slate-"], .bg-blue-600 [class*="text-slate-"], .bg-blue-700 [class*="text-slate-"], .bg-blue-800 [class*="text-slate-"], .bg-blue-900 [class*="text-slate-"],
+.bg-indigo-500 [class*="text-slate-"], .bg-indigo-600 [class*="text-slate-"], .bg-indigo-700 [class*="text-slate-"], .bg-indigo-800 [class*="text-slate-"], .bg-indigo-900 [class*="text-slate-"],
 .accent-gradient [class*="text-slate-"],
 .accent-gradient [class*="text-gray-"] {
   color: #FFFFFF !important;
 }
 
 /* 3. Berikan sedikit opasitas (transparansi) untuk teks label/keterangan kecil agar tetap estetis tapi terbaca */
-div[class*="bg-blue-"] p[class*="text-light"],
-div[class*="bg-blue-"] span[class*="text-xs"],
+.bg-blue-500 p[class*="text-light"], .bg-blue-600 p[class*="text-light"], .bg-blue-700 p[class*="text-light"], .bg-blue-800 p[class*="text-light"], .bg-blue-900 p[class*="text-light"],
+.bg-indigo-500 p[class*="text-light"], .bg-indigo-600 p[class*="text-light"], .bg-indigo-700 p[class*="text-light"], .bg-indigo-800 p[class*="text-light"], .bg-indigo-900 p[class*="text-light"],
+.bg-blue-500 span[class*="text-xs"], .bg-blue-600 span[class*="text-xs"], .bg-blue-700 span[class*="text-xs"], .bg-blue-800 span[class*="text-xs"], .bg-blue-900 span[class*="text-xs"],
+.bg-indigo-500 span[class*="text-xs"], .bg-indigo-600 span[class*="text-xs"], .bg-indigo-700 span[class*="text-xs"], .bg-indigo-800 span[class*="text-xs"], .bg-indigo-900 span[class*="text-xs"],
 .accent-gradient p[class*="text-sm"] {
   color: rgba(255, 255, 255, 0.8) !important;
 }
 
 /* 4. Pastikan ikon SVG di dalam kartu berwarna ikut menjadi putih bersih */
-div[class*="bg-blue-"] svg,
+.bg-blue-500 svg, .bg-blue-600 svg, .bg-blue-700 svg, .bg-blue-800 svg, .bg-blue-900 svg,
+.bg-indigo-500 svg, .bg-indigo-600 svg, .bg-indigo-700 svg, .bg-indigo-800 svg, .bg-indigo-900 svg,
 .accent-gradient svg {
   stroke: #FFFFFF !important;
+  color: #FFFFFF !important;
+}
+
+/* 5. Pastikan semua heading orbit di dalam kartu gelap (bg-slate-900, dll) atau kartu text-white menjadi putih murni */
+div[class*="bg-slate-900"] .h1-orbit,
+div[class*="bg-slate-900"] .h2-orbit,
+div[class*="bg-slate-900"] .h3-orbit,
+div[class*="bg-slate-900"] .h4-orbit,
+.text-white .h1-orbit,
+.text-white .h2-orbit,
+.text-white .h3-orbit,
+.text-white .h4-orbit,
+.accent-gradient .h1-orbit,
+.accent-gradient .h2-orbit,
+.accent-gradient .h3-orbit,
+.accent-gradient .h4-orbit {
   color: #FFFFFF !important;
 }
 
 /* --- KUSTOMISASI KOMPONEN UTAMA ORBIT --- */
 
 .neumorphic-card {
-  background-color: var(--card-bg);
   border-radius: 20px;
   border: 1px solid #E2E8F0;
   box-shadow: var(--modern-shadow);
   transition: all 0.2s ease-in-out;
+}
+
+/* Hanya isi background-color default jika tidak ada background class custom */
+.neumorphic-card:not([class*="bg-"]):not(.accent-gradient) {
+  background-color: var(--card-bg);
 }
 
 .neumorphic-card:hover {

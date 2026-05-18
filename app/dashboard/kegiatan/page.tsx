@@ -234,14 +234,22 @@ export default function JurnalPage() {
                            {(Array.isArray(safeKegiatan) ? safeKegiatan : []).filter(k => k && k.status_persetujuan === 'Disetujui').length}
                         </span>
                      </div>
-                     <div className="flex items-center justify-between p-4 bg-red-50/50 rounded-2xl border border-red-100/50">
-                        <div className="flex items-center gap-3">
-                           <XCircle size={16} className="text-red-600" />
-                           <span className="caption-orbit font-bold text-red-700">DITOLAK</span>
+                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+                        {/* Atau jika pembungkusnya flex, ganti seperti ini */}
+                        <div className="flex flex-col h-auto gap-4">
+
+                           {/* KODE BAR NOLAK KAMU ADA DI DALAM SINI */}
+                           <div className="flex items-center justify-between p-4 bg-red-50/50 rounded-2xl border border-red-100/50">
+                              <div className="flex items-center gap-3">
+                                 <XCircle size={16} className="text-red-600" />
+                                 <span className="caption-orbit font-bold text-red-700">DITOLAK</span>
+                              </div>
+                              <span className="body2-orbit font-bold text-red-800">
+                                 {(Array.isArray(safeKegiatan) ? safeKegiatan : []).filter(k => k && k.status_persetujuan === 'Ditolak').length}
+                              </span>
+                           </div>
+
                         </div>
-                        <span className="body2-orbit font-bold text-red-800">
-                           {(Array.isArray(safeKegiatan) ? safeKegiatan : []).filter(k => k && k.status_persetujuan === 'Ditolak').length}
-                        </span>
                      </div>
                   </div>
                </div>
