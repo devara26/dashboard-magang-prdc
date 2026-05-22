@@ -130,10 +130,8 @@ export default function BerkasPage() {
   }
 
   const documentTypes = [
-    { id: 'surat_lamaran', name: 'Surat Lamaran', icon: FileText, desc: 'Dokumen pengajuan magang ke instansi.' },
     { id: 'cv_resume', name: 'CV / Resume', icon: Upload, desc: 'Curriculum Vitae terbaru Anda.' },
     { id: 'ktm_ktp', name: 'KTM / KTP', icon: AlertCircle, desc: 'Kartu Identitas Mahasiswa atau KTP.' },
-    { id: 'asuransi', name: 'Asuransi Kesehatan', icon: ShieldCheck, desc: 'Bukti kepemilikan asuransi aktif (Opsional).' },
     { id: 'transkrip', name: 'Transkrip Nilai', icon: Clock, desc: 'Nilai kumulatif semester terakhir.' },
     { id: 'berita_acara', name: 'Berita Acara', icon: FileText, desc: 'Berita acara resmi pelaksanaan kegiatan magang.' },
     { id: 'daftar_hadir_kunjungan', name: 'Daftar Hadir Kunjungan Dospem', icon: Users, desc: 'Daftar hadir kunjungan dosen pembimbing lapangan.' },

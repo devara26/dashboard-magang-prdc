@@ -17,7 +17,7 @@ import {
 
 export const dynamic = 'force-dynamic'
 
-const DOCUMENT_TYPES_COUNT = 12
+const DOCUMENT_TYPES_COUNT = 10
 
 export default function DashboardPage() {
    const router = useRouter()
