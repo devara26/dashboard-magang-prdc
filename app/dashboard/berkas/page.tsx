@@ -12,7 +12,13 @@ import {
   Trash2,
   Plus,
   ChevronRight,
-  ShieldCheck
+  ShieldCheck,
+  Users,
+  Star,
+  Activity,
+  ClipboardList,
+  Award,
+  BookOpen
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -128,7 +134,14 @@ export default function BerkasPage() {
     { id: 'cv_resume', name: 'CV / Resume', icon: Upload, desc: 'Curriculum Vitae terbaru Anda.' },
     { id: 'ktm_ktp', name: 'KTM / KTP', icon: AlertCircle, desc: 'Kartu Identitas Mahasiswa atau KTP.' },
     { id: 'asuransi', name: 'Asuransi Kesehatan', icon: ShieldCheck, desc: 'Bukti kepemilikan asuransi aktif (Opsional).' },
-    { id: 'transkrip', name: 'Transkrip Nilai', icon: Clock, desc: 'Nilai kumulatif semester terakhir.' }
+    { id: 'transkrip', name: 'Transkrip Nilai', icon: Clock, desc: 'Nilai kumulatif semester terakhir.' },
+    { id: 'berita_acara', name: 'Berita Acara', icon: FileText, desc: 'Berita acara resmi pelaksanaan kegiatan magang.' },
+    { id: 'daftar_hadir_kunjungan', name: 'Daftar Hadir Kunjungan Dospem', icon: Users, desc: 'Daftar hadir kunjungan dosen pembimbing lapangan.' },
+    { id: 'lembar_penilaian_kantor', name: 'Lembar Penilaian Di kantor Magang', icon: Star, desc: 'Form penilaian dari supervisor atau kantor magang.' },
+    { id: 'form_monitoring', name: 'Form Monitoring Magang', icon: Activity, desc: 'Formulir pemantauan/monitoring aktivitas magang.' },
+    { id: 'lembar_bimbingan', name: 'Lembar Bimbingan Magang', icon: ClipboardList, desc: 'Catatan bimbingan berkala dengan dosen pembimbing.' },
+    { id: 'surat_rekognisi', name: 'Surat Rekognisi', icon: Award, desc: 'Surat pengakuan/rekognisi nilai hasil magang.' },
+    { id: 'catatan_harian', name: 'Catatan Harian Mahasiswa Magang', icon: BookOpen, desc: 'Catatan harian aktivitas/logbook mahasiswa magang.' }
   ]
 
   // Safe Progress Calculation
