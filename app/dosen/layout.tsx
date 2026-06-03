@@ -13,7 +13,8 @@ import {
   ChevronRight,
   Menu,
   X,
-  Search
+  Search,
+  CheckSquare
 } from 'lucide-react'
 
 import Header from '@/components/Header'
@@ -74,6 +75,7 @@ export default function DosenLayout({ children }: { children: React.ReactNode })
   const menuItems = [
     { name: 'Dashboard', icon: LayoutGrid, href: '/dosen' },
     { name: 'Monitoring Mahasiswa', icon: Users, href: '/dosen/mahasiswa' },
+    { name: 'Validasi Bimbingan', icon: CheckSquare, href: '/dosen/bimbingan' },
     { name: 'Persetujuan Laporan', icon: ClipboardList, href: '/dosen/persetujuan-laporan' },
     { name: 'Profil Saya', icon: User, href: '/dosen/profil' },
   ]
