@@ -20,9 +20,24 @@ export default function AppTour({ userId, onComplete, isMobileSidebarOpen, setIs
 
   const steps = [
     {
+      targetId: 'tour-dashboard',
+      title: 'Menu Dashboard',
+      description: 'Pantau ringkasan progres magang dan statistik harian Kamu di sini.',
+    },
+    {
       targetId: 'tour-absensi',
       title: 'Menu Absensi',
       description: 'Mencatat kehadiran harian Anda (check-in & check-out) secara praktis dengan deteksi lokasi.',
+    },
+    {
+      targetId: 'tour-pembimbing',
+      title: 'Menu Pembimbing',
+      description: 'Lihat informasi dan kontak dosen pembimbing Kamu pada halaman ini.',
+    },
+    {
+      targetId: 'tour-bimbingan',
+      title: 'Menu Bimbingan',
+      description: 'Mencatat riwayat bimbingan dengan dosen pembimbing, mengunggah foto dokumentasi, dan melacak progres kelayakan.',
     },
     {
       targetId: 'tour-jurnal',
@@ -30,9 +45,9 @@ export default function AppTour({ userId, onComplete, isMobileSidebarOpen, setIs
       description: 'Mengisi aktivitas harian magang Anda untuk dipantau dan disetujui oleh dosen pembimbing.',
     },
     {
-      targetId: 'tour-bimbingan',
-      title: 'Menu Bimbingan',
-      description: 'Mencatat riwayat bimbingan dengan dosen pembimbing, mengunggah foto dokumentasi, dan melacak progres kelayakan.',
+      targetId: 'tour-berkas',
+      title: 'Menu Berkas',
+      description: 'Unggah dan kelola semua dokumen administrasi resmi magang Kamu di sini.',
     }
   ]
 

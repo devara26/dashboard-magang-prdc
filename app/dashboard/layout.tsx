@@ -123,7 +123,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               return (
                 <Link
                   key={item.href}
-                  id={item.name === 'Absensi' ? 'tour-absensi' : item.name === 'Jurnal' ? 'tour-jurnal' : item.name === 'Bimbingan' ? 'tour-bimbingan' : undefined}
+                  id={
+                    item.name === 'Dashboard' ? 'tour-dashboard' :
+                    item.name === 'Absensi' ? 'tour-absensi' :
+                    item.name === 'Pembimbing' ? 'tour-pembimbing' :
+                    item.name === 'Bimbingan' ? 'tour-bimbingan' :
+                    item.name === 'Jurnal' ? 'tour-jurnal' :
+                    item.name === 'Berkas' ? 'tour-berkas' :
+                    undefined
+                  }
                   href={item.href}
                   className={`flex items-center gap-4 px-6 py-4 rounded-[16px] transition-all duration-300 group ${isActive
                     ? 'bg-blue-600 text-white shadow-lg'

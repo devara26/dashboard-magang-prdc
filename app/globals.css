@@ -11,10 +11,14 @@
   --modern-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.03), 0 10px 15px -3px rgba(15, 23, 42, 0.05), 0 0 0 1px rgba(15, 23, 42, 0.04);
 }
 
+@theme {
+  --font-sans: var(--font-plus-jakarta-sans), system-ui, sans-serif;
+}
+
 body {
   background-color: var(--background);
   color: var(--text-main);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-plus-jakarta-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
