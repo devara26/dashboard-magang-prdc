@@ -184,178 +184,189 @@ export default function DosenBimbinganPage() {
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-3xl border border-slate-150 p-6 flex flex-col justify-between shadow-sm">
-          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Total Pengajuan</span>
-          <span className="text-3xl font-black text-slate-800 mt-2">{logs.length}</span>
-        </div>
-        <div className="bg-orange-50 border border-orange-100 rounded-3xl p-6 flex flex-col justify-between">
-          <span className="text-[10px] font-extrabold text-orange-700 uppercase tracking-widest flex items-center gap-1.5">
-            <Clock size={12} /> Menunggu
-          </span>
-          <span className="text-3xl font-black text-orange-850 mt-2">
-            {logs.filter(l => l.status === 'Menunggu').length}
-          </span>
-        </div>
-        <div className="bg-emerald-50 border border-emerald-100 rounded-3xl p-6 flex flex-col justify-between">
-          <span className="text-[10px] font-extrabold text-emerald-700 uppercase tracking-widest flex items-center gap-1.5">
-            <CheckCircle2 size={12} /> Disetujui
-          </span>
-          <span className="text-3xl font-black text-emerald-850 mt-2">
-            {logs.filter(l => l.status === 'Disetujui').length}
-          </span>
-        </div>
-        <div className="bg-red-50 border border-red-100 rounded-3xl p-6 flex flex-col justify-between">
-          <span className="text-[10px] font-extrabold text-red-700 uppercase tracking-widest flex items-center gap-1.5">
-            <XCircle size={12} /> Ditolak
-          </span>
-          <span className="text-3xl font-black text-red-850 mt-2">
-            {logs.filter(l => l.status === 'Ditolak').length}
-          </span>
-        </div>
+      {/* --- Kartu Summary: Rapi dan Berjarak Sama --- */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 text-left">
+            <div className="p-3 bg-blue-50 rounded-full">
+               <FileText className="w-7 h-7 text-blue-600" />
+            </div>
+            <div>
+               <p className="text-sm font-medium text-gray-500">Total Pengajuan</p>
+               <p className="text-4xl font-extrabold text-gray-950">{logs.length}</p>
+            </div>
+         </div>
+         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 text-left">
+            <div className="p-3 bg-orange-50 rounded-full">
+               <Clock className="w-7 h-7 text-orange-600" />
+            </div>
+            <div>
+               <p className="text-sm font-medium text-gray-500">Menunggu</p>
+               <p className="text-4xl font-extrabold text-gray-950">
+                  {logs.filter(l => l.status === 'Menunggu').length}
+               </p>
+            </div>
+         </div>
+         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 text-left">
+            <div className="p-3 bg-emerald-50 rounded-full">
+               <CheckCircle2 className="w-7 h-7 text-emerald-600" />
+            </div>
+            <div>
+               <p className="text-sm font-medium text-gray-500">Disetujui</p>
+               <p className="text-4xl font-extrabold text-gray-950">
+                  {logs.filter(l => l.status === 'Disetujui').length}
+               </p>
+            </div>
+         </div>
+         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 text-left">
+            <div className="p-3 bg-red-50 rounded-full">
+               <XCircle className="w-7 h-7 text-red-600" />
+            </div>
+            <div>
+               <p className="text-sm font-medium text-gray-500">Ditolak</p>
+               <p className="text-4xl font-extrabold text-gray-950">
+                  {logs.filter(l => l.status === 'Ditolak').length}
+               </p>
+            </div>
+         </div>
       </div>
 
-      {/* List content */}
+      {/* --- Panel Mahasiswa: Struktur Rapi --- */}
       {filteredLogs.length > 0 ? (
-        <div className="grid grid-cols-1 gap-6">
-          {filteredLogs.map((item) => (
-            <div
-              key={item.id}
-              className="bg-white border border-slate-150 rounded-3xl p-6 md:p-8 flex flex-col lg:flex-row justify-between gap-8 shadow-sm hover:shadow-md hover:scale-[1.005] transition-all duration-300"
-            >
-              {/* Left Content (Mahasiswa details & topic) */}
-              <div className="flex-1 space-y-5 text-left">
-                {/* Identity & Header info */}
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="px-4 py-1.5 bg-slate-100 rounded-2xl text-xs font-bold text-slate-800">
-                    {item.nama_mahasiswa}
-                  </span>
-                  <span className="px-3.5 py-1.5 bg-slate-50 border border-slate-200/50 rounded-2xl text-xs font-medium text-slate-500">
-                    NIM: {item.nim}
-                  </span>
-                  <span className="flex items-center gap-1 text-slate-400 text-xs font-medium ml-2">
-                    <Calendar size={14} />
-                    {new Date(item.tanggal).toLocaleDateString('id-ID', {
-                      day: 'numeric',
-                      month: 'long',
-                      year: 'numeric'
-                    })}
-                  </span>
-                </div>
+         <div className="space-y-6">
+            {filteredLogs.map((item) => (
+               <div key={item.id} className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-8 text-left">
+                  
+                  {/* Kolom Kiri: Detail Utama (Mhs, Topik, Foto) */}
+                  <div className="flex-1 space-y-6">
+                     <div className="flex flex-col gap-2">
+                        {/* Nama & Badges: Sejajar Horizontal */}
+                        <div className="flex items-center justify-between gap-4">
+                           <div className="flex items-center gap-3">
+                              <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center font-bold text-blue-600 text-lg border">
+                                 {item.nama_mahasiswa?.charAt(0) || 'M'}
+                              </div>
+                              <div>
+                                 <p className="text-lg font-bold text-gray-950">{item.nama_mahasiswa}</p>
+                                 <p className="text-sm text-gray-500">NIM: {item.nim}</p>
+                              </div>
+                           </div>
+                           {/* Status Badges di Pojok Kanan Atas */}
+                           <div className="flex items-center gap-3">
+                              <span className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                                 item.metode === 'Online'
+                                    ? 'bg-blue-50 text-blue-600 border-blue-100'
+                                    : 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                              }`}>
+                                 {item.metode}
+                              </span>
+                              <span className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                                 item.status === 'Disetujui'
+                                    ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                                    : item.status === 'Ditolak'
+                                       ? 'bg-red-50 text-red-600 border-red-100'
+                                       : 'bg-orange-50 text-orange-600 border-orange-100'
+                              }`}>
+                                 {item.status}
+                              </span>
+                           </div>
+                        </div>
+                        <p className="text-sm text-gray-500 flex items-center gap-2">
+                           <Calendar className="w-4 h-4 text-gray-400" />
+                           {new Date(item.tanggal).toLocaleDateString('id-ID', {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric'
+                           })}
+                        </p>
+                     </div>
 
-                {/* Topic */}
-                <div className="space-y-2">
-                  <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Topik Bahasan</h4>
-                  <p className="text-slate-800 font-bold text-sm leading-relaxed whitespace-pre-wrap">
-                    {item.topik_bahasan}
-                  </p>
-                </div>
+                     <div className="space-y-2">
+                        <p className="text-xs font-semibold uppercase text-gray-500 tracking-wider">Topik Bahasan</p>
+                        <p className="text-base text-gray-800 font-medium leading-relaxed bg-gray-50 p-4 rounded-xl border whitespace-pre-wrap">{item.topik_bahasan}</p>
+                     </div>
 
-                {/* Documentation thumbnail */}
-                {item.dokumentasi_url && (
-                  <div className="space-y-2 max-w-sm">
-                    <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Foto Dokumentasi</h4>
-                    <a
-                      href={item.dokumentasi_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block relative rounded-2xl overflow-hidden border border-slate-100 aspect-video bg-slate-50 group cursor-pointer"
-                    >
-                      <img src={item.dokumentasi_url} className="w-full h-full object-cover group-hover:scale-105 transition-all duration-300" />
-                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-300">
-                        <span className="text-[10px] font-bold text-white bg-slate-900/60 px-3 py-1.5 rounded-full flex items-center gap-1">
-                          <ImageIcon size={12} /> Lihat Foto Asli
-                        </span>
-                      </div>
-                    </a>
+                     {item.dokumentasi_url && (
+                        <div className="space-y-2">
+                           <p className="text-xs font-semibold uppercase text-gray-500 tracking-wider mb-2">Foto Dokumentasi</p>
+                           <a
+                              href={item.dokumentasi_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block w-full max-w-sm h-52 relative rounded-xl overflow-hidden border border-gray-100 group shadow-inner"
+                           >
+                              <img src={item.dokumentasi_url} alt="Bukti Bimbingan" className="w-full h-full object-cover group-hover:scale-105 transition-all duration-300" />
+                              <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-300">
+                                 <span className="text-[10px] font-bold text-white bg-slate-900/60 px-3 py-1.5 rounded-full flex items-center gap-1">
+                                    <ImageIcon size={12} /> Lihat Foto Asli
+                                 </span>
+                              </div>
+                           </a>
+                        </div>
+                     )}
                   </div>
-                )}
-              </div>
 
-              {/* Right Content (Correction note & Actions) */}
-              <div className="w-full lg:w-96 flex flex-col justify-between gap-6 border-t lg:border-t-0 lg:border-l border-slate-100 pt-6 lg:pt-0 lg:pl-8 text-left">
-                {/* Method & Current Status info */}
-                <div className="flex items-center justify-between">
-                  <span className={`px-3.5 py-1.5 rounded-2xl text-[10px] font-extrabold uppercase tracking-wider border flex items-center gap-1 ${
-                    item.metode === 'Online'
-                      ? 'bg-blue-50 text-blue-600 border-blue-100'
-                      : 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                  }`}>
-                    {item.metode === 'Online' ? <Video size={10} /> : <MapPin size={10} />}
-                    {item.metode}
-                  </span>
-
-                  <span className={`px-4 py-1.5 rounded-2xl text-[10px] font-extrabold uppercase tracking-wider border ${
-                    item.status === 'Disetujui'
-                      ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                      : item.status === 'Ditolak'
-                        ? 'bg-red-50 text-red-600 border-red-100'
-                        : 'bg-orange-50 text-orange-600 border-orange-100'
-                  }`}>
-                    {item.status}
-                  </span>
-                </div>
-
-                {/* Koreksi input */}
-                <div className="space-y-2">
-                  <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                    <MessageSquare size={12} /> Catatan Koreksi
-                  </label>
-                  {item.status === 'Menunggu' ? (
-                    <textarea
-                      rows={2}
-                      value={koreksiInputs[item.id] || ''}
-                      onChange={e => setKoreksiInputs({ ...koreksiInputs, [item.id]: e.target.value })}
-                      placeholder="Masukkan catatan perbaikan atau feedback bimbingan..."
-                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-xs font-semibold text-slate-800 outline-none focus:ring-4 focus:ring-indigo-100 focus:bg-white focus:border-indigo-400 transition-all resize-none shadow-inner leading-relaxed"
-                    />
-                  ) : (
-                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-medium text-slate-700 leading-relaxed min-h-[50px] flex items-center">
-                      {item.catatan_koreksi || <span className="text-slate-400 italic">Tidak ada catatan koreksi</span>}
-                    </div>
-                  )}
-                </div>
-
-                {/* Validation Actions */}
-                {item.status === 'Menunggu' && (
-                  <div className="flex gap-4">
-                    <button
-                      onClick={() => handleValidasi(item.id, 'Ditolak')}
-                      disabled={processingId === item.id}
-                      className="flex-1 py-3.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-2xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
-                    >
-                      <X size={16} /> Tolak
-                    </button>
-                    <button
-                      onClick={() => handleValidasi(item.id, 'Disetujui')}
-                      disabled={processingId === item.id}
-                      className="flex-1 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer shadow-md shadow-emerald-100"
-                    >
-                      <Check size={16} /> Setujui
-                    </button>
+                  {/* Kolom Kanan: Catatan & Tombol */}
+                  <div className="md:w-96 flex flex-col justify-between border-t md:border-t-0 md:border-l border-gray-100 pt-8 md:pt-0 md:pl-8 space-y-6">
+                     <div className="space-y-4">
+                        <label htmlFor={`catatan-${item.id}`} className="block text-sm font-semibold text-gray-700">Catatan Koreksi</label>
+                        {item.status === 'Menunggu' ? (
+                           <textarea
+                              id={`catatan-${item.id}`}
+                              value={koreksiInputs[item.id] || ''}
+                              onChange={e => setKoreksiInputs({ ...koreksiInputs, [item.id]: e.target.value })}
+                              placeholder="Masukkan saran perbaikan laporan..."
+                              className="w-full h-44 p-4 border rounded-xl bg-white focus:ring-2 focus:ring-blue-100 focus:outline-none resize-none leading-relaxed text-sm"
+                           />
+                        ) : (
+                           <div className="p-4 bg-gray-50 border rounded-xl text-sm font-medium text-gray-700 leading-relaxed min-h-[176px]">
+                              {item.catatan_koreksi || <span className="text-gray-400 italic">Tidak ada catatan koreksi</span>}
+                           </div>
+                        )}
+                     </div>
+                     
+                     {/* Tombol Aksi: Sejajar di Bawah Kanan */}
+                     {item.status === 'Menunggu' && (
+                        <div className="flex items-center justify-end gap-3 mt-auto">
+                           <button
+                              onClick={() => handleValidasi(item.id, 'Ditolak')}
+                              disabled={processingId === item.id}
+                              className="flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-red-600 bg-red-50 hover:bg-red-100 text-sm cursor-pointer transition-colors active:scale-95 disabled:opacity-50"
+                           >
+                              <X className="w-4 h-4" />
+                              <span>TOLAK</span>
+                           </button>
+                           <button
+                              onClick={() => handleValidasi(item.id, 'Disetujui')}
+                              disabled={processingId === item.id}
+                              className="flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-white bg-green-600 hover:bg-green-700 text-sm cursor-pointer transition-colors active:scale-95 disabled:opacity-50 shadow-md"
+                           >
+                              <Check className="w-4 h-4" />
+                              <span>SETUJUI</span>
+                           </button>
+                        </div>
+                     )}
                   </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+
+               </div>
+            ))}
+         </div>
       ) : (
-        /* Empty State */
-        <div className="bg-white border border-slate-150 py-24 rounded-3xl text-center space-y-6 max-w-xl mx-auto shadow-sm">
-          <div className="w-20 h-20 bg-slate-50 rounded-[28px] flex items-center justify-center mx-auto text-slate-400 shadow-inner border border-slate-100">
-            <FileText size={36} />
-          </div>
-          <div className="max-w-xs mx-auto space-y-2">
-            <h4 className="text-slate-800 font-bold text-base">Tidak Ada Log Bimbingan</h4>
-            <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-              {filterStatus === 'Semua'
-                ? 'Belum ada mahasiswa yang mengirim log bimbingan berkala.'
-                : `Tidak ada data log bimbingan dengan status "${filterStatus}".`}
-            </p>
-          </div>
-        </div>
+         /* Empty State */
+         <div className="bg-white border border-slate-150 py-24 rounded-3xl text-center space-y-6 max-w-xl mx-auto shadow-sm">
+            <div className="w-20 h-20 bg-slate-50 rounded-[28px] flex items-center justify-center mx-auto text-slate-400 shadow-inner border border-slate-100">
+               <FileText size={36} />
+            </div>
+            <div className="max-w-xs mx-auto space-y-2">
+               <h4 className="text-slate-800 font-bold text-base">Tidak Ada Log Bimbingan</h4>
+               <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+                  {filterStatus === 'Semua'
+                     ? 'Belum ada mahasiswa yang mengirim log bimbingan berkala.'
+                     : `Tidak ada data log bimbingan dengan status "${filterStatus}".`}
+               </p>
+            </div>
+         </div>
       )}
+
     </div>
   )
 }

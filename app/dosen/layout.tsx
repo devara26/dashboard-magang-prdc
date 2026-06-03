@@ -111,12 +111,12 @@ export default function DosenLayout({ children }: { children: React.ReactNode })
                   key={item.href}
                   href={item.href}
                   className={`flex items-center gap-4 px-6 py-4 rounded-[16px] transition-all duration-300 group ${isActive
-                    ? 'accent-gradient text-white shadow-lg'
-                    : 'text-[var(--text-muted)] hover:bg-gray-100 hover:text-[var(--text-main)]'
+                    ? 'bg-blue-600 text-white shadow-lg'
+                    : 'text-gray-700 hover:bg-gray-100'
                     }`}
                 >
-                  <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className={isActive ? '!text-white' : 'text-[var(--text-light)] group-hover:text-[var(--accent-blue)]'} />
-                  <span className={`label-orbit font-bold ${isActive ? '!text-white' : ''}`}>{item.name}</span>
+                  <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className={isActive ? 'text-white' : 'text-gray-400 group-hover:text-blue-600'} />
+                  <span className={`label-orbit font-bold ${isActive ? 'text-white' : 'text-gray-700 group-hover:text-blue-600'}`}>{item.name}</span>
                 </Link>
               )
             })}

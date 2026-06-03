@@ -226,17 +226,16 @@ export default function AbsensiPage() {
               )}
            </div>
 
-           <div className="neumorphic-card p-8 accent-gradient text-white shadow-xl shadow-blue-100">
-              <div className="flex items-center gap-4 mb-4">
-                 <MapPin size={24} />
-                 <p className="label-orbit font-bold uppercase tracking-widest !text-white">Lokasi Presensi</p>
-              </div>
-              <p className="body2-orbit font-bold">{profile?.instansi_magang || 'Penempatan ORBIT'}</p>
-              <p className="caption-orbit mt-1 opacity-70 font-medium">Koordinat GPS Terverifikasi</p>
-           </div>
+            <div className="bg-blue-600 p-6 rounded-2xl text-white shadow-xl">
+               <div className="flex items-center gap-3 mb-4">
+                  <MapPin size={24} className="text-white" />
+                  <span className="text-xs font-medium uppercase tracking-wider text-blue-100">LOKASI PRESENSI</span>
+               </div>
+               <p className="text-lg font-bold mb-1 text-white">{profile?.instansi_magang || 'Penempatan ORBIT'}</p>
+               <p className="text-sm text-blue-100">Koordinat GPS Terverifikasi</p>
+            </div>
         </div>
       </div>
     </div>
   )
 }
-
