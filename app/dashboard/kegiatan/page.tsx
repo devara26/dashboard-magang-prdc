@@ -355,21 +355,21 @@ export default function JurnalPage() {
                <button
                   onClick={generatePDF}
                   disabled={downloadingPdf}
-                  className="neumorphic-button flex items-center gap-2 bg-slate-900 hover:bg-black text-white border-none shadow-lg active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 bg-white text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 font-semibold text-sm"
                >
                   {downloadingPdf ? (
-                     <Loader2 className="w-5 h-5 animate-spin text-white" />
+                     <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
                   ) : (
-                     <Download size={20} className="text-white" />
+                     <Download size={20} className="text-blue-600" />
                   )}
-                  <span className="label-orbit font-bold !text-white">Unduh Laporan PDF</span>
+                  <span>Unduh Laporan PDF</span>
                </button>
                <button
                   onClick={() => { resetForm(); setShowModal(true); }}
-                  className="neumorphic-button flex items-center gap-2 accent-gradient text-white border-none shadow-lg active:scale-95 transition-all cursor-pointer"
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold text-sm"
                >
                   <Plus size={20} />
-                  <span className="label-orbit font-bold !text-white">Tambah Jurnal</span>
+                  <span>Tambah Jurnal</span>
                </button>
             </div>
          </div>
@@ -500,7 +500,7 @@ export default function JurnalPage() {
                      </div>
                      <button
                         onClick={() => { resetForm(); setShowModal(true); }}
-                        className="neumorphic-button accent-gradient text-white border-none px-12 shadow-blue-200"
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold text-sm"
                      >
                         Tulis Jurnal Sekarang
                      </button>
