@@ -114,8 +114,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     : 'text-[var(--text-muted)] hover:bg-gray-100 hover:text-[var(--text-main)]'
                     }`}
                 >
-                  <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className={isActive ? 'text-white' : 'text-[var(--text-light)] group-hover:text-[var(--accent-blue)]'} />
-                  <span className="label-orbit font-bold">{item.name}</span>
+                  <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className={isActive ? '!text-white' : 'text-[var(--text-light)] group-hover:text-[var(--accent-blue)]'} />
+                  <span className={`label-orbit font-bold ${isActive ? '!text-white' : ''}`}>{item.name}</span>
                 </Link>
               )
             })}
