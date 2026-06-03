@@ -108,6 +108,7 @@ export default function ProfilPage() {
       setProfile({ ...profile, ...form } as Profile)
       setIsEditing(false)
       toast.success('Profil berhasil diperbarui')
+      window.location.reload()
     } catch (error: any) {
       toast.error('Gagal memperbarui: ' + error.message)
     } finally {
@@ -127,10 +128,11 @@ export default function ProfilPage() {
       const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file)
       if (uploadError) throw uploadError
       const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath)
-      await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', profile.id)
+      const { error: updateError } = await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', profile.id)
+      if (updateError) throw updateError
       setAvatarUrl(publicUrl)
       toast.success('Foto profil diperbarui')
-      router.refresh()
+      window.location.reload()
     } catch (error: any) {
       toast.error('Gagal mengunggah foto: ' + error.message)
     } finally {

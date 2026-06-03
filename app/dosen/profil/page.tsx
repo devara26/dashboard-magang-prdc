@@ -201,6 +201,7 @@ export default function DosenProfilPage() {
       setProfile({ ...profile, ...form } as DosenProfile)
       setIsEditing(false)
       toast.success('Profil berhasil diperbarui')
+      window.location.reload()
     } catch (error: any) {
       console.error(error)
       toast.error('Gagal memperbarui profil: ' + error.message)
@@ -241,7 +242,7 @@ export default function DosenProfilPage() {
 
       setAvatarUrl(publicUrl)
       toast.success('Foto profil berhasil diperbarui')
-      router.refresh()
+      window.location.reload()
     } catch (error: any) {
       console.error(error)
       setAvatarUrl(oldAvatarUrl)
