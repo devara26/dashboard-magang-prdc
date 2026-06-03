@@ -46,7 +46,7 @@ export default function DosenBimbinganPage() {
   const [loading, setLoading] = useState(true)
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [koreksiInputs, setKoreksiInputs] = useState<Record<string, string>>({})
-  const [filterStatus, setFilterStatus] = useState<string>('Semua')
+  const [filterStatus, setFilterStatus] = useState<string>('Menunggu')
 
   useEffect(() => {
     fetchData()
@@ -302,32 +302,40 @@ export default function DosenBimbinganPage() {
                   <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1">
                     <MessageSquare size={12} /> Catatan Koreksi
                   </label>
-                  <textarea
-                    rows={2}
-                    value={koreksiInputs[item.id] || ''}
-                    onChange={e => setKoreksiInputs({ ...koreksiInputs, [item.id]: e.target.value })}
-                    placeholder="Masukkan catatan perbaikan atau feedback bimbingan..."
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-xs font-semibold text-slate-800 outline-none focus:ring-4 focus:ring-indigo-100 focus:bg-white focus:border-indigo-400 transition-all resize-none shadow-inner leading-relaxed"
-                  />
+                  {item.status === 'Menunggu' ? (
+                    <textarea
+                      rows={2}
+                      value={koreksiInputs[item.id] || ''}
+                      onChange={e => setKoreksiInputs({ ...koreksiInputs, [item.id]: e.target.value })}
+                      placeholder="Masukkan catatan perbaikan atau feedback bimbingan..."
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-xs font-semibold text-slate-800 outline-none focus:ring-4 focus:ring-indigo-100 focus:bg-white focus:border-indigo-400 transition-all resize-none shadow-inner leading-relaxed"
+                    />
+                  ) : (
+                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-medium text-slate-700 leading-relaxed min-h-[50px] flex items-center">
+                      {item.catatan_koreksi || <span className="text-slate-400 italic">Tidak ada catatan koreksi</span>}
+                    </div>
+                  )}
                 </div>
 
                 {/* Validation Actions */}
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => handleValidasi(item.id, 'Ditolak')}
-                    disabled={processingId === item.id}
-                    className="flex-1 py-3.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-2xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
-                  >
-                    <X size={16} /> Tolak
-                  </button>
-                  <button
-                    onClick={() => handleValidasi(item.id, 'Disetujui')}
-                    disabled={processingId === item.id}
-                    className="flex-1 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer shadow-md shadow-emerald-100"
-                  >
-                    <Check size={16} /> Setujui
-                  </button>
-                </div>
+                {item.status === 'Menunggu' && (
+                  <div className="flex gap-4">
+                    <button
+                      onClick={() => handleValidasi(item.id, 'Ditolak')}
+                      disabled={processingId === item.id}
+                      className="flex-1 py-3.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-2xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+                    >
+                      <X size={16} /> Tolak
+                    </button>
+                    <button
+                      onClick={() => handleValidasi(item.id, 'Disetujui')}
+                      disabled={processingId === item.id}
+                      className="flex-1 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer shadow-md shadow-emerald-100"
+                    >
+                      <Check size={16} /> Setujui
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ))}
