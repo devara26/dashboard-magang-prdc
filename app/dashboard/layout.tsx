@@ -114,41 +114,44 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   key={item.href}
                   href={item.href}
                   className={`flex items-center gap-4 px-6 py-4 rounded-[16px] transition-all duration-300 group ${isActive
-                    ? 'accent-gradient text-white shadow-lg'
-                    : 'text-[var(--text-muted)] hover:bg-gray-100 hover:text-[var(--text-main)]'
+                    ? 'bg-blue-600 text-white shadow-lg'
+                    : 'text-gray-700 hover:bg-gray-100'
                     }`}
                 >
-                  <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className={isActive ? '!text-white' : 'text-[var(--text-light)] group-hover:text-[var(--accent-blue)]'} />
-                  <span className={`label-orbit font-bold ${isActive ? '!text-white' : ''}`}>{item.name}</span>
+                  <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className={isActive ? 'text-white' : 'text-gray-400 group-hover:text-blue-600'} />
+                  <span className={`label-orbit font-bold ${isActive ? 'text-white' : 'text-gray-700 group-hover:text-blue-600'}`}>{item.name}</span>
                 </Link>
               )
             })}
           </nav>
         </div>
 
-        <div className="pt-10 border-t border-gray-100 space-y-6">
-          <Link href="/dashboard/profil" className="flex items-center gap-4 p-5 bg-gray-50 rounded-[20px] border border-transparent hover:border-[var(--accent-blue)]/20 transition-all group">
-            <div className="w-12 h-12 rounded-full overflow-hidden bg-white border border-gray-200 shadow-sm flex items-center justify-center">
+        {/* --- SEKSI PROFIL: Rapi di Bawah Sidebar --- */}
+        <div className="mt-auto border-t border-gray-100 pt-6 px-4 space-y-5">
+          {/* Profil Pengguna: Tata Letak Rapi */}
+          <Link href="/dashboard/profil" className="bg-gray-50 p-4 rounded-xl border flex items-center gap-3 hover:bg-gray-100 transition-colors">
+            <div className="w-10 h-10 rounded-full overflow-hidden bg-white border border-gray-200 shadow-sm flex items-center justify-center shrink-0">
               {profile?.avatar_url ? (
                 <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center font-bold text-[var(--accent-blue)] text-lg">
-                  {profile?.nama_lengkap?.charAt(0)}
+                <div className="w-full h-full flex items-center justify-center font-bold text-blue-600 text-base">
+                  {profile?.nama_lengkap?.charAt(0) || 'U'}
                 </div>
               )}
             </div>
-            <div className="min-w-0">
-              <p className="body2-orbit font-bold text-[#202124] truncate">{profile?.nama_lengkap?.split(' ')[0]}</p>
-              <p className="caption-orbit font-bold text-gray-400 uppercase tracking-wider truncate">{profile?.nim || 'Mahasiswa'}</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-base font-bold text-gray-950 truncate">{profile?.nama_lengkap || 'Pengguna ORBIT'}</p>
+              <p className="text-xs text-gray-500 font-medium truncate">NIM: {profile?.nim || 'Mahasiswa'}</p>
             </div>
           </Link>
 
+          {/* Tombol Keluar: Penegasan Jelas --- */}
           <button
             onClick={() => supabase.auth.signOut().then(() => router.push('/login'))}
-            className="flex w-full items-center gap-4 px-6 py-4 text-[var(--text-muted)] hover:text-red-600 hover:bg-red-50 rounded-[16px] transition-all body2-orbit font-bold"
+            className="w-full flex items-center justify-center gap-2.5 p-3 rounded-lg font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition text-sm cursor-pointer"
           >
-            <LogOut size={20} strokeWidth={2} />
-            Keluar
+            <LogOut className="w-5 h-5" />
+            <span>Keluar</span>
           </button>
         </div>
       </aside>
