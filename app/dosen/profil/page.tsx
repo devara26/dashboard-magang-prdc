@@ -241,6 +241,7 @@ export default function DosenProfilPage() {
 
       setAvatarUrl(publicUrl)
       toast.success('Foto profil berhasil diperbarui')
+      router.refresh()
     } catch (error: any) {
       console.error(error)
       setAvatarUrl(oldAvatarUrl)
@@ -491,7 +492,7 @@ export default function DosenProfilPage() {
                           </div>
                         </td>
                         <td className="px-6 py-3 text-right space-x-2">
-                          <Link href={`/dosen/mahasiswa/${m.id}`} className="inline-flex p-1.5 bg-[#E8F0FE] text-[#1A73E8] hover:bg-[#D2E3FC] rounded-md transition-colors" title="Lihat Dashboard">
+                          <Link href={`/dosen/monitor/${m.id}`} className="inline-flex p-1.5 bg-[#E8F0FE] text-[#1A73E8] hover:bg-[#D2E3FC] rounded-md transition-colors" title="Lihat Dashboard">
                             <Eye className="w-4 h-4" />
                           </Link>
                           <button onClick={() => handleRemoveMahasiswa(m.id, m.nama_lengkap)} className="inline-flex p-1.5 bg-[#FCE8E6] text-[#C5221F] hover:bg-[#FAD2CF] rounded-md transition-colors" title="Hapus Mahasiswa">

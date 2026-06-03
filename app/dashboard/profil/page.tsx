@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { exportLaporanExcel } from '@/lib/export-excel'
+import { verifyDosenAction } from './actions'
 import { 
   User, 
   Mail, 
@@ -129,6 +130,7 @@ export default function ProfilPage() {
       await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', profile.id)
       setAvatarUrl(publicUrl)
       toast.success('Foto profil diperbarui')
+      router.refresh()
     } catch (error: any) {
       toast.error('Gagal mengunggah foto: ' + error.message)
     } finally {
@@ -152,15 +154,19 @@ export default function ProfilPage() {
   async function handleDosenCodeSubmit(e: React.FormEvent) {
     e.preventDefault()
     setModalLoading(true)
-    if (dosenCode === '123') {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        await supabase.from('profiles').update({ role: 'dosen' }).eq('id', user.id)
+    setModalError('')
+    
+    try {
+      const res = await verifyDosenAction(dosenCode)
+      if (res.success) {
         window.location.href = '/dosen'
+      } else {
+        setModalError(res.error || 'Kode akses salah!')
+        setModalLoading(false)
       }
-    } else {
-      setModalError('Kode akses salah!'); 
-      setModalLoading(false);
+    } catch (err: any) {
+      setModalError('Terjadi kesalahan sistem. Coba lagi.')
+      setModalLoading(false)
     }
   }
 

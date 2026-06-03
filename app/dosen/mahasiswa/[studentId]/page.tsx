@@ -155,12 +155,13 @@ export default function StudentDashboardView({ params }: { params: Promise<{ stu
       setComments(prev => [...prev, data as any])
       setNewComment(prev => ({ ...prev, [kegiatanId]: '' }))
 
-      await supabase.from('notifications').insert({
-        user_id: studentId,
-        message: `Dosen memberikan komentar pada jurnal Anda: "${message.substring(0, 30)}..."`,
-        type: 'info',
-        is_read: false
-      })
+      await supabase.from('notifications').insert([
+        {
+          user_id: studentId,
+          message: `Dosen memberikan komentar pada jurnal Anda: "${message.substring(0, 30)}..."`,
+          type: 'info'
+        }
+      ])
 
       toast.success('Komentar berhasil dikirim')
     } catch (error: any) {

@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Search, User, Eye } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -20,22 +21,22 @@ type Mahasiswa = {
 
 export default function DaftarMahasiswaPage() {
   const router = useRouter()
-  const [mahasiswa, setMahasiswa] = useState<any[]>([])
+  const [daftarMahasiswa, setDaftarMahasiswa] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
+  const [kataKunci, setKataKunci] = useState("")
+  const [dosenId, setDosenId] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchData() {
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return
+        setDosenId(user.id)
 
         const { data: mhsData, error } = await supabase
           .from('profiles')
-          .select('id, nama_lengkap, nim, prodi, instansi_magang, tanggal_mulai, tanggal_selesai')
+          .select('id, nama_lengkap, nim, prodi, instansi_magang, tanggal_mulai, tanggal_selesai, dosen_id')
           .eq('role', 'mahasiswa')
-          .eq('dosen_id', user.id)
-          .order('nama_lengkap', { ascending: true })
 
         if (error) throw error
 
@@ -65,8 +66,14 @@ export default function DaftarMahasiswaPage() {
           }
         })
 
-        // PERBAIKAN: Mengubah nama fungsi pengubah data agar sinkron dengan state di atas
-        setMahasiswa(mhsList)
+        // Sort: dosenId at the top
+        mhsList.sort((a, b) => {
+          if (a.dosen_id === user.id && b.dosen_id !== user.id) return -1
+          if (a.dosen_id !== user.id && b.dosen_id === user.id) return 1
+          return 0
+        })
+
+        setDaftarMahasiswa(mhsList)
       } catch (error: any) {
         toast.error('Gagal memuat daftar mahasiswa: ' + error.message)
       } finally {
@@ -76,10 +83,9 @@ export default function DaftarMahasiswaPage() {
     fetchData()
   }, [])
 
-  const filteredMahasiswa = mahasiswa.filter(m =>
-    m.nama_lengkap?.toLowerCase().includes(search.toLowerCase()) ||
-    m.nim?.toLowerCase().includes(search.toLowerCase()) ||
-    m.instansi_magang?.toLowerCase().includes(search.toLowerCase())
+  const mahasiswaTampil = daftarMahasiswa.filter((mhs) =>
+    (mhs.nama_lengkap || '').toLowerCase().includes(kataKunci.toLowerCase()) ||
+    (mhs.nim || '').includes(kataKunci)
   )
 
   if (loading) return (
@@ -104,15 +110,15 @@ export default function DaftarMahasiswaPage() {
           <input
             type="text"
             placeholder="Cari berdasarkan nama, NIM, atau instansi..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={kataKunci}
+            onChange={(e) => setKataKunci(e.target.value)}
             className="w-full pl-9 pr-4 py-2 bg-[#F8F9FA] border border-gray-200 rounded-lg text-sm focus:bg-white focus:border-[#137333] focus:ring-1 focus:ring-[#137333] transition-all"
           />
         </div>
       </div>
 
       <div className="bg-white rounded-b-2xl shadow-sm border border-gray-200 overflow-x-auto">
-        {filteredMahasiswa.length === 0 ? (
+        {mahasiswaTampil.length === 0 ? (
           <div className="p-8 text-center flex flex-col items-center border-t border-gray-100">
             <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mb-3">
               <User className="w-5 h-5 text-gray-300" />
@@ -131,10 +137,17 @@ export default function DaftarMahasiswaPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredMahasiswa.map((m) => (
+              {mahasiswaTampil.map((m) => (
                 <tr key={m.id} className="hover:bg-[#F8F9FA] transition-colors group">
                   <td className="px-6 py-3">
-                    <p className="font-bold text-[#202124]">{m.nama_lengkap}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold text-[#202124]">{m.nama_lengkap}</p>
+                      {m.dosen_id === dosenId && (
+                        <span className="bg-blue-600 text-white text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                          Bimbingan Saya
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-3 text-[#5F6368]">
                     {m.nim}
@@ -155,7 +168,7 @@ export default function DaftarMahasiswaPage() {
                   </td>
                   <td className="px-6 py-3 text-right">
                     <Link
-                      href={`/dosen/mahasiswa/${m.id}`}
+                      href={`/dosen/monitor/${m.id}`}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#E6F4EA] text-[#137333] hover:bg-[#CEEAD6] rounded-md text-xs font-bold transition-colors"
                     >
                       <Eye className="w-3.5 h-3.5" />
