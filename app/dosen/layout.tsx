@@ -115,8 +115,8 @@ export default function DosenLayout({ children }: { children: React.ReactNode })
                     : 'text-gray-700 hover:bg-gray-100'
                     }`}
                 >
-                  <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className={isActive ? 'text-white' : 'text-gray-400 group-hover:text-blue-600'} />
-                  <span className={`label-orbit font-bold ${isActive ? 'text-white' : 'text-gray-700 group-hover:text-blue-600'}`}>{item.name}</span>
+                  <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className={isActive ? '!text-white' : 'text-gray-400 group-hover:text-blue-600'} />
+                  <span className={`label-orbit font-bold ${isActive ? '!text-white' : 'text-gray-700 group-hover:text-blue-600'}`}>{item.name}</span>
                 </Link>
               )
             })}
