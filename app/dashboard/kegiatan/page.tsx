@@ -498,12 +498,12 @@ export default function JurnalPage() {
                            Belum ada catatan jurnal yang sesuai dengan pencarian Anda.
                         </p>
                      </div>
-                     <button
-                        onClick={() => { resetForm(); setShowModal(true); }}
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold text-sm"
-                     >
-                        Tulis Jurnal Sekarang
-                     </button>
+                      <button
+                         onClick={() => { resetForm(); setShowModal(true); }}
+                         className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold text-sm"
+                      >
+                         Tulis Jurnal Sekarang
+                      </button>
                   </div>
                )}
             </div>
