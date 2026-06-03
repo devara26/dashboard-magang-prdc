@@ -229,7 +229,7 @@ export default function AbsensiPage() {
            <div className="neumorphic-card p-8 accent-gradient text-white shadow-xl shadow-blue-100">
               <div className="flex items-center gap-4 mb-4">
                  <MapPin size={24} />
-                 <p className="label-orbit font-bold uppercase tracking-widest">Lokasi Presensi</p>
+                 <p className="label-orbit font-bold uppercase tracking-widest !text-white">Lokasi Presensi</p>
               </div>
               <p className="body2-orbit font-bold">{profile?.instansi_magang || 'Penempatan ORBIT'}</p>
               <p className="caption-orbit mt-1 opacity-70 font-medium">Koordinat GPS Terverifikasi</p>

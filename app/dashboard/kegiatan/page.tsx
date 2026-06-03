@@ -200,7 +200,7 @@ export default function JurnalPage() {
                className="neumorphic-button flex items-center gap-2 accent-gradient text-white border-none shadow-lg active:scale-95 transition-all"
             >
                <Plus size={20} />
-               <span className="label-orbit font-bold">Tambah Jurnal</span>
+               <span className="label-orbit font-bold !text-white">Tambah Jurnal</span>
             </button>
          </div>
 
