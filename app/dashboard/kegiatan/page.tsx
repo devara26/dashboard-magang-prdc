@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
+
 import {
    Plus,
    Search,
@@ -92,9 +95,6 @@ export default function JurnalPage() {
    async function generatePDF() {
       setDownloadingPdf(true)
       try {
-         const jsPDF = (await import('jspdf')).default
-         await import('jspdf-autotable')
-
          const { data: { user }, error: authError } = await supabase.auth.getUser()
          if (authError || !user) {
             toast.error('Sesi tidak ditemukan. Silakan login kembali.')
@@ -183,7 +183,7 @@ export default function JurnalPage() {
             ]
          })
 
-         ;(doc as any).autoTable({
+         autoTable(doc, {
             startY: 62,
             head: [['Tanggal', 'Hari', 'Jam Masuk', 'Jam Keluar', 'Status', 'Catatan']],
             body: absensiBody,
@@ -217,7 +217,7 @@ export default function JurnalPage() {
             ]
          })
 
-         ;(doc as any).autoTable({
+         autoTable(doc, {
             startY: startYJurnal + 4,
             head: [['Tanggal', 'Aktivitas / Kegiatan', 'Status Progress', 'Persetujuan', 'Komentar Dosen']],
             body: kegiatanBody,
