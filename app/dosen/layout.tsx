@@ -16,6 +16,8 @@ import {
   Search
 } from 'lucide-react'
 
+import Header from '@/components/Header'
+
 export const dynamic = 'force-dynamic'
 
 export default function DosenLayout({ children }: { children: React.ReactNode }) {
@@ -24,7 +26,7 @@ export default function DosenLayout({ children }: { children: React.ReactNode })
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
-
+  
   useEffect(() => {
     async function checkUser() {
       try {
@@ -168,6 +170,8 @@ export default function DosenLayout({ children }: { children: React.ReactNode })
               <Search size={18} className="text-[var(--text-light)]" />
               <input placeholder="Cari mahasiswa..." className="bg-transparent border-none outline-none body2-orbit font-semibold w-full placeholder:text-[var(--text-light)] text-[var(--text-main)]" />
             </div>
+
+            <Header />
 
             <div className="w-10 h-10 rounded-full overflow-hidden bg-white border border-gray-200 shadow-md flex items-center justify-center">
               {profile?.avatar_url ? (

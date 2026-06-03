@@ -25,29 +25,9 @@ export default function DosenBeranda() {
   const [stats, setStats] = useState({ totalMahasiswa: 0, menunggu: 0, rataKehadiran: 0 })
   const [tableData, setTableData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [bukaNotif, setBukaNotif] = useState(false)
-  const [daftarNotif, setDaftarNotif] = useState<any[]>([])
-
-  const ambilNotifikasi = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      const { data } = await supabase
-        .from('notifications')
-        .select('id, message, type')
-        .eq('user_id', user.id)
-        .limit(5)
-      
-      if (data) setDaftarNotif(data)
-    } catch (err) {
-      console.error(err)
-    }
-  }
 
   useEffect(() => {
     fetchData()
-    ambilNotifikasi()
   }, [])
 
   async function fetchData() {
@@ -214,43 +194,7 @@ export default function DosenBeranda() {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <div className="relative">
-            <button 
-              onClick={() => setBukaNotif(!bukaNotif)}
-              className="neumorphic-button relative w-14 h-14 flex items-center justify-center text-[var(--text-main)] shadow-sm"
-            >
-              <Bell size={24} />
-              <span className="absolute top-4 right-4 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>
-            </button>
-            {bukaNotif && (
-              <div className="absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 py-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                <div className="px-5 pb-3 border-b border-gray-50 flex items-center justify-between">
-                  <span className="font-bold text-sm text-[var(--text-main)]">Notifikasi</span>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">Baru</span>
-                </div>
-                <div className="divide-y divide-gray-50 max-h-64 overflow-y-auto px-5">
-                  {daftarNotif.length === 0 ? (
-                    <div className="py-4 text-center text-xs text-gray-500">Tidak ada notifikasi.</div>
-                  ) : (
-                    daftarNotif.map((notif) => (
-                      <div key={notif.id} className="border-b pb-2 last:border-0 py-3">
-                        <p className="font-semibold text-black capitalize">{notif.type}</p>
-                        <p className="text-xs mt-1 text-gray-600">{notif.message}</p>
-                      </div>
-                    ))
-                  )}
-                </div>
-                <div className="px-5 pt-3 border-t border-gray-50 text-center">
-                  <button 
-                    onClick={() => setBukaNotif(false)}
-                    className="text-xs font-bold text-[var(--accent-blue)] hover:underline"
-                  >
-                    Tutup Notifikasi
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          {/* Notifikasi telah diintegrasikan ke Header layout */}
         </div>
       </div>
 
