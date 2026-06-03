@@ -16,7 +16,9 @@ import {
    Check,
    AlertCircle,
    FileText,
-   User
+   User,
+   Download,
+   Loader2
 } from 'lucide-react'
 
 // Memaksa Vercel agar tidak melakukan optimasi statis yang merusak pembacaan cookie Supabase auth
@@ -30,6 +32,7 @@ export default function JurnalPage() {
    const [submitting, setSubmitting] = useState(false)
    const [searchQuery, setSearchQuery] = useState('')
    const [editingId, setEditingId] = useState<number | null>(null)
+   const [downloadingPdf, setDownloadingPdf] = useState(false)
    const [newKegiatan, setNewKegiatan] = useState({
       kegiatan: '',
       tanggal: new Date().toISOString().split('T')[0],
@@ -83,6 +86,159 @@ export default function JurnalPage() {
          console.error('Runtime fetch error:', error)
       } finally {
          setLoading(false)
+      }
+   }
+
+   async function generatePDF() {
+      setDownloadingPdf(true)
+      try {
+         const jsPDF = (await import('jspdf')).default
+         await import('jspdf-autotable')
+
+         const { data: { user }, error: authError } = await supabase.auth.getUser()
+         if (authError || !user) {
+            toast.error('Sesi tidak ditemukan. Silakan login kembali.')
+            return
+         }
+
+         // Fetch Profile
+         const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .maybeSingle()
+
+         if (profileError || !profileData) {
+            toast.error('Gagal mengambil profil mahasiswa.')
+            return
+         }
+
+         const studentName = profileData.nama_lengkap || 'Pengguna'
+         const studentNim = profileData.nim || '-'
+
+         // Fetch Absensi
+         const { data: absensiData, error: absensiError } = await supabase
+            .from('absensi')
+            .select('*')
+            .eq('mahasiswa_id', user.id)
+            .order('tanggal', { ascending: true })
+
+         if (absensiError) {
+            console.error('Error fetching absensi:', absensiError)
+         }
+
+         // Fetch Jurnal Kegiatan
+         let kegiatanData: any[] = []
+         if (profileData.nim) {
+            const { data: k, error: kError } = await supabase
+               .from('Kegiatan')
+               .select('*')
+               .eq('nim', profileData.nim)
+               .order('tanggal', { ascending: true })
+            if (kError) console.error('Error fetching kegiatan:', kError)
+            if (k) kegiatanData = k
+         } else {
+            const { data: k, error: kError } = await supabase
+               .from('Kegiatan')
+               .select('*')
+               .eq('mahasiswa_id', user.id)
+               .order('tanggal', { ascending: true })
+            if (kError) console.error('Error fetching kegiatan:', kError)
+            if (k) kegiatanData = k
+         }
+
+         const doc = new jsPDF()
+
+         // Title & Header info
+         doc.setFontSize(18)
+         doc.setTextColor(20, 20, 20)
+         doc.text("Laporan Kegiatan Magang", 14, 20)
+
+         doc.setFontSize(10)
+         doc.setTextColor(80, 80, 80)
+         doc.text(`Nama Lengkap: ${studentName}`, 14, 28)
+         doc.text(`NIM: ${studentNim}`, 14, 34)
+         if (profileData.instansi_magang) {
+            doc.text(`Instansi Magang: ${profileData.instansi_magang}`, 14, 40)
+         }
+         doc.text(`Tanggal Unduh: ${new Date().toLocaleDateString('id-ID')}`, 14, 46)
+
+         // Table 1: Riwayat Presensi Harian
+         doc.setFontSize(12)
+         doc.setTextColor(20, 20, 20)
+         doc.text("1. Riwayat Presensi Harian", 14, 56)
+
+         const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
+         const absensiBody = (absensiData || []).map(a => {
+            const d = new Date(a.tanggal)
+            const dateFormatted = isNaN(d.getTime()) ? a.tanggal : d.toLocaleDateString('id-ID')
+            const dayName = isNaN(d.getTime()) ? '-' : days[d.getDay()]
+            return [
+               dateFormatted,
+               dayName,
+               a.check_in || '-',
+               a.check_out || '-',
+               a.status || '-',
+               a.keterangan || '-'
+            ]
+         })
+
+         ;(doc as any).autoTable({
+            startY: 62,
+            head: [['Tanggal', 'Hari', 'Jam Masuk', 'Jam Keluar', 'Status', 'Catatan']],
+            body: absensiBody,
+            theme: 'striped',
+            headStyles: { fillColor: [19, 115, 51] }, // Brand Green
+            styles: { fontSize: 8 },
+            margin: { left: 14, right: 14 }
+         })
+
+         // Table 2: Riwayat Jurnal Kegiatan
+         const finalY = (doc as any).lastAutoTable.finalY || 100
+         let startYJurnal = finalY + 15
+         if (startYJurnal > 250) {
+            doc.addPage()
+            startYJurnal = 20
+         }
+
+         doc.setFontSize(12)
+         doc.setTextColor(20, 20, 20)
+         doc.text("2. Riwayat Jurnal Kegiatan", 14, startYJurnal)
+
+         const kegiatanBody = kegiatanData.map(k => {
+            const d = new Date(k.tanggal)
+            const dateFormatted = isNaN(d.getTime()) ? k.tanggal : d.toLocaleDateString('id-ID')
+            return [
+               dateFormatted,
+               k.kegiatan || '-',
+               k.status || 'Proses',
+               k.status_persetujuan || 'Menunggu',
+               k.komentar_dosen || '-'
+            ]
+         })
+
+         ;(doc as any).autoTable({
+            startY: startYJurnal + 4,
+            head: [['Tanggal', 'Aktivitas / Kegiatan', 'Status Progress', 'Persetujuan', 'Komentar Dosen']],
+            body: kegiatanBody,
+            theme: 'striped',
+            headStyles: { fillColor: [19, 115, 51] }, // Brand Green
+            styles: { fontSize: 8 },
+            columnStyles: {
+               1: { cellWidth: 90 },
+               4: { cellWidth: 35 }
+            },
+            margin: { left: 14, right: 14 }
+         })
+
+         doc.save(`Laporan_Magang_${studentNim}_${studentName.replace(/\s+/g, '_')}.pdf`)
+         toast.success('Laporan PDF berhasil diunduh')
+
+      } catch (error: any) {
+         console.error('PDF Generation Error:', error)
+         toast.error('Gagal membuat laporan PDF: ' + error.message)
+      } finally {
+         setDownloadingPdf(false)
       }
    }
 
@@ -195,13 +351,27 @@ export default function JurnalPage() {
                   Catat aktivitas harian untuk {profile?.nama_lengkap ?? 'Pengguna'}.
                </p>
             </div>
-            <button
-               onClick={() => { resetForm(); setShowModal(true); }}
-               className="neumorphic-button flex items-center gap-2 accent-gradient text-white border-none shadow-lg active:scale-95 transition-all"
-            >
-               <Plus size={20} />
-               <span className="label-orbit font-bold !text-white">Tambah Jurnal</span>
-            </button>
+            <div className="flex flex-wrap items-center justify-center md:justify-end gap-4">
+               <button
+                  onClick={generatePDF}
+                  disabled={downloadingPdf}
+                  className="neumorphic-button flex items-center gap-2 bg-slate-900 hover:bg-black text-white border-none shadow-lg active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+               >
+                  {downloadingPdf ? (
+                     <Loader2 className="w-5 h-5 animate-spin text-white" />
+                  ) : (
+                     <Download size={20} className="text-white" />
+                  )}
+                  <span className="label-orbit font-bold !text-white">Unduh Laporan PDF</span>
+               </button>
+               <button
+                  onClick={() => { resetForm(); setShowModal(true); }}
+                  className="neumorphic-button flex items-center gap-2 accent-gradient text-white border-none shadow-lg active:scale-95 transition-all cursor-pointer"
+               >
+                  <Plus size={20} />
+                  <span className="label-orbit font-bold !text-white">Tambah Jurnal</span>
+               </button>
+            </div>
          </div>
 
          <div className="flex flex-col lg:flex-row gap-8 items-start">
