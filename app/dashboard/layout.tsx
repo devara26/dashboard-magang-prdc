@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 
 import Header from '@/components/Header'
+import AppTour from '@/components/AppTour'
 
 export const dynamic = 'force-dynamic'
 
@@ -86,6 +87,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-screen bg-[var(--background)] text-[var(--text-main)] font-sans antialiased">
+      {profile && profile.has_seen_tour === false && pathname === '/dashboard' && (
+        <AppTour
+          userId={profile.id}
+          isMobileSidebarOpen={isMobileSidebarOpen}
+          setIsMobileSidebarOpen={setIsMobileSidebarOpen}
+          onComplete={() => {
+            setProfile((prev: any) => prev ? { ...prev, has_seen_tour: true } : null)
+          }}
+        />
+      )}
 
       {isMobileSidebarOpen && (
         <div
@@ -112,6 +123,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               return (
                 <Link
                   key={item.href}
+                  id={item.name === 'Absensi' ? 'tour-absensi' : item.name === 'Jurnal' ? 'tour-jurnal' : item.name === 'Bimbingan' ? 'tour-bimbingan' : undefined}
                   href={item.href}
                   className={`flex items-center gap-4 px-6 py-4 rounded-[16px] transition-all duration-300 group ${isActive
                     ? 'bg-blue-600 text-white shadow-lg'
