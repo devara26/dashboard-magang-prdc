@@ -103,7 +103,7 @@ export default function BerkasSayaPage() {
 
       // 1. Upload file to Supabase Storage
       const { error: uploadError } = await supabase.storage
-        .from('berkas-magang')
+        .from('berkas')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: true
@@ -113,7 +113,7 @@ export default function BerkasSayaPage() {
 
       // 2. Get Public URL
       const { data: { publicUrl } } = supabase.storage
-        .from('berkas-magang')
+        .from('berkas')
         .getPublicUrl(filePath)
 
       // 3. Save or update record in database
