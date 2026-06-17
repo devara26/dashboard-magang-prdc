@@ -17,7 +17,7 @@ import {
 
 export const dynamic = 'force-dynamic'
 
-const DOCUMENT_TYPES_COUNT = 10
+const DOCUMENT_TYPES_COUNT = 12
 
 export default function DashboardPage() {
    const router = useRouter()
@@ -105,7 +105,7 @@ export default function DashboardPage() {
          kegiatanData = safeJurnal.slice(0, 3)
 
          const { count: berkasCount, error: berkasError } = await supabase
-            .from('berkas')
+            .from('berkas_mahasiswa')
             .select('*', { count: 'exact', head: true })
             .eq('mahasiswa_id', user.id)
 

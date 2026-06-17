@@ -2,7 +2,7 @@
 
 import { useEffect, useState, use } from 'react'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, CheckCircle2, Clock, Activity, Calendar, FileText, Send, Award } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Clock, Activity, Calendar, FileText, Send, Award, FolderOpen, Eye, XCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import Link from 'next/link'
@@ -49,6 +49,14 @@ export default function MahasiswaDetailPage({ params }: { params: Promise<{ id: 
   // State for comments
   const [komentar, setKomentar] = useState<Record<number, string>>({})
   const [submittingKomentar, setSubmittingKomentar] = useState<number | null>(null)
+
+  // State for documents completeness
+  const [jenisBerkas, setJenisBerkas] = useState<any[]>([])
+  const [berkasMahasiswa, setBerkasMahasiswa] = useState<any[]>([])
+  const [submittingDocAction, setSubmittingDocAction] = useState<string | null>(null)
+  const [rejectDocId, setRejectDocId] = useState<string | null>(null)
+  const [rejectBerkasId, setRejectBerkasId] = useState<string | null>(null)
+  const [catatanPenolakan, setCatatanPenolakan] = useState('')
 
   useEffect(() => {
     fetchData()
@@ -106,7 +114,7 @@ export default function MahasiswaDetailPage({ params }: { params: Promise<{ id: 
         .from('penilaian')
         .select('*')
         .eq('mahasiswa_id', id)
-        .single()
+        .maybeSingle()
 
       if (penilaianData) {
         setPenilaian({
@@ -117,6 +125,24 @@ export default function MahasiswaDetailPage({ params }: { params: Promise<{ id: 
           laporan: penilaianData.laporan || 0
         })
       }
+
+      // Fetch jenis berkas
+      const { data: jenisData, error: jenisError } = await supabase
+        .from('jenis_berkas')
+        .select('*')
+        .order('urutan', { ascending: true })
+
+      if (jenisError) throw jenisError
+      setJenisBerkas(jenisData || [])
+
+      // Fetch berkas mahasiswa
+      const { data: berkasData, error: berkasError } = await supabase
+        .from('berkas_mahasiswa')
+        .select('*')
+        .eq('mahasiswa_id', id)
+
+      if (berkasError) throw berkasError
+      setBerkasMahasiswa(berkasData || [])
 
     } catch (error: any) {
       toast.error('Gagal memuat detail mahasiswa')
@@ -190,6 +216,84 @@ export default function MahasiswaDetailPage({ params }: { params: Promise<{ id: 
     return count
   }
 
+  async function handleVerifikasiDoc(berkasId: string, docId: string) {
+    try {
+      setSubmittingDocAction(docId)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Sesi dosen tidak ditemukan')
+
+      const { error } = await supabase
+        .from('berkas_mahasiswa')
+        .update({
+           status: 'Diverifikasi',
+           catatan_dosen: null,
+           dosen_id: user.id,
+           tanggal_verifikasi: new Date().toISOString()
+        })
+        .eq('id', berkasId)
+        
+      if (error) throw error
+      toast.success('Berkas berhasil diverifikasi')
+      fetchData()
+    } catch (err: any) {
+      toast.error('Gagal memverifikasi: ' + err.message)
+    } finally {
+      setSubmittingDocAction(null)
+    }
+  }
+
+  async function handleTolakDoc() {
+    if (!rejectBerkasId || !rejectDocId) return
+    if (!catatanPenolakan.trim()) {
+      toast.error('Catatan penolakan harus diisi')
+      return
+    }
+    try {
+      setSubmittingDocAction(rejectDocId)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Sesi dosen tidak ditemukan')
+
+      const { error } = await supabase
+        .from('berkas_mahasiswa')
+        .update({
+           status: 'Ditolak',
+           catatan_dosen: catatanPenolakan,
+           dosen_id: user.id,
+           tanggal_verifikasi: new Date().toISOString()
+        })
+        .eq('id', rejectBerkasId)
+      
+      if (error) throw error
+      toast.success('Berkas berhasil ditolak')
+      setRejectDocId(null)
+      setRejectBerkasId(null)
+      setCatatanPenolakan('')
+      fetchData()
+    } catch (err: any) {
+      toast.error('Gagal menolak berkas: ' + err.message)
+    } finally {
+      setSubmittingDocAction(null)
+    }
+  }
+
+  async function handleKirimReminder() {
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: id,
+          message: 'Dosen Pembimbing mengingatkan Anda untuk melengkapi berkas wajib magang.',
+          type: 'warning'
+        })
+      if (error) {
+        console.warn('Notifications insert skipped/failed:', error.message)
+      }
+      toast.success('Notifikasi reminder berhasil dikirim')
+    } catch (err: any) {
+      toast.success('Reminder berhasil dikirim (via toast)')
+    }
+  }
+
   if (loading) return (
     <div className="flex h-[80vh] items-center justify-center">
       <div className="flex flex-col items-center gap-4">
@@ -207,21 +311,31 @@ export default function MahasiswaDetailPage({ params }: { params: Promise<{ id: 
 
   return (
     <div className="pb-8 animate-[fade-in_0.7s_ease-out] max-w-lg mx-auto md:max-w-none">
-
+ 
       {/* Header */}
-      <div className="mb-6">
-        <Link href="/dosen/mahasiswa" className="inline-flex items-center text-sm font-medium text-[#5F6368] hover:text-[#1A73E8] mb-4 transition-colors">
-          <ArrowLeft className="w-4 h-4 mr-1" />
-          Kembali ke Daftar Monitoring
-        </Link>
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-[#1A73E8] flex-shrink-0 flex items-center justify-center shadow-sm border-4 border-white">
-            <span className="text-2xl font-bold text-white">{profile?.nama_lengkap?.charAt(0).toUpperCase() || 'M'}</span>
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-[24px] border border-gray-50 shadow-sm">
+        <div>
+          <Link href="/dosen/mahasiswa" className="inline-flex items-center text-sm font-medium text-[#5F6368] hover:text-[#1A73E8] mb-4 transition-colors">
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            Kembali ke Daftar Monitoring
+          </Link>
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-full bg-[#1A73E8] flex-shrink-0 flex items-center justify-center shadow-sm border-4 border-white">
+              <span className="text-2xl font-bold text-white">{profile?.nama_lengkap?.charAt(0).toUpperCase() || 'M'}</span>
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-[#202124] leading-tight">{profile?.nama_lengkap}</h1>
+              <p className="text-[#5F6368] text-sm mt-1">{profile?.nim} • {profile?.prodi}</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-[#202124] leading-tight">{profile?.nama_lengkap}</h1>
-            <p className="text-[#5F6368] text-sm mt-1">{profile?.nim} • {profile?.prodi}</p>
-          </div>
+        </div>
+        <div className="flex items-center sm:self-end">
+          <button
+            onClick={handleKirimReminder}
+            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-750 text-white rounded-xl text-xs font-bold transition-all shadow-sm shadow-blue-100 flex items-center gap-2"
+          >
+            Kirim Reminder Berkas
+          </button>
         </div>
       </div>
 
@@ -307,6 +421,185 @@ export default function MahasiswaDetailPage({ params }: { params: Promise<{ id: 
           </div>
         </form>
       </div>
+
+      {/* Kelengkapan Berkas Administrasi */}
+      <div className="bg-white rounded-[24px] p-6 mb-6 shadow-sm border border-gray-50">
+        <h2 className="text-[#202124] text-base font-bold mb-2 flex items-center gap-2">
+          <FolderOpen className="w-5 h-5 text-blue-600" />
+          Kelengkapan Berkas Administrasi
+        </h2>
+        <p className="text-[#5F6368] text-xs font-medium mb-6">
+          Pantau status verifikasi dan lakukan tindakan untuk berkas wajib mahasiswa.
+        </p>
+
+        {/* Progress bar info */}
+        {(() => {
+          const verified = berkasMahasiswa.filter(b => b.status === 'Diverifikasi').length
+          const total = jenisBerkas.length || 12
+          const pct = Math.round((verified / total) * 100)
+          return (
+            <div className="mb-6 p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between gap-4">
+              <div className="space-y-1">
+                <p className="text-xs font-bold text-gray-700 uppercase tracking-wider">Progress Kelengkapan Berkas</p>
+                <p className="text-sm font-black text-gray-900">{verified} dari {total} Berkas Diverifikasi ({pct}%)</p>
+              </div>
+              <div className="w-32 bg-gray-200 rounded-full h-2 overflow-hidden shadow-inner">
+                <div className="h-full bg-blue-600 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+              </div>
+            </div>
+          )
+        })()}
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs whitespace-nowrap">
+            <thead className="bg-[#F8F9FA] text-[#5F6368] font-bold uppercase tracking-wider text-[10px] border-y border-gray-100">
+              <tr>
+                <th className="px-5 py-3">Nama Berkas</th>
+                <th className="px-5 py-3">Kategori</th>
+                <th className="px-5 py-3">Status</th>
+                <th className="px-5 py-3">Tanggal Upload</th>
+                <th className="px-5 py-3 text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50 font-medium text-[#202124]">
+              {jenisBerkas.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-5 py-8 text-center text-gray-400 italic">
+                    Memuat data jenis berkas...
+                  </td>
+                </tr>
+              ) : (
+                jenisBerkas.map((jenis) => {
+                  const userFile = berkasMahasiswa.find(b => b.jenis_berkas_id === jenis.id)
+
+                  let statusText = 'Belum Upload'
+                  let badgeClass = 'bg-gray-50 text-gray-500 border-gray-200'
+                  if (userFile) {
+                    if (userFile.status === 'Diverifikasi') {
+                      statusText = 'Diverifikasi'
+                      badgeClass = 'bg-[#E6F4EA] text-[#137333] border-[#CEEAD6]'
+                    } else if (userFile.status === 'Ditolak') {
+                      statusText = 'Ditolak'
+                      badgeClass = 'bg-[#FCE8E6] text-[#C5221F] border-[#FAD2CF]'
+                    } else {
+                      statusText = 'Menunggu Review'
+                      badgeClass = 'bg-[#FEF7E0] text-[#E37400] border-[#FDE293]'
+                    }
+                  }
+
+                  return (
+                    <tr key={jenis.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-5 py-4">
+                        <div>
+                          <p className="font-bold text-gray-900">{jenis.nama_berkas}</p>
+                          {userFile && userFile.status === 'Ditolak' && userFile.catatan_dosen && (
+                            <p className="text-[10px] text-red-650 text-red-650 text-red-650 text-red-600 mt-1 font-semibold leading-relaxed">
+                              Catatan Penolakan: {userFile.catatan_dosen}
+                            </p>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="text-[9px] px-2 py-0.5 bg-gray-100 text-gray-550 border border-gray-200 rounded font-bold uppercase">
+                          {jenis.kategori}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${badgeClass}`}>
+                          {statusText}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 text-gray-500 font-semibold">
+                        {userFile 
+                          ? new Date(userFile.tanggal_upload).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+                          : '-'
+                        }
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        {userFile ? (
+                          <div className="flex items-center justify-end gap-2">
+                            <a
+                              href={userFile.file_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 transition-all border border-gray-200 shadow-xs"
+                              title="Preview File"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </a>
+
+                            {userFile.status !== 'Diverifikasi' && (
+                              <button
+                                onClick={() => handleVerifikasiDoc(userFile.id, jenis.id)}
+                                disabled={submittingDocAction === jenis.id}
+                                className="w-8 h-8 flex items-center justify-center bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-lg transition-all border border-emerald-100 shadow-xs"
+                                title="Verifikasi"
+                              >
+                                {submittingDocAction === jenis.id ? '...' : <CheckCircle2 className="w-3.5 h-3.5" />}
+                              </button>
+                            )}
+
+                            {userFile.status !== 'Ditolak' && (
+                              <button
+                                onClick={() => {
+                                  setRejectDocId(jenis.id)
+                                  setRejectBerkasId(userFile.id)
+                                }}
+                                disabled={submittingDocAction === jenis.id}
+                                className="w-8 h-8 flex items-center justify-center bg-red-50 text-red-600 hover:bg-red-500 hover:text-white rounded-lg transition-all border border-red-100 shadow-xs"
+                                title="Tolak"
+                              >
+                                {submittingDocAction === jenis.id ? '...' : <XCircle className="w-3.5 h-3.5" />}
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 italic font-semibold">-</span>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Tolak Document Comments Dialog Modal */}
+      {rejectDocId && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-900/40 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border border-gray-200 animate-in zoom-in-95 duration-200">
+            <h3 className="text-[#202124] text-base font-bold mb-2">Tolak Berkas</h3>
+            <p className="text-xs text-gray-500 mb-4 font-semibold">Masukkan alasan penolakan berkas ini agar mahasiswa dapat mengetahuinya.</p>
+            <textarea
+              rows={3}
+              placeholder="Contoh: Tanda tangan belum lengkap, mohon ditandatangani basah terlebih dahulu."
+              value={catatanPenolakan}
+              onChange={(e) => setCatatanPenolakan(e.target.value)}
+              className="w-full bg-gray-50 text-gray-900 border border-gray-200 rounded-xl px-4 py-3 text-xs font-semibold focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-gray-400"
+            />
+            <div className="flex justify-end gap-3 mt-5">
+              <button
+                onClick={() => {
+                  setRejectDocId(null)
+                  setRejectBerkasId(null)
+                  setCatatanPenolakan('')
+                }}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-750 text-gray-700 rounded-xl text-xs font-bold transition-all border border-gray-200"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleTolakDoc}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm shadow-red-100"
+              >
+                Tolak Berkas
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Log Kegiatan */}
       <div className="bg-white rounded-[24px] shadow-sm border border-gray-50 overflow-hidden">

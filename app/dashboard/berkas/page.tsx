@@ -4,264 +4,346 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { 
   FileText, 
-  Upload, 
   CheckCircle2, 
   AlertCircle, 
   Clock, 
-  Download, 
-  Trash2,
-  Plus,
-  ChevronRight,
-  ShieldCheck,
-  Users,
-  Star,
-  Activity,
-  ClipboardList,
-  Award,
-  BookOpen
+  FileQuestion,
+  RefreshCw,
+  Info
 } from 'lucide-react'
 import { toast } from 'sonner'
+import BerkasProgress from '@/components/BerkasProgress'
+import FileUpload from '@/components/FileUpload'
 
-// Memaksa rendering dinamis untuk menghindari kegagalan pembacaan cookie pada fase static build
 export const dynamic = 'force-dynamic'
 
-export default function BerkasPage() {
-  const [berkas, setBerkas] = useState<any[]>([])
-  const [profile, setProfile] = useState<any>(null)
+interface JenisBerkas {
+  id: string
+  nama_berkas: string
+  kategori: string
+  keterangan: string
+  is_wajib: boolean
+  urutan: number
+}
+
+interface BerkasMahasiswa {
+  id: string
+  mahasiswa_id: string
+  jenis_berkas_id: string
+  nama_file: string
+  file_url: string
+  tipe_file: string
+  ukuran_bytes: number
+  status: 'Menunggu Review' | 'Diverifikasi' | 'Ditolak'
+  catatan_dosen: string | null
+  tanggal_upload: string
+}
+
+export default function BerkasSayaPage() {
+  const [jenisBerkas, setJenisBerkas] = useState<JenisBerkas[]>([])
+  const [berkasUploaded, setBerkasUploaded] = useState<BerkasMahasiswa[]>([])
+  const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [uploading, setUploading] = useState<string | null>(null)
+  const [uploadingId, setUploadingId] = useState<string | null>(null)
+  const [uploadStatus, setUploadStatus] = useState<Record<string, 'idle' | 'uploading' | 'success' | 'error'>>({})
+  const [uploadErrorMsg, setUploadErrorMsg] = useState<Record<string, string>>({})
+  const [showUploaderId, setShowUploaderId] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchBerkas()
+    fetchInitialData()
   }, [])
 
-  async function fetchBerkas() {
+  async function fetchInitialData() {
     try {
       setLoading(true)
       const { data: { user }, error: authError } = await supabase.auth.getUser()
       if (authError || !user) {
+        toast.error('Sesi tidak ditemukan. Silakan login kembali.')
         setLoading(false)
         return
       }
+      setUserId(user.id)
 
-      // Fetch profile dengan maybeSingle() untuk mencegah crash jika data kosong
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
+      // Fetch master data jenis berkas
+      const { data: jenisData, error: jenisError } = await supabase
+        .from('jenis_berkas')
         .select('*')
-        .eq('id', user.id)
-        .maybeSingle()
+        .order('urutan', { ascending: true })
 
-      if (profileError) console.error('Error fetching profile:', profileError)
-      
-      const activeProfile = profileData || { id: user.id, nama_lengkap: 'Pengguna ORBIT' }
-      setProfile(activeProfile)
+      if (jenisError) throw jenisError
+      setJenisBerkas(jenisData || [])
 
-      // Fetch data berkas
-      const { data: berkasData, error: berkasError } = await supabase
-        .from('berkas')
+      // Fetch berkas mahasiswa yang sudah diupload
+      const { data: uploadData, error: uploadError } = await supabase
+        .from('berkas_mahasiswa')
         .select('*')
         .eq('mahasiswa_id', user.id)
 
-      if (berkasError) console.error('Error fetching berkas:', berkasError)
-      
-      setBerkas(Array.isArray(berkasData) ? berkasData : [])
-    } catch (error) {
-      console.error('Critical runtime fetch error (berkas):', error)
-      setBerkas([])
+      if (uploadError) throw uploadError
+      setBerkasUploaded(uploadData || [])
+    } catch (error: any) {
+      console.error('Error fetching berkas data:', error)
+      toast.error('Gagal memuat data berkas: ' + (error.message || 'Terjadi kesalahan'))
     } finally {
       setLoading(false)
     }
   }
 
-  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>, type: string) {
-    const file = e.target.files?.[0]
-    if (!file || !profile?.id) return
+  const handleUpload = async (file: File, jenisBerkasId: string) => {
+    if (!userId) return
 
-    setUploading(type)
+    setUploadingId(jenisBerkasId)
+    setUploadStatus(prev => ({ ...prev, [jenisBerkasId]: 'uploading' }))
+    setUploadErrorMsg(prev => ({ ...prev, [jenisBerkasId]: '' }))
+
     try {
-      // 1. Upload ke Storage Bucket 'berkas' (huruf kecil semua)
       const fileExt = file.name.split('.').pop()
-      const fileName = `${profile.id}-${type}-${Date.now()}.${fileExt}`
-      
+      const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.]/g, '_')
+      const filePath = `${userId}/${jenisBerkasId}/${Date.now()}_${sanitizedFileName}`
+
+      // 1. Upload file to Supabase Storage
       const { error: uploadError } = await supabase.storage
-        .from('berkas')
-        .upload(fileName, file)
+        .from('berkas-magang')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        })
 
       if (uploadError) throw uploadError
 
-      // 2. Ambil Public URL
+      // 2. Get Public URL
       const { data: { publicUrl } } = supabase.storage
-        .from('berkas')
-        .getPublicUrl(fileName)
+        .from('berkas-magang')
+        .getPublicUrl(filePath)
 
-      // 3. Simpan/Update Record di Database
-      const { error: dbError } = await supabase
-        .from('berkas')
-        .upsert({
-          mahasiswa_id: profile.id,
-          document_type: type,
-          file_url: publicUrl,
-          file_name: file.name,
-          file_type: file.type,
-          file_size: file.size
-        }, { onConflict: 'mahasiswa_id, document_type' })
+      // 3. Save or update record in database
+      const existing = berkasUploaded.find(b => b.jenis_berkas_id === jenisBerkasId)
+      
+      if (existing) {
+        // Update record
+        const { error: dbError } = await supabase
+          .from('berkas_mahasiswa')
+          .update({
+            nama_file: file.name,
+            file_url: publicUrl,
+            tipe_file: file.type,
+            ukuran_bytes: file.size,
+            status: 'Menunggu Review',
+            catatan_dosen: null,
+            tanggal_upload: new Date().toISOString()
+          })
+          .eq('id', existing.id)
 
-      if (dbError) throw dbError
+        if (dbError) throw dbError
+      } else {
+        // Insert record
+        const { error: dbError } = await supabase
+          .from('berkas_mahasiswa')
+          .insert({
+            mahasiswa_id: userId,
+            jenis_berkas_id: jenisBerkasId,
+            nama_file: file.name,
+            file_url: publicUrl,
+            tipe_file: file.type,
+            ukuran_bytes: file.size,
+            status: 'Menunggu Review',
+            tanggal_upload: new Date().toISOString()
+          })
 
-      toast.success(`${type} berhasil diunggah`)
-      fetchBerkas()
+        if (dbError) throw dbError
+      }
+
+      setUploadStatus(prev => ({ ...prev, [jenisBerkasId]: 'success' }))
+      toast.success('Berkas berhasil diunggah')
+      setShowUploaderId(null)
+      
+      // Refresh data berkas mahasiswa
+      const { data: uploadData } = await supabase
+        .from('berkas_mahasiswa')
+        .select('*')
+        .eq('mahasiswa_id', userId)
+      setBerkasUploaded(uploadData || [])
+
     } catch (error: any) {
-      toast.error('Gagal mengunggah: ' + (error.message || 'Error tidak dikenal'))
+      console.error('Upload error:', error)
+      setUploadStatus(prev => ({ ...prev, [jenisBerkasId]: 'error' }))
+      setUploadErrorMsg(prev => ({ ...prev, [jenisBerkasId]: error.message || 'Gagal mengunggah berkas' }))
+      toast.error('Gagal mengunggah: ' + (error.message || 'Terjadi kesalahan'))
     } finally {
-      setUploading(null)
+      setUploadingId(null)
     }
   }
 
-  async function handleDelete(id: string, type: string) {
-    if (!confirm(`Hapus ${type}?`)) return
-    try {
-      const { error } = await supabase.from('berkas').delete().eq('id', id)
-      if (error) throw error
-      toast.success(`${type} berhasil dihapus`)
-      fetchBerkas()
-    } catch (error: any) {
-      toast.error('Gagal menghapus: ' + error.message)
-    }
+  const handleClear = (jenisBerkasId: string) => {
+    setUploadStatus(prev => ({ ...prev, [jenisBerkasId]: 'idle' }))
+    setUploadErrorMsg(prev => ({ ...prev, [jenisBerkasId]: '' }))
   }
 
-  const documentTypes = [
-    { id: 'cv_resume', name: 'CV / Resume', icon: Upload, desc: 'Curriculum Vitae terbaru Anda.' },
-    { id: 'ktm_ktp', name: 'KTM / KTP', icon: AlertCircle, desc: 'Kartu Identitas Mahasiswa atau KTP.' },
-    { id: 'transkrip', name: 'Transkrip Nilai', icon: Clock, desc: 'Nilai kumulatif semester terakhir.' },
-    { id: 'berita_acara', name: 'Berita Acara', icon: FileText, desc: 'Berita acara resmi pelaksanaan kegiatan magang.' },
-    { id: 'daftar_hadir_kunjungan', name: 'Daftar Hadir Kunjungan Dospem', icon: Users, desc: 'Daftar hadir kunjungan dosen pembimbing lapangan.' },
-    { id: 'lembar_penilaian_kantor', name: 'Lembar Penilaian Di kantor Magang', icon: Star, desc: 'Form penilaian dari supervisor atau kantor magang.' },
-    { id: 'form_monitoring', name: 'Form Monitoring Magang', icon: Activity, desc: 'Formulir pemantauan/monitoring aktivitas magang.' },
-    { id: 'lembar_bimbingan', name: 'Lembar Bimbingan Magang', icon: ClipboardList, desc: 'Catatan bimbingan berkala dengan dosen pembimbing.' },
-    { id: 'surat_rekognisi', name: 'Surat Rekognisi', icon: Award, desc: 'Surat pengakuan/rekognisi nilai hasil magang.' },
-    { id: 'catatan_harian', name: 'Catatan Harian Mahasiswa Magang', icon: BookOpen, desc: 'Catatan harian aktivitas/logbook mahasiswa magang.' }
-  ]
-
-  // Safe Progress Calculation
-  const safeBerkas = Array.isArray(berkas) ? berkas : []
-  const uploadedCount = safeBerkas.length
-  const totalCount = documentTypes.length
-  const progressPercent = Math.round((uploadedCount / totalCount) * 100)
-
-  // Strict Loading Boundary
+  // Calculate stats
+  // "Diverifikasi" counts as complete
+  const verifiedCount = berkasUploaded.filter(b => b.status === 'Diverifikasi').length
+  const totalCount = jenisBerkas.length
+  
   if (loading) {
     return (
-      <div className="fixed inset-0 z-[999] bg-[#F8F9FA] flex items-center justify-center">
-        <div className="text-center space-y-6">
-          <div className="w-16 h-16 border-4 border-[var(--accent-blue)] border-t-transparent rounded-full animate-spin mx-auto shadow-sm"></div>
-          <p className="text-[var(--text-main)] font-bold text-lg tracking-tight">Menyelaraskan Berkas Digital...</p>
+      <div className="flex min-h-[70vh] items-center justify-center bg-gray-50/50">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto shadow-sm"></div>
+          <p className="text-gray-500 font-bold text-sm tracking-tight animate-pulse">Menyelaraskan Berkas Digital...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-12 pb-24 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+    <div className="space-y-10 pb-24 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1400px] mx-auto">
       {/* Header Area */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
-        <div>
-          <h1 className="h1-orbit text-[var(--text-main)]">Pusat Dokumen</h1>
-          <p className="subtitle-orbit text-[var(--text-muted)] mt-1">Lengkapi administrasi magang Anda secara digital.</p>
+      <div className="flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left bg-white p-8 rounded-3xl border border-gray-150 border-gray-200/60 shadow-sm">
+        <div className="space-y-2">
+          <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">Berkas Saya</h1>
+          <p className="text-gray-500 text-sm font-medium">Unggah dan pantau status kelengkapan berkas wajib magang Anda di sini.</p>
         </div>
-        <div className="flex items-center gap-6 bg-white px-8 py-4 rounded-[32px] shadow-sm border border-gray-100">
-           <div className="flex flex-col text-right">
-              <span className="caption-orbit font-bold text-[var(--text-light)] uppercase">Kelengkapan</span>
-              <span className="body2-orbit font-bold text-[var(--text-main)]">{uploadedCount} dari {totalCount} Berkas</span>
-           </div>
-           <div className="w-14 h-14 rounded-2xl accent-gradient flex items-center justify-center text-white shadow-lg">
-              <span className="font-bold">{progressPercent}%</span>
-           </div>
+        <div className="w-full md:w-80 bg-gray-50 p-6 rounded-2xl border border-gray-100">
+          <BerkasProgress value={verifiedCount} total={totalCount} />
         </div>
       </div>
 
-      {/* Grid Bento Dokumen */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {documentTypes.map((type) => {
-          const fileData = safeBerkas.find(b => b && b.document_type === type.name)
-          const isUploading = uploading === type.name
-          const Icon = type.icon
+      {/* Checklist List */}
+      <div className="space-y-4">
+        {jenisBerkas.map((jenis) => {
+          const userFile = berkasUploaded.find(b => b.jenis_berkas_id === jenis.id)
+          const isUploading = uploadingId === jenis.id
+          const currentStatus = uploadStatus[jenis.id] || 'idle'
+          const errorMsg = uploadErrorMsg[jenis.id]
+          const isUploaderOpen = showUploaderId === jenis.id
+
+          // Determine status text & colors
+          let statusLabel = 'Belum Upload'
+          let statusBadgeClass = 'bg-gray-100 text-gray-600 border-gray-200'
+          let statusIcon = <FileQuestion size={14} className="text-gray-400" />
+
+          if (userFile) {
+            if (userFile.status === 'Diverifikasi') {
+              statusLabel = 'Diverifikasi'
+              statusBadgeClass = 'bg-emerald-50 text-emerald-600 border-emerald-100'
+              statusIcon = <CheckCircle2 size={14} className="text-emerald-500" />
+            } else if (userFile.status === 'Ditolak') {
+              statusLabel = 'Ditolak'
+              statusBadgeClass = 'bg-red-50 text-red-600 border-red-100 animate-pulse'
+              statusIcon = <AlertCircle size={14} className="text-red-500" />
+            } else {
+              statusLabel = 'Menunggu Review'
+              statusBadgeClass = 'bg-amber-50 text-amber-600 border-amber-100'
+              statusIcon = <Clock size={14} className="text-amber-500" />
+            }
+          }
 
           return (
-            <div key={type.id} className="neumorphic-card p-8 group hover:scale-[1.02] transition-all duration-300 shadow-sm border border-transparent hover:border-blue-100/50">
-               <div className="flex items-start justify-between mb-8">
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${fileData ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-50 text-[var(--text-light)] group-hover:bg-blue-50 group-hover:text-[var(--accent-blue)]'}`}>
-                     <Icon size={28} />
+            <div 
+              key={jenis.id} 
+              className={`bg-white rounded-2xl border transition-all duration-300 p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:shadow-md ${
+                userFile?.status === 'Ditolak' ? 'border-red-200 bg-red-50/5' : 'border-gray-200/80 hover:border-blue-200/50'
+              }`}
+            >
+              {/* Left Column: Icon & Document Details */}
+              <div className="flex items-start gap-4 flex-1">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+                  userFile?.status === 'Diverifikasi' ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'
+                }`}>
+                  <FileText size={22} />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <h3 className="text-base font-bold text-gray-900 leading-tight">{jenis.nama_berkas}</h3>
+                    <span className="text-[10px] px-2.5 py-0.5 bg-gray-100 text-gray-500 font-bold uppercase tracking-wider rounded-full border border-gray-200">
+                      {jenis.kategori}
+                    </span>
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border ${statusBadgeClass}`}>
+                      {statusIcon}
+                      {statusLabel}
+                    </span>
                   </div>
-                  {fileData && (
-                    <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100 animate-in zoom-in duration-500">
-                       <CheckCircle2 size={12} />
-                       <span className="text-[10px] font-bold uppercase tracking-widest">Tersimpan</span>
+                  <p className="text-xs text-gray-400 font-medium leading-relaxed">
+                    {jenis.keterangan || 'Tidak ada keterangan tambahan.'}
+                  </p>
+                  
+                  {/* Upload Date for tracking */}
+                  {userFile && (
+                    <p className="text-[10px] text-gray-400 font-semibold pt-1">
+                      Diunggah pada: {new Date(userFile.tanggal_upload).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  )}
+
+                  {/* Lecturer Rejection Notes */}
+                  {userFile && userFile.status === 'Ditolak' && userFile.catatan_dosen && (
+                    <div className="mt-3 bg-red-50/50 border border-red-100 rounded-xl p-3 flex items-start gap-2 max-w-xl">
+                      <Info size={14} className="text-red-500 shrink-0 mt-0.5" />
+                      <div className="space-y-0.5">
+                        <p className="text-[10px] font-bold text-red-650 text-red-600 uppercase tracking-widest">Catatan Penolakan Dosen:</p>
+                        <p className="text-xs font-semibold text-red-750 text-red-700 leading-relaxed">
+                          {userFile.catatan_dosen}
+                        </p>
+                      </div>
                     </div>
                   )}
-               </div>
+                </div>
+              </div>
 
-               <div className="space-y-2">
-                  <h3 className="body1-orbit font-bold text-[var(--text-main)]">{type.name}</h3>
-                  <p className="caption-orbit text-[var(--text-light)] leading-relaxed font-medium">{type.desc}</p>
-               </div>
-
-               <div className="mt-10 pt-8 border-t border-gray-50">
-                  {fileData ? (
-                    <div className="flex items-center justify-between">
-                       <a 
-                          href={fileData.file_url} 
-                          target="_blank" 
-                          rel="noreferrer" 
-                          className="flex items-center gap-2 text-[var(--accent-blue)] font-bold caption-orbit hover:opacity-70 transition-opacity"
-                       >
-                          <Download size={16} /> Lihat Berkas
-                       </a>
-                       <button 
-                          onClick={() => handleDelete(fileData.id, type.name)} 
-                          className="w-10 h-10 flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
-                       >
-                          <Trash2 size={18} />
-                       </button>
+              {/* Right Column: Upload Uploader or Button Action */}
+              <div className="w-full md:w-auto shrink-0 flex flex-col items-stretch md:items-end justify-center">
+                {userFile && !isUploaderOpen ? (
+                  <div className="space-y-3">
+                    {/* File has been uploaded, show link and possibly upload-again button */}
+                    <div className="flex items-center justify-end gap-3 flex-wrap">
+                      <a
+                        href={userFile.file_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex-1 md:flex-initial text-center px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-750 text-gray-700 rounded-xl text-xs font-bold transition-all"
+                      >
+                        Lihat Berkas
+                      </a>
+                      {userFile.status === 'Ditolak' && (
+                        <button
+                          onClick={() => setShowUploaderId(jenis.id)}
+                          className="flex-1 md:flex-initial px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                        >
+                          <RefreshCw size={14} /> Upload Ulang
+                        </button>
+                      )}
                     </div>
-                  ) : (
-                    <label className={`w-full py-4 flex items-center justify-center gap-3 rounded-2xl cursor-pointer transition-all ${isUploading ? 'bg-gray-100 opacity-50' : 'bg-gray-50 hover:bg-[var(--accent-blue)] hover:text-white group-hover:shadow-md'}`}>
-                       {isUploading ? (
-                         <div className="w-5 h-5 border-2 border-[var(--accent-blue)] border-t-transparent rounded-full animate-spin"></div>
-                       ) : (
-                         <Plus size={18} />
-                       )}
-                       <span className="label-orbit font-bold uppercase tracking-widest">{isUploading ? 'Mengunggah...' : 'Unggah File'}</span>
-                       <input 
-                          type="file" 
-                          className="hidden" 
-                          onChange={(e) => handleUpload(e, type.name)} 
-                          disabled={!!uploading}
-                       />
-                    </label>
-                  )}
-               </div>
+                  </div>
+                ) : (
+                  <div className="w-full md:w-[320px]">
+                    {isUploaderOpen || !userFile ? (
+                      <div className="space-y-2">
+                        <FileUpload
+                          onFileSelect={(file) => handleUpload(file, jenis.id)}
+                          onClear={() => handleClear(jenis.id)}
+                          status={isUploading ? 'uploading' : currentStatus === 'success' ? 'success' : 'idle'}
+                          errorMessage={errorMsg}
+                          currentFileName={userFile?.nama_file}
+                          currentFileUrl={userFile?.file_url}
+                        />
+                        {userFile && (
+                          <button
+                            onClick={() => {
+                              setShowUploaderId(null)
+                              handleClear(jenis.id)
+                            }}
+                            className="w-full py-2 bg-gray-50 hover:bg-gray-100 text-gray-500 rounded-xl text-xs font-bold transition-all border border-gray-250 border-gray-200"
+                          >
+                            Batal Upload Ulang
+                          </button>
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
+                )}
+              </div>
             </div>
           )
         })}
-      </div>
-
-      {/* Info Card */}
-      <div className="neumorphic-card p-10 bg-slate-900 text-white shadow-xl shadow-slate-100 flex flex-col md:flex-row items-center gap-10">
-         <div className="w-20 h-20 bg-white/10 rounded-[32px] flex items-center justify-center backdrop-blur-md shrink-0">
-            <ShieldCheck size={32} className="text-blue-400" />
-         </div>
-         <div className="space-y-4 flex-1">
-            <h3 className="h4-orbit">Sistem Penyimpanan Terverifikasi</h3>
-            <p className="body2-orbit opacity-70 leading-relaxed font-medium max-w-3xl">
-               Semua berkas yang Anda unggah akan disimpan secara aman di infrastruktur cloud ORBIT. Dokumen ini diperlukan untuk keperluan administratif sertifikasi magang Anda di akhir program.
-            </p>
-         </div>
-         <button 
-            onClick={() => window.location.reload()}
-            className="px-8 py-4 bg-white/10 hover:bg-white/20 rounded-2xl caption-orbit font-bold uppercase tracking-widest transition-all backdrop-blur-sm border border-white/10"
-         >
-            Refresh Data
-         </button>
       </div>
     </div>
   )

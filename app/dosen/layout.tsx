@@ -7,6 +7,7 @@ import Link from 'next/link'
 import {
   LayoutGrid,
   Users,
+  FolderOpen,
   ClipboardList,
   User,
   LogOut,
@@ -75,6 +76,7 @@ export default function DosenLayout({ children }: { children: React.ReactNode })
   const menuItems = [
     { name: 'Dashboard', icon: LayoutGrid, href: '/dosen' },
     { name: 'Monitoring Mahasiswa', icon: Users, href: '/dosen/mahasiswa' },
+    { name: 'Kelengkapan Berkas', icon: FolderOpen, href: '/dosen/berkas' },
     { name: 'Validasi Bimbingan', icon: CheckSquare, href: '/dosen/bimbingan' },
     { name: 'Persetujuan Laporan', icon: ClipboardList, href: '/dosen/persetujuan-laporan' },
     { name: 'Profil Saya', icon: User, href: '/dosen/profil' },

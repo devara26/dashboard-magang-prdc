@@ -16,7 +16,8 @@ import {
   Menu,
   X,
   Search,
-  ClipboardList
+  ClipboardList,
+  FileText
 } from 'lucide-react'
 
 import Header from '@/components/Header'
@@ -81,7 +82,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: 'Pembimbing', icon: Users, href: '/dashboard/pembimbing' },
     { name: 'Bimbingan', icon: ClipboardList, href: '/dashboard/bimbingan' },
     { name: 'Jurnal', icon: BookOpen, href: '/dashboard/kegiatan' },
-    { name: 'Berkas', icon: FolderOpen, href: '/dashboard/berkas' },
+    { name: 'Berkas Saya', icon: FileText, href: '/dashboard/berkas' },
     { name: 'Profil', icon: User, href: '/dashboard/profil' },
   ]
 
@@ -129,7 +130,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     item.name === 'Pembimbing' ? 'tour-pembimbing' :
                     item.name === 'Bimbingan' ? 'tour-bimbingan' :
                     item.name === 'Jurnal' ? 'tour-jurnal' :
-                    item.name === 'Berkas' ? 'tour-berkas' :
+                    item.name === 'Berkas Saya' ? 'tour-berkas' :
                     undefined
                   }
                   href={item.href}
