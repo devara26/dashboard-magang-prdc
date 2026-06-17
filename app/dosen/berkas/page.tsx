@@ -67,7 +67,7 @@ export default function MonitoringBerkasPage() {
 
       // 2. Fetch all uploads metadata to process in memory
       const { data: uploadsData, error: uploadsError } = await supabase
-        .from('berkas_mahasiswa')
+        .from('berkas')
         .select('mahasiswa_id, status')
 
       if (uploadsError) throw uploadsError

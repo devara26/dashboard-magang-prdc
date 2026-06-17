@@ -75,7 +75,7 @@ export default function BerkasSayaPage() {
 
       // Fetch berkas mahasiswa yang sudah diupload
       const { data: uploadData, error: uploadError } = await supabase
-        .from('berkas_mahasiswa')
+        .from('berkas')
         .select('*')
         .eq('mahasiswa_id', user.id)
 
@@ -122,7 +122,7 @@ export default function BerkasSayaPage() {
       if (existing) {
         // Update record
         const { error: dbError } = await supabase
-          .from('berkas_mahasiswa')
+          .from('berkas')
           .update({
             nama_file: file.name,
             file_url: publicUrl,
@@ -138,7 +138,7 @@ export default function BerkasSayaPage() {
       } else {
         // Insert record
         const { error: dbError } = await supabase
-          .from('berkas_mahasiswa')
+          .from('berkas')
           .insert({
             mahasiswa_id: userId,
             jenis_berkas_id: jenisBerkasId,
@@ -159,7 +159,7 @@ export default function BerkasSayaPage() {
       
       // Refresh data berkas mahasiswa
       const { data: uploadData } = await supabase
-        .from('berkas_mahasiswa')
+        .from('berkas')
         .select('*')
         .eq('mahasiswa_id', userId)
       setBerkasUploaded(uploadData || [])

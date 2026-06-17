@@ -105,7 +105,7 @@ export default function DashboardPage() {
          kegiatanData = safeJurnal.slice(0, 3)
 
          const { count: berkasCount, error: berkasError } = await supabase
-            .from('berkas_mahasiswa')
+            .from('berkas')
             .select('*', { count: 'exact', head: true })
             .eq('mahasiswa_id', user.id)
 

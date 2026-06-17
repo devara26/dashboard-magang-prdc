@@ -137,7 +137,7 @@ export default function MahasiswaDetailPage({ params }: { params: Promise<{ id: 
 
       // Fetch berkas mahasiswa
       const { data: berkasData, error: berkasError } = await supabase
-        .from('berkas_mahasiswa')
+        .from('berkas')
         .select('*')
         .eq('mahasiswa_id', id)
 
@@ -223,7 +223,7 @@ export default function MahasiswaDetailPage({ params }: { params: Promise<{ id: 
       if (!user) throw new Error('Sesi dosen tidak ditemukan')
 
       const { error } = await supabase
-        .from('berkas_mahasiswa')
+        .from('berkas')
         .update({
            status: 'Diverifikasi',
            catatan_dosen: null,
@@ -254,7 +254,7 @@ export default function MahasiswaDetailPage({ params }: { params: Promise<{ id: 
       if (!user) throw new Error('Sesi dosen tidak ditemukan')
 
       const { error } = await supabase
-        .from('berkas_mahasiswa')
+        .from('berkas')
         .update({
            status: 'Ditolak',
            catatan_dosen: catatanPenolakan,
