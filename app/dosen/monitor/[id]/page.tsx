@@ -435,7 +435,7 @@ export default function MahasiswaDetailPage({ params }: { params: Promise<{ id: 
         {/* Progress bar info */}
         {(() => {
           const verified = berkasMahasiswa.filter(b => b.status === 'Diverifikasi').length
-          const total = jenisBerkas.length || 12
+          const total = jenisBerkas.length || 13
           const pct = Math.round((verified / total) * 100)
           return (
             <div className="mb-6 p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between gap-4">

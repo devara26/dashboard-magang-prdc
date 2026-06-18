@@ -41,6 +41,7 @@ export default function MonitoringBerkasPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [activeFilter, setActiveFilter] = useState<'Semua' | 'Lengkap' | 'Perlu Review' | 'Belum Lengkap'>('Semua')
+  const [totalDocs, setTotalDocs] = useState(13)
 
   useEffect(() => {
     fetchData()
@@ -56,6 +57,13 @@ export default function MonitoringBerkasPage() {
         return
       }
       setCurrentDosenId(user.id)
+
+      // 0. Fetch total jenis berkas count
+      const { data: jenisData } = await supabase
+        .from('jenis_berkas')
+        .select('id')
+      const totalDocsCount = jenisData?.length || 13
+      setTotalDocs(totalDocsCount)
 
       // 1. Fetch all students
       const { data: profilesData, error: profilesError } = await supabase
@@ -86,7 +94,7 @@ export default function MonitoringBerkasPage() {
         let statusKelengkapan: StudentData['statusKelengkapan'] = 'Belum Lengkap'
         if (uploadedCount === 0) {
           statusKelengkapan = 'Tidak Ada'
-        } else if (verifiedCount === 12) {
+        } else if (verifiedCount === totalDocsCount) {
           statusKelengkapan = 'Lengkap'
         } else if (menungguCount > 0) {
           statusKelengkapan = 'Perlu Review'
@@ -158,8 +166,8 @@ export default function MonitoringBerkasPage() {
         'NIM': student.nim,
         'Program Studi': student.prodi || '-',
         'Instansi Magang': student.instansi_magang || '-',
-        'Total Berkas Diunggah': `${student.uploadedCount}/12`,
-        'Berkas Diverifikasi': `${student.verifiedCount}/12`,
+        'Total Berkas Diunggah': `${student.uploadedCount}/${totalDocs}`,
+        'Berkas Diverifikasi': `${student.verifiedCount}/${totalDocs}`,
         'Berkas Menunggu Review': student.menungguCount,
         'Berkas Ditolak': student.ditolakCount,
         'Status Kelengkapan': student.statusKelengkapan,
@@ -359,20 +367,20 @@ export default function MonitoringBerkasPage() {
                       <td className="px-6 py-5 text-gray-550 text-gray-500 font-semibold">{student.nim}</td>
                       <td className="px-6 py-5">
                         <div className="w-48">
-                          <div className="flex items-center justify-between text-[11px] font-bold text-gray-500 mb-1">
-                            <span>{student.verifiedCount}/12 Berkas</span>
-                            <span>{Math.round((student.verifiedCount / 12) * 100)}%</span>
+                          <div className="flex items-center justify-between text-[11px] font-bold text-gray-550 text-gray-500 mb-1">
+                            <span>{student.verifiedCount}/{totalDocs} Berkas</span>
+                            <span>{Math.round((student.verifiedCount / totalDocs) * 100)}%</span>
                           </div>
                           <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
                             <div
                               className={`h-full rounded-full transition-all duration-500 ${
-                                student.verifiedCount === 12
+                                student.verifiedCount === totalDocs
                                   ? 'bg-emerald-500'
                                   : student.statusKelengkapan === 'Perlu Review'
                                   ? 'bg-amber-500'
                                   : 'bg-red-500'
                               }`}
-                              style={{ width: `${(student.verifiedCount / 12) * 100}%` }}
+                              style={{ width: `${(student.verifiedCount / totalDocs) * 100}%` }}
                             />
                           </div>
                         </div>

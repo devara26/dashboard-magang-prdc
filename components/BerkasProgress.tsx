@@ -11,7 +11,7 @@ interface BerkasProgressProps {
 
 export default function BerkasProgress({
   value = 0,
-  total = 12,
+  total = 13,
   className = '',
   size = 'md'
 }: BerkasProgressProps) {
