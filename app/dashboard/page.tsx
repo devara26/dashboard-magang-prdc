@@ -4,10 +4,12 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { getActivePeriode } from '@/lib/periode'
+import { getActivePeriode, checkMagang1Selesai } from '@/lib/periode'
+import Link from 'next/link'
 import {
    Calendar,
    CheckCircle2,
+   XCircle,
    FileText,
    Plus,
    ChevronRight,
@@ -32,6 +34,14 @@ export default function DashboardPage() {
    })
    const [monthlyAttendance, setMonthlyAttendance] = useState<number[]>(Array(12).fill(0))
    const [loading, setLoading] = useState(true)
+   const [showMagang2Banner, setShowMagang2Banner] = useState(false)
+   const [hasShownToast, setHasShownToast] = useState(false)
+   const [magang2Status, setMagang2Status] = useState({
+      laporanUploaded: false,
+      laporanVerified: false,
+      magang1Selesai: false,
+      allCompleted: false
+   })
 
    useEffect(() => {
       fetchData()
@@ -67,6 +77,76 @@ export default function DashboardPage() {
             setLoading(false)
             return
          }
+
+         // Fetch data for Magang 2 banner
+         const { data: periodes } = await supabase
+            .from('periode_magang')
+            .select('*')
+            .eq('mahasiswa_id', user.id)
+
+         const hasMagang2 = periodes?.some(p => p.nomor_periode === 2) || false
+         const magang1 = periodes?.find(p => p.nomor_periode === 1) || null
+
+         let isLaporanUploaded = false
+         let isLaporanVerified = false
+         let isMagang1Selesai = false
+
+         if (magang1) {
+            isMagang1Selesai = magang1.status === 'selesai'
+
+            // Fetch Laporan Akhir (urutan = 10)
+            const { data: jenisBerkasLaporan } = await supabase
+               .from('jenis_berkas')
+               .select('id')
+               .eq('urutan', 10)
+               .maybeSingle()
+
+            if (jenisBerkasLaporan) {
+               const { data: berkasLaporan } = await supabase
+                  .from('berkas')
+                  .select('status')
+                  .eq('mahasiswa_id', user.id)
+                  .eq('jenis_berkas_id', jenisBerkasLaporan.id)
+                  .eq('periode_id', magang1.id)
+                  .maybeSingle()
+
+               if (berkasLaporan) {
+                  isLaporanUploaded = true
+                  isLaporanVerified = berkasLaporan.status === 'Diverifikasi'
+               }
+            }
+
+            // Sync/check status selesai menggunakan helper
+            if (isLaporanVerified && !isMagang1Selesai) {
+               const syncedSelesai = await checkMagang1Selesai(supabase, user.id)
+               if (syncedSelesai) {
+                  isMagang1Selesai = true
+               }
+            }
+         }
+
+         const showBanner = !hasMagang2
+         const allDone = isLaporanUploaded && isLaporanVerified && isMagang1Selesai
+
+         setShowMagang2Banner(showBanner)
+         setMagang2Status({
+            laporanUploaded: isLaporanUploaded,
+            laporanVerified: isLaporanVerified,
+            magang1Selesai: isMagang1Selesai,
+            allCompleted: allDone
+         })
+
+         setHasShownToast(prev => {
+            if (!prev && showBanner) {
+               if (allDone) {
+                  toast.success("Magang 1 selesai! Magang 2 siap dimulai")
+               } else {
+                  toast.info("Lengkapi berkas untuk membuka Magang 2")
+               }
+               return true
+            }
+            return prev
+         })
 
          let absensiQuery = supabase
             .from('absensi')
@@ -180,6 +260,104 @@ export default function DashboardPage() {
                </div>
             </div>
          </div>
+
+         {showMagang2Banner && (
+            <div className={`p-8 rounded-3xl border transition-all duration-300 shadow-sm ${
+               magang2Status.allCompleted 
+                  ? 'bg-emerald-50/40 border-emerald-250 border-emerald-100 shadow-md shadow-emerald-100/20' 
+                  : 'bg-indigo-50/30 border-indigo-100/60 shadow-indigo-100/10'
+            }`}>
+               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                  <div className="space-y-4">
+                     <div>
+                        <h3 className={`text-lg font-bold tracking-tight ${
+                           magang2Status.allCompleted ? 'text-emerald-950 text-emerald-900' : 'text-slate-800'
+                        }`}>
+                           {magang2Status.allCompleted ? 'Magang 1 Selesai!' : 'Syarat Pindah ke Magang 2'}
+                        </h3>
+                        <p className={`text-sm mt-1 font-medium ${
+                           magang2Status.allCompleted ? 'text-emerald-700/95' : 'text-slate-500'
+                        }`}>
+                           {magang2Status.allCompleted 
+                              ? 'Selamat! Kamu telah memenuhi semua persyaratan untuk melanjutkan ke Magang 2.' 
+                              : 'Selesaikan persyaratan berikut agar dapat membuka pendaftaran periode Magang 2.'}
+                        </p>
+                     </div>
+                     
+                     <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 pt-1">
+                        <div className="flex items-center gap-2.5">
+                           <span className="shrink-0">
+                              {magang2Status.laporanUploaded ? (
+                                 <CheckCircle2 className="text-emerald-600 w-5 h-5" />
+                              ) : (
+                                 <XCircle className="text-slate-350 text-slate-300 w-5 h-5" />
+                              )}
+                           </span>
+                           <span className={`text-xs font-semibold ${
+                              magang2Status.laporanUploaded 
+                                 ? 'text-emerald-800 font-bold' 
+                                 : 'text-slate-500'
+                           }`}>
+                              Laporan Akhir Magang sudah diupload
+                           </span>
+                        </div>
+                        <div className="flex items-center gap-2.5">
+                           <span className="shrink-0">
+                              {magang2Status.laporanVerified ? (
+                                 <CheckCircle2 className="text-emerald-600 w-5 h-5" />
+                              ) : (
+                                 <XCircle className="text-slate-350 text-slate-300 w-5 h-5" />
+                              )}
+                           </span>
+                           <span className={`text-xs font-semibold ${
+                              magang2Status.laporanVerified 
+                                 ? 'text-emerald-800 font-bold' 
+                                 : 'text-slate-500'
+                           }`}>
+                              Laporan Akhir sudah diverifikasi dosen
+                           </span>
+                        </div>
+                        <div className="flex items-center gap-2.5">
+                           <span className="shrink-0">
+                              {magang2Status.magang1Selesai ? (
+                                 <CheckCircle2 className="text-emerald-600 w-5 h-5" />
+                              ) : (
+                                 <XCircle className="text-slate-350 text-slate-300 w-5 h-5" />
+                              )}
+                           </span>
+                           <span className={`text-xs font-semibold ${
+                              magang2Status.magang1Selesai 
+                                 ? 'text-emerald-800 font-bold' 
+                                 : 'text-slate-500'
+                           }`}>
+                              Status Magang 1 = selesai
+                           </span>
+                        </div>
+                     </div>
+                  </div>
+                  
+                  <div className="shrink-0">
+                     {magang2Status.allCompleted ? (
+                        <Link
+                           href="/dashboard/setup-magang-2"
+                           className="px-6 py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-2xl font-bold text-xs uppercase tracking-widest shadow-md shadow-emerald-250 shadow-emerald-200/50 hover:shadow-lg transition-all hover:scale-[1.02] flex items-center justify-center gap-2 text-center border-none cursor-pointer"
+                        >
+                           Mulai Magang 2
+                           <ChevronRight size={16} />
+                        </Link>
+                     ) : (
+                        <Link
+                           href="/dashboard/berkas"
+                           className="px-6 py-3.5 bg-indigo-600 text-white rounded-2xl font-bold text-xs uppercase tracking-widest shadow-md shadow-indigo-250 shadow-indigo-200/40 hover:shadow-lg transition-all hover:scale-[1.02] flex items-center justify-center gap-2 text-center border-none cursor-pointer"
+                        >
+                           Lengkapi Berkas
+                           <ChevronRight size={16} />
+                        </Link>
+                     )}
+                  </div>
+               </div>
+            </div>
+         )}
 
          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
             <div className="neumorphic-card p-6 flex flex-col items-center text-center shadow-sm">
