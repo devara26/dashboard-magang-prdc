@@ -14,6 +14,7 @@ import {
   Info
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { getActivePeriode } from '@/lib/periode'
 
 // Memaksa rendering dinamis
 export const dynamic = 'force-dynamic'
@@ -45,16 +46,34 @@ export default function AbsensiPage() {
         .eq('id', user.id)
         .maybeSingle()
       
-      setProfile(profileData || { id: user.id, nama_lengkap: 'Pengguna ORBIT' })
+      const activePeriode = await getActivePeriode(supabase, user.id)
+      const activePeriodeId = activePeriode?.id || null
+
+      const activeProfile = {
+        ...(profileData || { id: user.id, nama_lengkap: 'Pengguna ORBIT' }),
+        active_periode_id: activePeriodeId
+      }
+      setProfile(activeProfile)
+
+      if (!activePeriodeId) {
+        setLoading(false)
+        return
+      }
 
       // Fetch absensi history
       const { data: absensiData, error: absError } = await supabase
         .from('absensi')
         .select('*')
         .eq('mahasiswa_id', user.id)
+        .eq('periode_id', activePeriodeId)
         .order('tanggal', { ascending: false })
 
-      if (absError) console.error('Absensi fetch error:', absError)
+      console.log('user id:', user.id)
+      console.log('absensi data:', absensiData)
+      console.log('absensi error (stringified):', JSON.stringify(absError))
+      if (absError) {
+        console.error('Absensi fetch error:', JSON.stringify(absError))
+      }
       
       const safeAbsensi = Array.isArray(absensiData) ? absensiData : []
       setAbsensi(safeAbsensi)
@@ -65,7 +84,7 @@ export default function AbsensiPage() {
       setTodayPresence(foundToday || null)
 
     } catch (error) {
-      console.error('Critical runtime error (absensi):', error)
+      console.error('Critical runtime error (absensi):', JSON.stringify(error))
       setAbsensi([])
     } finally {
       setLoading(false)
@@ -87,7 +106,8 @@ export default function AbsensiPage() {
           tanggal: today,
           check_in: now,
           status: 'Hadir',
-          keterangan: 'Hadir tepat waktu melalui portal ORBIT'
+          keterangan: 'Hadir tepat waktu melalui portal ORBIT',
+          periode_id: profile.active_periode_id
         }])
 
       if (error) throw error

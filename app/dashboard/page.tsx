@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { getActivePeriode } from '@/lib/periode'
 import {
    Calendar,
    CheckCircle2,
@@ -51,18 +52,32 @@ export default function DashboardPage() {
             .eq('id', user.id)
             .maybeSingle()
 
-         if (profileError) console.error('Error fetching profile:', profileError)
+         if (profileError) console.error('Error fetching profile:', JSON.stringify(profileError))
+
+         // Ambil atau inisialisasi periode aktif
+         const activePeriode = await getActivePeriode(supabase, user.id)
+         const activePeriodeId = activePeriode?.id || null
 
          const activeProfile = profileData || { id: user.id, nama_lengkap: 'Pengguna ORBIT', nim: '' }
          setProfile(activeProfile)
 
-         const { data: absensiData, error: absensiError } = await supabase
+         console.log('dashboard/page.tsx: activePeriodeId =', activePeriodeId)
+
+         if (!activePeriodeId) {
+            setLoading(false)
+            return
+         }
+
+         let absensiQuery = supabase
             .from('absensi')
             .select('tanggal')
             .eq('mahasiswa_id', user.id)
             .eq('status', 'Hadir')
+            .eq('periode_id', activePeriodeId)
 
-         if (absensiError) console.error('Error fetching absensi:', absensiError)
+         const { data: absensiData, error: absensiError } = await absensiQuery
+
+         if (absensiError) console.error('Error fetching absensi:', JSON.stringify(absensiError))
 
          const safeAbsensi = Array.isArray(absensiData) ? absensiData : []
          const hadirCount = safeAbsensi.length
@@ -94,22 +109,27 @@ export default function DashboardPage() {
             query = query.eq('mahasiswa_id', user.id);
          }
 
+         query = query.eq('periode_id', activePeriodeId);
+
          const { data: queryData, error: queryError } = await query
             .order('tanggal', { ascending: false })
 
-         if (queryError) console.error('Error fetching dashboard kegiatan:', queryError)
+         if (queryError) console.error('Error fetching dashboard kegiatan:', JSON.stringify(queryError))
 
          const safeJurnal = Array.isArray(queryData) ? queryData : []
          countTotal = safeJurnal.length
          countSelesai = safeJurnal.filter((k: any) => k.status_persetujuan === 'Disetujui' || k.status === 'Disetujui').length
          kegiatanData = safeJurnal.slice(0, 3)
 
-         const { count: berkasCount, error: berkasError } = await supabase
+         let berkasQuery = supabase
             .from('berkas')
             .select('*', { count: 'exact', head: true })
             .eq('mahasiswa_id', user.id)
+            .eq('periode_id', activePeriodeId)
 
-         if (berkasError) console.error('Error fetching berkas:', berkasError)
+         const { count: berkasCount, error: berkasError } = await berkasQuery
+
+         if (berkasError) console.error('Error fetching berkas:', JSON.stringify(berkasError))
 
          setKegiatan(kegiatanData)
          setStats({
@@ -119,7 +139,7 @@ export default function DashboardPage() {
             totalBerkas: berkasCount || 0
          })
       } catch (error) {
-         console.error('Critical runtime dashboard error:', error)
+         console.error('Critical runtime dashboard error:', JSON.stringify(error))
          setKegiatan([])
       } finally {
          setLoading(false)

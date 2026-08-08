@@ -233,6 +233,34 @@ export default function MahasiswaDetailPage({ params }: { params: Promise<{ id: 
         .eq('id', berkasId)
         
       if (error) throw error
+
+      // Cek apakah berkas yang diverifikasi adalah Laporan Akhir (urutan 10)
+      try {
+        const { data: berkasInfo } = await supabase
+          .from('berkas')
+          .select('jenis_berkas_id, periode_id')
+          .eq('id', berkasId)
+          .maybeSingle()
+
+        if (berkasInfo?.periode_id) {
+          const { data: jenisData } = await supabase
+            .from('jenis_berkas')
+            .select('urutan')
+            .eq('id', berkasInfo.jenis_berkas_id)
+            .maybeSingle()
+
+          if (jenisData?.urutan === 10) {
+            // Update status periode menjadi 'selesai'
+            await supabase
+              .from('periode_magang')
+              .update({ status: 'selesai' })
+              .eq('id', berkasInfo.periode_id)
+          }
+        }
+      } catch (checkErr) {
+        console.error('Error auto-completing period status:', checkErr)
+      }
+
       toast.success('Berkas berhasil diverifikasi')
       fetchData()
     } catch (err: any) {

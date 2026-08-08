@@ -14,6 +14,7 @@ import {
 import { toast } from 'sonner'
 import BerkasProgress from '@/components/BerkasProgress'
 import FileUpload from '@/components/FileUpload'
+import { getActivePeriode } from '@/lib/periode'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,6 +44,7 @@ export default function BerkasSayaPage() {
   const [jenisBerkas, setJenisBerkas] = useState<JenisBerkas[]>([])
   const [berkasUploaded, setBerkasUploaded] = useState<BerkasMahasiswa[]>([])
   const [userId, setUserId] = useState<string | null>(null)
+  const [activePeriodeId, setActivePeriodeId] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [uploadingId, setUploadingId] = useState<string | null>(null)
   const [uploadStatus, setUploadStatus] = useState<Record<string, 'idle' | 'uploading' | 'success' | 'error'>>({})
@@ -73,16 +75,26 @@ export default function BerkasSayaPage() {
       if (jenisError) throw jenisError
       setJenisBerkas(jenisData || [])
 
+      const activePeriode = await getActivePeriode(supabase, user.id)
+      const currentPeriodeId = activePeriode?.id || null
+      setActivePeriodeId(currentPeriodeId)
+
+      if (!currentPeriodeId) {
+        setLoading(false)
+        return
+      }
+
       // Fetch berkas mahasiswa yang sudah diupload
       const { data: uploadData, error: uploadError } = await supabase
         .from('berkas')
         .select('*')
         .eq('mahasiswa_id', user.id)
+        .eq('periode_id', currentPeriodeId)
 
       if (uploadError) throw uploadError
       setBerkasUploaded(uploadData || [])
     } catch (error: any) {
-      console.error('Error fetching berkas data:', error)
+      console.error('Error fetching berkas data:', JSON.stringify(error))
       toast.error('Gagal memuat data berkas: ' + (error.message || 'Terjadi kesalahan'))
     } finally {
       setLoading(false)
@@ -147,7 +159,8 @@ export default function BerkasSayaPage() {
             tipe_file: file.type,
             ukuran_bytes: file.size,
             status: 'Menunggu Review',
-            tanggal_upload: new Date().toISOString()
+            tanggal_upload: new Date().toISOString(),
+            periode_id: activePeriodeId
           })
 
         if (dbError) throw dbError
@@ -162,10 +175,11 @@ export default function BerkasSayaPage() {
         .from('berkas')
         .select('*')
         .eq('mahasiswa_id', userId)
+        .eq('periode_id', activePeriodeId)
       setBerkasUploaded(uploadData || [])
 
     } catch (error: any) {
-      console.error('Upload error:', error)
+      console.error('Upload error:', JSON.stringify(error))
       setUploadStatus(prev => ({ ...prev, [jenisBerkasId]: 'error' }))
       setUploadErrorMsg(prev => ({ ...prev, [jenisBerkasId]: error.message || 'Gagal mengunggah berkas' }))
       toast.error('Gagal mengunggah: ' + (error.message || 'Terjadi kesalahan'))

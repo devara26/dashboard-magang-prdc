@@ -22,6 +22,7 @@ import {
 
 import Header from '@/components/Header'
 import AppTour from '@/components/AppTour'
+import PeriodeSwitcher from '@/components/PeriodeSwitcher'
 
 export const dynamic = 'force-dynamic'
 
@@ -198,6 +199,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Search size={18} className="text-[var(--text-light)]" />
               <input placeholder="Cari data..." className="bg-transparent border-none outline-none body2-orbit font-semibold w-full placeholder:text-[var(--text-light)] text-[var(--text-main)]" />
             </div>
+
+            <PeriodeSwitcher />
 
             <Header />
 

@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { getActivePeriode } from '@/lib/periode'
 
 import {
    Plus,
@@ -62,9 +63,17 @@ export default function JurnalPage() {
             .maybeSingle()
 
          if (profileError) console.error('Error profile:', profileError)
-         setProfile(profileData || { id: user.id, nama_lengkap: 'User' })
 
-         const nimFilter = profileData?.nim || ''
+         const activePeriode = await getActivePeriode(supabase, user.id)
+         const activePeriodeId = activePeriode?.id || null
+
+         const activeProfile = {
+            ...(profileData || { id: user.id, nama_lengkap: 'User' }),
+            active_periode_id: activePeriodeId
+         }
+         setProfile(activeProfile)
+
+         const nimFilter = activeProfile?.nim || ''
 
          let query = supabase
             .from('Kegiatan')
@@ -76,13 +85,16 @@ export default function JurnalPage() {
             query = query.eq('mahasiswa_id', user.id);
          }
 
+         if (activePeriodeId) {
+            query = query.eq('periode_id', activePeriodeId);
+         }
+
          // Ambil data dari tabel Kegiatan berdasarkan NIM mahasiswa aktif atau ID mahasiswa
          const { data: kegiatanData, error: kegiatanError } = await query
             .order('tanggal', { ascending: false })
 
          if (kegiatanError) console.error('Error kegiatan:', kegiatanError)
 
-         // PERBAIKAN: Gunakan setKegiatan (bukan setStats) sesuai state asli halaman ini
          setKegiatan(kegiatanData || [])
 
       } catch (error) {
@@ -116,11 +128,15 @@ export default function JurnalPage() {
          const studentName = profileData.nama_lengkap || 'Pengguna'
          const studentNim = profileData.nim || '-'
 
+         const activePeriode = await getActivePeriode(supabase, user.id)
+         const activePeriodeId = activePeriode?.id || null
+
          // Fetch Absensi
          const { data: absensiData, error: absensiError } = await supabase
             .from('absensi')
             .select('*')
             .eq('mahasiswa_id', user.id)
+            .eq('periode_id', activePeriodeId)
             .order('tanggal', { ascending: true })
 
          if (absensiError) {
@@ -129,23 +145,21 @@ export default function JurnalPage() {
 
          // Fetch Jurnal Kegiatan
          let kegiatanData: any[] = []
+         let kQuery = supabase
+            .from('Kegiatan')
+            .select('*')
+            .eq('periode_id', activePeriodeId)
+            .order('tanggal', { ascending: true })
+
          if (profileData.nim) {
-            const { data: k, error: kError } = await supabase
-               .from('Kegiatan')
-               .select('*')
-               .eq('nim', profileData.nim)
-               .order('tanggal', { ascending: true })
-            if (kError) console.error('Error fetching kegiatan:', kError)
-            if (k) kegiatanData = k
+            kQuery = kQuery.or(`nim.eq.${profileData.nim},mahasiswa_id.eq.${user.id}`)
          } else {
-            const { data: k, error: kError } = await supabase
-               .from('Kegiatan')
-               .select('*')
-               .eq('mahasiswa_id', user.id)
-               .order('tanggal', { ascending: true })
-            if (kError) console.error('Error fetching kegiatan:', kError)
-            if (k) kegiatanData = k
+            kQuery = kQuery.eq('mahasiswa_id', user.id)
          }
+
+         const { data: k, error: kError } = await kQuery
+         if (kError) console.error('Error fetching kegiatan:', kError)
+         if (k) kegiatanData = k
 
          const doc = new jsPDF()
 
@@ -258,7 +272,8 @@ export default function JurnalPage() {
             status: newKegiatan.status,
             nim: profile?.nim || '',
             nama_mahasiswa: profile?.nama_lengkap || 'Pengguna',
-            mahasiswa_id: profile?.id || null
+            mahasiswa_id: profile?.id || null,
+            periode_id: profile?.active_periode_id || null
          }
 
          if (editingId) {

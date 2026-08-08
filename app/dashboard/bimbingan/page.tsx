@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
+import { getActivePeriode } from '@/lib/periode'
 import {
   Plus,
   Calendar,
@@ -63,22 +64,37 @@ export default function BimbinganPage() {
         .maybeSingle()
 
       if (profileError) {
-        console.error('Error profile:', profileError)
+        console.error('Error profile:', JSON.stringify(profileError))
       }
-      setProfile(profileData || { id: user.id })
+
+      const activePeriode = await getActivePeriode(supabase, user.id)
+      const activePeriodeId = activePeriode?.id || null
+
+      const activeProfile = {
+        ...(profileData || { id: user.id }),
+        active_periode_id: activePeriodeId
+      }
+      setProfile(activeProfile)
+
+      if (!activePeriodeId) {
+        setLoading(false)
+        return
+      }
 
       // Fetch assigned lecturer if exists
-      if (profileData?.dosen_id) {
+      if (activeProfile?.dosen_id) {
         const { data: dosenData, error: dosenError } = await supabase
           .from('profiles')
           .select('nama_lengkap, avatar_url')
-          .eq('id', profileData.dosen_id)
+          .eq('id', activeProfile.dosen_id)
           .maybeSingle()
         
         if (dosenError) {
-          console.error('Error fetching dosen:', dosenError)
+          console.error('Error fetching dosen:', JSON.stringify(dosenError))
         }
         setDosen(dosenData)
+      } else {
+        setDosen(null)
       }
 
       // Fetch bimbingan logs
@@ -86,15 +102,19 @@ export default function BimbinganPage() {
         .from('log_bimbingan')
         .select('*')
         .eq('mahasiswa_id', user.id)
+        .eq('periode_id', activePeriodeId)
         .order('tanggal', { ascending: false })
 
+      console.log('logs data:', logsData)
+      console.log('logs error:', JSON.stringify(logsError))
+      
       if (logsError) {
-        console.error('Error fetching logs:', logsError)
+        console.error('Error fetching logs:', JSON.stringify(logsError))
       }
       setLogs(logsData || [])
 
     } catch (error) {
-      console.error('Runtime fetch error:', error)
+      console.error('Runtime fetch error:', JSON.stringify(error))
     } finally {
       setLoading(false)
     }
@@ -168,7 +188,8 @@ export default function BimbinganPage() {
         metode: newBimbingan.metode,
         topik_bahasan: newBimbingan.topik_bahasan,
         dokumentasi_url: newBimbingan.dokumentasi_url || null,
-        status: 'Menunggu'
+        status: 'Menunggu',
+        periode_id: profile.active_periode_id || null
       }
 
       const { error } = await supabase
