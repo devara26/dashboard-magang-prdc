@@ -2,7 +2,21 @@
 
 import { useEffect, useState, use } from 'react'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, CheckCircle2, Clock, Activity, Calendar, FileText, Send, Award, FolderOpen, Eye, XCircle } from 'lucide-react'
+import { 
+  ArrowLeft, 
+  CheckCircle2, 
+  Clock, 
+  Activity, 
+  Calendar, 
+  FileText, 
+  Send, 
+  Award, 
+  FolderOpen, 
+  Eye, 
+  XCircle,
+  CheckCircle,
+  AlertTriangle
+} from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import Link from 'next/link'
@@ -23,6 +37,7 @@ type Kegiatan = {
   tanggal: string
   kegiatan: string
   status: string
+  status_persetujuan?: 'Menunggu' | 'Disetujui' | 'Ditolak'
   komentar_dosen?: string
 }
 
@@ -39,16 +54,24 @@ export default function MahasiswaDetailPage({ params }: { params: Promise<{ id: 
   const resolvedParams = use(params)
   const id = resolvedParams.id
 
+  const [activeTab, setActiveTab] = useState<'ringkasan' | 'jurnal' | 'berkas' | 'absensi_detail'>('ringkasan')
   const [profile, setProfile] = useState<Profile | null>(null)
   const [kegiatan, setKegiatan] = useState<Kegiatan[]>([])
+  const [absensi, setAbsensi] = useState<any[]>([])
   const [absensiStats, setAbsensiStats] = useState({ hadir: 0, izin: 0, sakit: 0, alpha: 0 })
   const [penilaian, setPenilaian] = useState<Penilaian>({ kedisiplinan: 0, kompetensi: 0, sikap: 0, laporan: 0 })
   const [loading, setLoading] = useState(true)
   const [submittingPenilaian, setSubmittingPenilaian] = useState(false)
 
-  // State for comments
+  // State for comments and filters
   const [komentar, setKomentar] = useState<Record<number, string>>({})
   const [submittingKomentar, setSubmittingKomentar] = useState<number | null>(null)
+  const [bulanFilter, setBulanFilter] = useState<string>('all')
+  const [jurnalStatusFilter, setJurnalStatusFilter] = useState<string>('all')
+
+  // Inline approval states
+  const [rejectingJurnalId, setRejectingJurnalId] = useState<number | null>(null)
+  const [jurnalRejectionComment, setJurnalRejectionComment] = useState('')
 
   // State for documents completeness
   const [jenisBerkas, setJenisBerkas] = useState<any[]>([])
@@ -75,10 +98,14 @@ export default function MahasiswaDetailPage({ params }: { params: Promise<{ id: 
       setProfile(profileData)
 
       // Fetch Absensi
-      const { data: absensiData } = await supabase
+      const { data: absensiData, error: absensiError } = await supabase
         .from('absensi')
-        .select('status')
+        .select('*')
         .eq('mahasiswa_id', id)
+        .order('tanggal', { ascending: false })
+
+      if (absensiError) throw absensiError
+      setAbsensi(absensiData || [])
 
       if (absensiData) {
         const stats = { hadir: 0, izin: 0, sakit: 0, alpha: 0 }
@@ -149,6 +176,75 @@ export default function MahasiswaDetailPage({ params }: { params: Promise<{ id: 
       console.error(error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Jurnal approval handlers
+  async function handleApproveJurnal(jurnalId: number) {
+    try {
+      const { error } = await supabase
+        .from('Kegiatan')
+        .update({ status_persetujuan: 'Disetujui', komentar_dosen: null })
+        .eq('id', jurnalId)
+
+      if (error) throw error
+
+      setKegiatan(prev =>
+        prev.map(k => (k.id === jurnalId ? { ...k, status_persetujuan: 'Disetujui', komentar_dosen: undefined } : k))
+      )
+      toast.success('Jurnal berhasil disetujui')
+
+      // Send real-time notification
+      try {
+        await supabase.from('notifications').insert({
+          user_id: id,
+          message: 'Jurnal kamu telah disetujui oleh dosen ✅',
+          type: 'jurnal_approved'
+        })
+      } catch (err) {
+        console.warn('Failed to insert notification:', err)
+      }
+    } catch (e: any) {
+      toast.error('Gagal menyetujui jurnal: ' + e.message)
+    }
+  }
+
+  async function handleRejectJurnal(jurnalId: number) {
+    if (!jurnalRejectionComment.trim()) {
+      toast.error('Harap masukkan alasan penolakan jurnal.')
+      return
+    }
+    try {
+      const { error } = await supabase
+        .from('Kegiatan')
+        .update({ 
+          status_persetujuan: 'Ditolak', 
+          komentar_dosen: jurnalRejectionComment.trim() 
+        })
+        .eq('id', jurnalId)
+
+      if (error) throw error
+
+      setKegiatan(prev =>
+        prev.map(k => (k.id === jurnalId ? { ...k, status_persetujuan: 'Ditolak', komentar_dosen: jurnalRejectionComment.trim() } : k))
+      )
+      setKomentar(prev => ({ ...prev, [jurnalId]: jurnalRejectionComment.trim() }))
+      toast.success('Jurnal ditolak dengan komentar')
+      setRejectingJurnalId(null)
+      setJurnalRejectionComment('')
+
+      // Send real-time notification
+      try {
+        await supabase.from('notifications').insert({
+          user_id: id,
+          message: `Jurnal kamu ditolak oleh dosen: "${jurnalRejectionComment.substring(0, 25)}..." ❌`,
+          type: 'jurnal_rejected'
+        })
+      } catch (err) {
+        console.warn('Failed to insert notification:', err)
+      }
+    } catch (e: any) {
+      toast.error('Gagal menolak jurnal: ' + e.message)
     }
   }
 
@@ -338,13 +434,13 @@ export default function MahasiswaDetailPage({ params }: { params: Promise<{ id: 
   const progressPersen = totalHariTarget > 0 ? Math.min(Math.round((absensiStats.hadir / totalHariTarget) * 100), 100) : 0
 
   return (
-    <div className="pb-8 animate-[fade-in_0.7s_ease-out] max-w-lg mx-auto md:max-w-none">
+    <div className="pb-8 animate-[fade-in_0.7s_ease-out] max-w-[1400px] mx-auto">
  
       {/* Header */}
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-[24px] border border-gray-50 shadow-sm">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-[24px] border border-gray-200/60 shadow-sm">
         <div>
-          <Link href="/dosen/mahasiswa" className="inline-flex items-center text-sm font-medium text-[#5F6368] hover:text-[#1A73E8] mb-4 transition-colors">
-            <ArrowLeft className="w-4 h-4 mr-1" />
+          <Link href="/dosen/mahasiswa" className="inline-flex items-center text-xs font-bold text-gray-500 hover:text-blue-600 transition-colors uppercase tracking-wider mb-4 gap-1">
+            <ArrowLeft className="w-4 h-4" />
             Kembali ke Daftar Monitoring
           </Link>
           <div className="flex items-center gap-4">
@@ -360,238 +456,510 @@ export default function MahasiswaDetailPage({ params }: { params: Promise<{ id: 
         <div className="flex items-center sm:self-end">
           <button
             onClick={handleKirimReminder}
-            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-750 text-white rounded-xl text-xs font-bold transition-all shadow-sm shadow-blue-100 flex items-center gap-2"
+            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-750 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-2"
           >
             Kirim Reminder Berkas
           </button>
         </div>
       </div>
 
-      {/* Rekap Absensi */}
-      <div className="bg-white rounded-[24px] p-6 mb-6 shadow-sm border border-gray-50">
-        <h2 className="text-[#202124] text-base font-bold mb-4 flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-[#1A73E8]" />
-          Rekap Absensi
-        </h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-[#E6F4EA] rounded-2xl p-4 text-center">
-            <p className="text-[#137333] text-2xl font-black">{absensiStats.hadir}</p>
-            <p className="text-[#137333] text-xs font-bold uppercase mt-1">Hadir</p>
-          </div>
-          <div className="bg-[#FEF7E0] rounded-2xl p-4 text-center">
-            <p className="text-[#E37400] text-2xl font-black">{absensiStats.izin}</p>
-            <p className="text-[#E37400] text-xs font-bold uppercase mt-1">Izin</p>
-          </div>
-          <div className="bg-[#FCE8E6] rounded-2xl p-4 text-center">
-            <p className="text-[#C5221F] text-2xl font-black">{absensiStats.sakit}</p>
-            <p className="text-[#C5221F] text-xs font-bold uppercase mt-1">Sakit</p>
-          </div>
-          <div className="bg-[#E8F0FE] rounded-2xl p-4 text-center relative overflow-hidden">
-            <p className="text-[#1A73E8] text-2xl font-black z-10 relative">{progressPersen}%</p>
-            <p className="text-[#1A73E8] text-xs font-bold uppercase mt-1 z-10 relative">Persentase</p>
-          </div>
-        </div>
+      {/* Navigation Tabs */}
+      <div className="flex border-b border-gray-200 mb-6 overflow-x-auto no-scrollbar gap-2">
+        {([
+          { id: 'ringkasan', label: 'Ringkasan', icon: Activity },
+          { id: 'jurnal', label: 'Jurnal', icon: FileText },
+          { id: 'berkas', label: 'Berkas', icon: FolderOpen },
+          { id: 'absensi_detail', label: 'Absensi Detail', icon: Calendar },
+        ] as const).map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center gap-2 px-6 py-3.5 border-b-2 font-extrabold text-xs uppercase tracking-wider whitespace-nowrap transition-all duration-300 ${
+              activeTab === tab.id
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-400 hover:text-gray-700'
+            }`}
+          >
+            <tab.icon className="w-4 h-4" />
+            {tab.label}
+          </button>
+        ))}
       </div>
 
-      {/* Form Penilaian */}
-      <div className="bg-white rounded-[24px] p-6 mb-6 shadow-sm border border-gray-50">
-        <h2 className="text-[#202124] text-base font-bold mb-4 flex items-center gap-2">
-          <Award className="w-5 h-5 text-[#FBBC04]" />
-          Penilaian Akhir (0-100)
-        </h2>
-        <form onSubmit={handleSimpanPenilaian}>
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-xs font-bold text-[#5F6368] mb-1.5 uppercase">Kedisiplinan</label>
-              <input
-                type="number" min="0" max="100" required
-                value={penilaian.kedisiplinan || ''}
-                onChange={e => setPenilaian({ ...penilaian, kedisiplinan: Number(e.target.value) })}
-                className="w-full bg-[#F8F9FA] text-[#202124] rounded-xl px-4 py-2.5 text-sm border-transparent focus:bg-white focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] transition-all font-medium"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-[#5F6368] mb-1.5 uppercase">Kompetensi</label>
-              <input
-                type="number" min="0" max="100" required
-                value={penilaian.kompetensi || ''}
-                onChange={e => setPenilaian({ ...penilaian, kompetensi: Number(e.target.value) })}
-                className="w-full bg-[#F8F9FA] text-[#202124] rounded-xl px-4 py-2.5 text-sm border-transparent focus:bg-white focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] transition-all font-medium"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-[#5F6368] mb-1.5 uppercase">Sikap/Etika</label>
-              <input
-                type="number" min="0" max="100" required
-                value={penilaian.sikap || ''}
-                onChange={e => setPenilaian({ ...penilaian, sikap: Number(e.target.value) })}
-                className="w-full bg-[#F8F9FA] text-[#202124] rounded-xl px-4 py-2.5 text-sm border-transparent focus:bg-white focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] transition-all font-medium"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-[#5F6368] mb-1.5 uppercase">Laporan</label>
-              <input
-                type="number" min="0" max="100" required
-                value={penilaian.laporan || ''}
-                onChange={e => setPenilaian({ ...penilaian, laporan: Number(e.target.value) })}
-                className="w-full bg-[#F8F9FA] text-[#202124] rounded-xl px-4 py-2.5 text-sm border-transparent focus:bg-white focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] transition-all font-medium"
-              />
-            </div>
-          </div>
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={submittingPenilaian}
-              className="bg-[#1A73E8] hover:bg-[#1967D2] text-white rounded-xl px-6 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
-            >
-              {submittingPenilaian ? 'Menyimpan...' : 'Simpan Penilaian'}
-            </button>
-          </div>
-        </form>
-      </div>
-
-      {/* Kelengkapan Berkas Administrasi */}
-      <div className="bg-white rounded-[24px] p-6 mb-6 shadow-sm border border-gray-50">
-        <h2 className="text-[#202124] text-base font-bold mb-2 flex items-center gap-2">
-          <FolderOpen className="w-5 h-5 text-blue-600" />
-          Kelengkapan Berkas Administrasi
-        </h2>
-        <p className="text-[#5F6368] text-xs font-medium mb-6">
-          Pantau status verifikasi dan lakukan tindakan untuk berkas wajib mahasiswa.
-        </p>
-
-        {/* Progress bar info */}
-        {(() => {
-          const verified = berkasMahasiswa.filter(b => b.status === 'Diverifikasi').length
-          const total = jenisBerkas.length || 13
-          const pct = Math.round((verified / total) * 100)
-          return (
-            <div className="mb-6 p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between gap-4">
-              <div className="space-y-1">
-                <p className="text-xs font-bold text-gray-700 uppercase tracking-wider">Progress Kelengkapan Berkas</p>
-                <p className="text-sm font-black text-gray-900">{verified} dari {total} Berkas Diverifikasi ({pct}%)</p>
-              </div>
-              <div className="w-32 bg-gray-200 rounded-full h-2 overflow-hidden shadow-inner">
-                <div className="h-full bg-blue-600 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+      {/* TAB CONTENTS */}
+      <div className="bg-white border border-gray-200/60 rounded-3xl p-6 md:p-8 min-h-[400px] shadow-sm">
+        
+        {/* TAB 1: RINGKASAN */}
+        {activeTab === 'ringkasan' && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            {/* Rekap Absensi */}
+            <div className="bg-gray-50/50 rounded-2xl p-6 border border-gray-150">
+              <h2 className="text-[#202124] text-base font-bold mb-4 flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-[#1A73E8]" />
+                Rekap Absensi
+              </h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-[#E6F4EA] rounded-2xl p-4 text-center">
+                  <p className="text-[#137333] text-2xl font-black">{absensiStats.hadir}</p>
+                  <p className="text-[#137333] text-xs font-bold uppercase mt-1">Hadir</p>
+                </div>
+                <div className="bg-[#FEF7E0] rounded-2xl p-4 text-center">
+                  <p className="text-[#E37400] text-2xl font-black">{absensiStats.izin}</p>
+                  <p className="text-[#E37400] text-xs font-bold uppercase mt-1">Izin</p>
+                </div>
+                <div className="bg-[#FCE8E6] rounded-2xl p-4 text-center">
+                  <p className="text-[#C5221F] text-2xl font-black">{absensiStats.sakit}</p>
+                  <p className="text-[#C5221F] text-xs font-bold uppercase mt-1">Sakit</p>
+                </div>
+                <div className="bg-[#E8F0FE] rounded-2xl p-4 text-center relative overflow-hidden">
+                  <p className="text-[#1A73E8] text-2xl font-black z-10 relative">{progressPersen}%</p>
+                  <p className="text-[#1A73E8] text-xs font-bold uppercase mt-1 z-10 relative">Persentase</p>
+                </div>
               </div>
             </div>
-          )
-        })()}
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs whitespace-nowrap">
-            <thead className="bg-[#F8F9FA] text-[#5F6368] font-bold uppercase tracking-wider text-[10px] border-y border-gray-100">
-              <tr>
-                <th className="px-5 py-3">Nama Berkas</th>
-                <th className="px-5 py-3">Kategori</th>
-                <th className="px-5 py-3">Status</th>
-                <th className="px-5 py-3">Tanggal Upload</th>
-                <th className="px-5 py-3 text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50 font-medium text-[#202124]">
-              {jenisBerkas.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-5 py-8 text-center text-gray-400 italic">
-                    Memuat data jenis berkas...
-                  </td>
-                </tr>
-              ) : (
-                jenisBerkas.map((jenis) => {
-                  const userFile = berkasMahasiswa.find(b => b.jenis_berkas_id === jenis.id)
+            {/* Form Penilaian */}
+            <div className="bg-gray-50/50 rounded-2xl p-6 border border-gray-150">
+              <h2 className="text-[#202124] text-base font-bold mb-4 flex items-center gap-2">
+                <Award className="w-5 h-5 text-[#FBBC04]" />
+                Penilaian Akhir (0-100)
+              </h2>
+              <form onSubmit={handleSimpanPenilaian}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                  <div>
+                    <label className="block text-xs font-bold text-[#5F6368] mb-1.5 uppercase">Kedisiplinan</label>
+                    <input
+                      type="number" min="0" max="100" required
+                      value={penilaian.kedisiplinan || ''}
+                      onChange={e => setPenilaian({ ...penilaian, kedisiplinan: Number(e.target.value) })}
+                      className="w-full bg-white text-[#202124] border border-gray-200 rounded-xl px-4 py-2.5 text-xs outline-none focus:border-blue-600 font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#5F6368] mb-1.5 uppercase">Kompetensi</label>
+                    <input
+                      type="number" min="0" max="100" required
+                      value={penilaian.kompetensi || ''}
+                      onChange={e => setPenilaian({ ...penilaian, kompetensi: Number(e.target.value) })}
+                      className="w-full bg-white text-[#202124] border border-gray-200 rounded-xl px-4 py-2.5 text-xs outline-none focus:border-blue-600 font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#5F6368] mb-1.5 uppercase">Sikap/Etika</label>
+                    <input
+                      type="number" min="0" max="100" required
+                      value={penilaian.sikap || ''}
+                      onChange={e => setPenilaian({ ...penilaian, sikap: Number(e.target.value) })}
+                      className="w-full bg-white text-[#202124] border border-gray-200 rounded-xl px-4 py-2.5 text-xs outline-none focus:border-blue-600 font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#5F6368] mb-1.5 uppercase">Laporan</label>
+                    <input
+                      type="number" min="0" max="100" required
+                      value={penilaian.laporan || ''}
+                      onChange={e => setPenilaian({ ...penilaian, laporan: Number(e.target.value) })}
+                      className="w-full bg-white text-[#202124] border border-gray-200 rounded-xl px-4 py-2.5 text-xs outline-none focus:border-blue-600 font-bold"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={submittingPenilaian}
+                    className="bg-blue-600 hover:bg-blue-750 text-white rounded-xl px-6 py-2.5 text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50"
+                  >
+                    {submittingPenilaian ? 'Menyimpan...' : 'Simpan Penilaian'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
-                  let statusText = 'Belum Upload'
-                  let badgeClass = 'bg-gray-50 text-gray-500 border-gray-200'
-                  if (userFile) {
-                    if (userFile.status === 'Diverifikasi') {
-                      statusText = 'Diverifikasi'
-                      badgeClass = 'bg-[#E6F4EA] text-[#137333] border-[#CEEAD6]'
-                    } else if (userFile.status === 'Ditolak') {
-                      statusText = 'Ditolak'
-                      badgeClass = 'bg-[#FCE8E6] text-[#C5221F] border-[#FAD2CF]'
-                    } else {
-                      statusText = 'Menunggu Review'
-                      badgeClass = 'bg-[#FEF7E0] text-[#E37400] border-[#FDE293]'
-                    }
-                  }
+        {/* TAB 2: JURNAL */}
+        {activeTab === 'jurnal' && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            {/* Filter and stats row */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gray-50/50 p-5 rounded-2xl border border-gray-150">
+              <div className="flex gap-4 text-xs font-extrabold uppercase tracking-wider text-gray-650">
+                <span>Total {kegiatan.length} Jurnal terbuat</span>
+                <span>•</span>
+                <span className="text-blue-600">{kegiatan.filter(k => k.status_persetujuan === 'Disetujui').length} Disetujui</span>
+                <span>•</span>
+                <span className="text-amber-500">{kegiatan.filter(k => k.status_persetujuan === 'Menunggu' || !k.status_persetujuan).length} Pending</span>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-gray-500">Filter Status:</span>
+                <select
+                  value={jurnalStatusFilter}
+                  onChange={(e) => setJurnalStatusFilter(e.target.value)}
+                  className="bg-white border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold outline-none focus:border-blue-600 text-gray-700 shadow-sm"
+                >
+                  <option value="all">Semua Status</option>
+                  <option value="Menunggu">Menunggu</option>
+                  <option value="Disetujui">Disetujui</option>
+                  <option value="Ditolak">Ditolak</option>
+                </select>
+              </div>
+            </div>
 
-                  return (
-                    <tr key={jenis.id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-5 py-4">
-                        <div>
-                          <p className="font-bold text-gray-900">{jenis.nama_berkas}</p>
-                          {userFile && userFile.status === 'Ditolak' && userFile.catatan_dosen && (
-                            <p className="text-[10px] text-red-650 text-red-650 text-red-650 text-red-600 mt-1 font-semibold leading-relaxed">
-                              Catatan Penolakan: {userFile.catatan_dosen}
-                            </p>
-                          )}
+            {/* Kegiatan / Jurnal Log */}
+            {(() => {
+              const filteredJurnals = kegiatan.filter(k => {
+                if (jurnalStatusFilter === 'all') return true
+                if (jurnalStatusFilter === 'Menunggu') return k.status_persetujuan === 'Menunggu' || !k.status_persetujuan
+                return k.status_persetujuan === jurnalStatusFilter
+              })
+
+              if (filteredJurnals.length === 0) {
+                return (
+                  <div className="p-12 text-center bg-gray-50 rounded-2xl border border-gray-200">
+                    <p className="text-gray-400 font-bold text-xs">Belum ada kegiatan jurnal yang sesuai filter.</p>
+                  </div>
+                )
+              }
+
+              return (
+                <div className="space-y-4">
+                  {filteredJurnals.map((k) => (
+                    <div 
+                      key={k.id} 
+                      className={`p-6 border rounded-2xl space-y-4 transition-all hover:shadow-md bg-white ${
+                        k.status_persetujuan === 'Ditolak'
+                          ? 'border-rose-250 bg-rose-50/5'
+                          : k.status_persetujuan === 'Disetujui'
+                          ? 'border-emerald-100 hover:border-emerald-250/50'
+                          : 'border-gray-250 hover:border-blue-200/50'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start gap-4">
+                        <div className="space-y-1">
+                          <p className="text-xs font-black text-blue-600 uppercase tracking-wide">{k.tanggal}</p>
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${
+                            k.status_persetujuan === 'Disetujui'
+                              ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                              : k.status_persetujuan === 'Ditolak'
+                              ? 'bg-rose-50 text-rose-600 border-rose-100'
+                              : 'bg-amber-50 text-amber-600 border-amber-100'
+                          }`}>
+                            {k.status_persetujuan || 'Menunggu'}
+                          </span>
                         </div>
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className="text-[9px] px-2 py-0.5 bg-gray-100 text-gray-550 border border-gray-200 rounded font-bold uppercase">
-                          {jenis.kategori}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${badgeClass}`}>
-                          {statusText}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 text-gray-500 font-semibold">
-                        {userFile 
-                          ? new Date(userFile.tanggal_upload).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
-                          : '-'
-                        }
-                      </td>
-                      <td className="px-5 py-4 text-right">
-                        {userFile ? (
-                          <div className="flex items-center justify-end gap-2">
-                            <a
-                              href={userFile.file_url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 transition-all border border-gray-200 shadow-xs"
-                              title="Preview File"
+
+                        {/* Jurnal inline actions */}
+                        {(k.status_persetujuan === 'Menunggu' || !k.status_persetujuan) && (
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleApproveJurnal(k.id)}
+                              className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all shadow-sm shadow-emerald-100 cursor-pointer"
                             >
-                              <Eye className="w-3.5 h-3.5" />
-                            </a>
-
-                            {userFile.status !== 'Diverifikasi' && (
-                              <button
-                                onClick={() => handleVerifikasiDoc(userFile.id, jenis.id)}
-                                disabled={submittingDocAction === jenis.id}
-                                className="w-8 h-8 flex items-center justify-center bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-lg transition-all border border-emerald-100 shadow-xs"
-                                title="Verifikasi"
-                              >
-                                {submittingDocAction === jenis.id ? '...' : <CheckCircle2 className="w-3.5 h-3.5" />}
-                              </button>
-                            )}
-
-                            {userFile.status !== 'Ditolak' && (
-                              <button
-                                onClick={() => {
-                                  setRejectDocId(jenis.id)
-                                  setRejectBerkasId(userFile.id)
-                                }}
-                                disabled={submittingDocAction === jenis.id}
-                                className="w-8 h-8 flex items-center justify-center bg-red-50 text-red-600 hover:bg-red-500 hover:text-white rounded-lg transition-all border border-red-100 shadow-xs"
-                                title="Tolak"
-                              >
-                                {submittingDocAction === jenis.id ? '...' : <XCircle className="w-3.5 h-3.5" />}
-                              </button>
-                            )}
+                              Setujui
+                            </button>
+                            <button
+                              onClick={() => {
+                                setRejectingJurnalId(k.id)
+                                setJurnalRejectionComment('')
+                              }}
+                              className="px-4 py-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                            >
+                              Tolak
+                            </button>
                           </div>
-                        ) : (
-                          <span className="text-gray-400 italic font-semibold">-</span>
                         )}
+                      </div>
+
+                      {/* Rejection comment input if triggered */}
+                      {rejectingJurnalId === k.id && (
+                        <div className="bg-rose-50/50 border border-rose-100 rounded-xl p-4 space-y-3">
+                          <label className="text-[10px] font-black text-rose-700 uppercase tracking-wider">Komentar Penolakan Jurnal:</label>
+                          <textarea
+                            value={jurnalRejectionComment}
+                            onChange={(e) => setJurnalRejectionComment(e.target.value)}
+                            placeholder="Alasan penolakan..."
+                            rows={2}
+                            className="w-full bg-white border border-rose-200 rounded-xl p-3 text-xs outline-none focus:border-rose-500 font-medium"
+                          />
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={() => setRejectingJurnalId(null)}
+                              className="px-3.5 py-1.5 bg-gray-100 hover:bg-gray-250 text-gray-500 rounded-lg text-xs font-bold"
+                            >
+                              Batal
+                            </button>
+                            <button
+                              onClick={() => handleRejectJurnal(k.id)}
+                              className="px-3.5 py-1.5 bg-rose-650 bg-rose-600 hover:bg-rose-750 text-white rounded-lg text-xs font-bold"
+                            >
+                              Kirim
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Kegiatan Content description */}
+                      <p className="text-xs text-gray-750 text-gray-700 font-medium leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-150">
+                        {k.kegiatan}
+                      </p>
+
+                      {/* Comments Form */}
+                      <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                        <label className="block text-[10px] font-bold text-gray-500 mb-2 uppercase">Catatan Pembimbing</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            placeholder="Tambahkan catatan untuk kegiatan ini..."
+                            value={komentar[k.id] || ''}
+                            onChange={e => setKomentar({ ...komentar, [k.id]: e.target.value })}
+                            className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] outline-none transition-all font-medium text-gray-700"
+                          />
+                          <button
+                            onClick={() => handleSimpanKomentar(k.id)}
+                            disabled={submittingKomentar === k.id}
+                            className="bg-white border border-gray-200 text-[#1A73E8] hover:bg-[#E8F0FE] rounded-lg px-3 py-2 text-xs font-medium transition-colors disabled:opacity-50 flex items-center shrink-0 cursor-pointer"
+                          >
+                            {submittingKomentar === k.id ? '...' : <Send className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            })()}
+          </div>
+        )}
+
+        {/* TAB 3: BERKAS */}
+        {activeTab === 'berkas' && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <h2 className="text-[#202124] text-base font-bold flex items-center gap-2">
+              <FolderOpen className="w-5 h-5 text-blue-600" />
+              Kelengkapan Berkas Administrasi
+            </h2>
+            <p className="text-[#5F6368] text-xs font-medium -mt-4">
+              Pantau status verifikasi dan lakukan tindakan untuk berkas wajib mahasiswa.
+            </p>
+
+            {/* Progress bar info */}
+            {(() => {
+              const verified = berkasMahasiswa.filter(b => b.status === 'Diverifikasi').length
+              const total = jenisBerkas.length || 12
+              const pct = Math.round((verified / total) * 100)
+              return (
+                <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-gray-700 uppercase tracking-wider">Progress Kelengkapan Berkas</p>
+                    <p className="text-sm font-black text-gray-900">{verified} dari {total} Berkas Diverifikasi ({pct}%)</p>
+                  </div>
+                  <div className="w-32 bg-gray-200 rounded-full h-2 overflow-hidden shadow-inner shrink-0">
+                    <div className="h-full bg-blue-600 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              )
+            })()}
+
+            <div className="overflow-x-auto border border-gray-250 border-gray-200 rounded-2xl shadow-sm">
+              <table className="w-full text-left text-xs whitespace-nowrap">
+                <thead className="bg-[#F8F9FA] text-[#5F6368] font-bold uppercase tracking-wider text-[10px] border-b border-gray-200">
+                  <tr>
+                    <th className="px-6 py-4">Nama Berkas</th>
+                    <th className="px-6 py-4">Kategori</th>
+                    <th className="px-6 py-4">Status</th>
+                    <th className="px-6 py-4">Tanggal Upload</th>
+                    <th className="px-6 py-4 text-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-150 font-medium text-[#202124]">
+                  {jenisBerkas.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-8 text-center text-gray-400 italic">
+                        Memuat data jenis berkas...
                       </td>
                     </tr>
-                  )
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                  ) : (
+                    jenisBerkas.map((jenis) => {
+                      const userFile = berkasMahasiswa.find(b => b.jenis_berkas_id === jenis.id)
+
+                      let statusText = 'Belum Upload'
+                      let badgeClass = 'bg-gray-50 text-gray-500 border-gray-200'
+                      if (userFile) {
+                        if (userFile.status === 'Diverifikasi') {
+                          statusText = 'Diverifikasi'
+                          badgeClass = 'bg-[#E6F4EA] text-[#137333] border-[#CEEAD6]'
+                        } else if (userFile.status === 'Ditolak') {
+                          statusText = 'Ditolak'
+                          badgeClass = 'bg-[#FCE8E6] text-[#C5221F] border-[#FAD2CF]'
+                        } else {
+                          statusText = 'Menunggu Review'
+                          badgeClass = 'bg-[#FEF7E0] text-[#E37400] border-[#FDE293]'
+                        }
+                      }
+
+                      return (
+                        <tr key={jenis.id} className="hover:bg-gray-50/50 transition-colors">
+                          <td className="px-6 py-4">
+                            <div>
+                              <p className="font-bold text-gray-900 leading-tight">{jenis.nama_berkas}</p>
+                              {userFile && userFile.status === 'Ditolak' && userFile.catatan_dosen && (
+                                <p className="text-[10px] text-red-650 text-red-600 mt-1 font-semibold leading-relaxed">
+                                  Catatan Penolakan: {userFile.catatan_dosen}
+                                </p>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-[9px] px-2.5 py-0.5 bg-gray-100 text-gray-550 border border-gray-200 rounded-full font-bold uppercase tracking-wider">
+                              {jenis.kategori}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${badgeClass}`}>
+                              {statusText}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-gray-500 font-semibold">
+                            {userFile 
+                              ? new Date(userFile.tanggal_upload).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+                              : '-'
+                            }
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            {userFile ? (
+                              <div className="flex items-center justify-end gap-2">
+                                <a
+                                  href={userFile.file_url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-205 hover:bg-gray-200 rounded-lg text-gray-700 transition-all border border-gray-200 shadow-xs"
+                                  title="Preview File"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                </a>
+
+                                {userFile.status !== 'Diverifikasi' && (
+                                  <button
+                                    onClick={() => handleVerifikasiDoc(userFile.id, jenis.id)}
+                                    disabled={submittingDocAction === jenis.id}
+                                    className="w-8 h-8 flex items-center justify-center bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-lg transition-all border border-emerald-100 shadow-xs cursor-pointer"
+                                    title="Verifikasi"
+                                  >
+                                    {submittingDocAction === jenis.id ? '...' : <CheckCircle2 className="w-3.5 h-3.5" />}
+                                  </button>
+                                )}
+
+                                {userFile.status !== 'Ditolak' && (
+                                  <button
+                                    onClick={() => {
+                                      setRejectDocId(jenis.id)
+                                      setRejectBerkasId(userFile.id)
+                                    }}
+                                    disabled={submittingDocAction === jenis.id}
+                                    className="w-8 h-8 flex items-center justify-center bg-red-50 text-red-650 text-red-600 hover:bg-red-500 hover:text-white rounded-lg transition-all border border-red-100 shadow-xs cursor-pointer"
+                                    title="Tolak"
+                                  >
+                                    {submittingDocAction === jenis.id ? '...' : <XCircle className="w-3.5 h-3.5" />}
+                                  </button>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 italic font-semibold">-</span>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 4: ABSENSI DETAIL */}
+        {activeTab === 'absensi_detail' && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            {/* Recap and Monthly Filter */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gray-50/50 p-5 rounded-2xl border border-gray-150">
+              <div className="flex gap-4 flex-wrap text-xs font-bold text-gray-650 uppercase tracking-wider">
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>{absensiStats.hadir} Hadir</span>
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span>{absensiStats.izin} Izin</span>
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span>{absensiStats.sakit} Sakit</span>
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-gray-400 inline-block"></span>{absensiStats.alpha} Alpha</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-gray-500">Filter Bulan:</span>
+                <select
+                  value={bulanFilter}
+                  onChange={(e) => setBulanFilter(e.target.value)}
+                  className="bg-white border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold outline-none focus:border-blue-600 text-gray-700 shadow-sm"
+                >
+                  <option value="all">Semua Bulan</option>
+                  {/* Extract dynamic months from absensi state */}
+                  {Array.from(new Set(absensi.map(a => a.tanggal.substring(0, 7)))).sort().map(monthStr => {
+                    const [year, month] = monthStr.split('-')
+                    const monthName = new Date(Number(year), Number(month) - 1, 1).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
+                    return <option key={monthStr} value={monthStr}>{monthName}</option>
+                  })}
+                </select>
+              </div>
+            </div>
+
+            {/* Full Attendance Logs Table */}
+            <div className="border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-200 text-[10px] font-black text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4">Tanggal</th>
+                    <th className="px-6 py-4">Check-in</th>
+                    <th className="px-6 py-4">Check-out</th>
+                    <th className="px-6 py-4">Status</th>
+                    <th className="px-6 py-4">Keterangan</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-150 font-bold text-gray-750 text-gray-700">
+                  {(() => {
+                    const filteredAbs = absensi.filter(a => bulanFilter === 'all' || a.tanggal.substring(0, 7) === bulanFilter)
+                    
+                    if (filteredAbs.length === 0) {
+                      return (
+                        <tr>
+                          <td colSpan={5} className="px-6 py-12 text-center text-gray-400 font-bold">
+                            Tidak ditemukan data absensi untuk bulan ini.
+                          </td>
+                        </tr>
+                      )
+                    }
+
+                    return filteredAbs.map((a) => (
+                      <tr key={a.id} className="hover:bg-gray-50/50 transition-colors">
+                        <td className="px-6 py-4 font-extrabold text-gray-900">{new Date(a.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</td>
+                        <td className="px-6 py-4 text-gray-500">{a.check_in || '-'}</td>
+                        <td className="px-6 py-4 text-gray-500">{a.check_out || '-'}</td>
+                        <td className="px-6 py-4">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[9px] uppercase tracking-wider font-extrabold border ${
+                            a.status === 'Hadir'
+                              ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                              : a.status === 'Izin'
+                              ? 'bg-amber-50 text-amber-600 border-amber-100'
+                              : a.status === 'Sakit'
+                              ? 'bg-rose-50 text-rose-600 border-rose-100'
+                              : 'bg-gray-100 text-gray-500 border-gray-200'
+                          }`}>
+                            {a.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-gray-400 font-semibold">{a.keterangan || 'Tidak ada keterangan'}</td>
+                      </tr>
+                    ))
+                  })()}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Tolak Document Comments Dialog Modal */}
@@ -628,62 +996,6 @@ export default function MahasiswaDetailPage({ params }: { params: Promise<{ id: 
           </div>
         </div>
       )}
-
-      {/* Log Kegiatan */}
-      <div className="bg-white rounded-[24px] shadow-sm border border-gray-50 overflow-hidden">
-        <div className="px-6 py-5 border-b border-gray-50 bg-white">
-          <h2 className="text-[#202124] text-base font-bold flex items-center gap-2">
-            <FileText className="w-5 h-5 text-[#34A853]" />
-            Jurnal Kegiatan
-          </h2>
-        </div>
-
-        {kegiatan.length === 0 ? (
-          <div className="p-8 text-center">
-            <p className="text-[#5F6368] text-sm">Belum ada kegiatan yang dilaporkan.</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-gray-50">
-            {kegiatan.map((k) => (
-              <div key={k.id} className="p-6">
-                <div className="flex items-start gap-4 mb-4">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${k.status === 'Selesai' ? 'bg-[#E6F4EA] text-[#137333]' : 'bg-[#FEF7E0] text-[#E37400]'}`}>
-                    {k.status === 'Selesai' ? <CheckCircle2 className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-[11px] font-bold text-[#1A73E8] mb-1">{k.tanggal}</p>
-                    <p className="text-sm font-bold text-[#202124] leading-relaxed">{k.kegiatan}</p>
-                    <span className="inline-block mt-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-gray-100 text-gray-600">
-                      Status: {k.status}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Form Komentar */}
-                <div className="ml-14 bg-[#F8F9FA] p-3 rounded-xl border border-gray-100">
-                  <label className="block text-[10px] font-bold text-[#5F6368] mb-2 uppercase">Komentar Pembimbing</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Tambahkan catatan untuk kegiatan ini..."
-                      value={komentar[k.id] || ''}
-                      onChange={e => setKomentar({ ...komentar, [k.id]: e.target.value })}
-                      className="flex-1 bg-white border-transparent rounded-lg px-3 py-2 text-sm focus:border-[#1A73E8] focus:ring-1 focus:ring-[#1A73E8] transition-all"
-                    />
-                    <button
-                      onClick={() => handleSimpanKomentar(k.id)}
-                      disabled={submittingKomentar === k.id}
-                      className="bg-white border border-gray-200 text-[#1A73E8] hover:bg-[#E8F0FE] rounded-lg px-3 py-2 text-sm font-medium transition-colors disabled:opacity-50 flex items-center"
-                    >
-                      {submittingKomentar === k.id ? '...' : <Send className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
 
     </div>
   )
