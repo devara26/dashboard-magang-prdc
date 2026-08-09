@@ -10,7 +10,10 @@ import {
   CheckCircle, 
   AlertTriangle, 
   Clock, 
-  Inbox 
+  Inbox,
+  BookOpen,
+  Users,
+  FolderOpen
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -20,6 +23,7 @@ export default function NotificationBell() {
   const [notifications, setNotifications] = useState<any[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const bellRef = useRef<HTMLDivElement>(null)
+  const [processingNotifId, setProcessingNotifId] = useState<string | null>(null)
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -102,9 +106,16 @@ export default function NotificationBell() {
             setNotifications(prev => [newNotif, ...prev.slice(0, 9)])
             setUnreadCount(prev => prev + 1)
             
+            const desc = newNotif.type === 'pembimbing_request' || 
+                         newNotif.type === 'jurnal_baru' || 
+                         newNotif.type === 'berkas_baru' || 
+                         newNotif.type === 'bimbingan_baru'
+                           ? 'Notifikasi baru dari mahasiswa'
+                           : 'Notifikasi baru dari dosen pembimbing'
+
             // Display toast using sonner
             toast(newNotif.message, {
-              description: 'Notifikasi baru dari dosen pembimbing',
+              description: desc,
               icon: getNotificationIcon(newNotif.type, 'h-5 w-5'),
               duration: 5000,
             })
@@ -132,13 +143,23 @@ export default function NotificationBell() {
   const getNotificationIcon = (type: string, className = 'h-4 w-4') => {
     switch (type) {
       case 'berkas_verified':
-        return <CheckCircle2 className={`${className} text-emerald-500`} />
+      case 'berkas_baru':
+        return <FolderOpen className={`${className} text-blue-500`} />
       case 'berkas_rejected':
         return <XCircle className={`${className} text-red-500`} />
       case 'jurnal_approved':
-        return <CheckCircle className={`${className} text-blue-500`} />
+      case 'bimbingan_approved':
+      case 'pembimbing_accepted':
+        return <CheckCircle className={`${className} text-emerald-500`} />
       case 'jurnal_rejected':
+      case 'bimbingan_rejected':
+      case 'pembimbing_rejected':
         return <AlertTriangle className={`${className} text-orange-500`} />
+      case 'jurnal_baru':
+        return <BookOpen className={`${className} text-indigo-500`} />
+      case 'pembimbing_request':
+      case 'bimbingan_baru':
+        return <Users className={`${className} text-violet-500`} />
       default:
         return <Bell className={`${className} text-gray-500`} />
     }
@@ -169,8 +190,224 @@ export default function NotificationBell() {
     }
   }
 
+  // Terima pembimbing_request
+  const handleAcceptPembimbing = async (notif: any) => {
+    setProcessingNotifId(notif.id)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Dosen belum login')
+
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('nama_lengkap')
+        .eq('id', user.id)
+        .single()
+      
+      const lecturerName = profileData?.nama_lengkap || 'Dosen Pembimbing'
+
+      // Mark request notification as read
+      const { error: readError } = await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('id', notif.id)
+
+      if (readError) throw readError
+
+      // Send confirmation notification back to student
+      const { error: notifError } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: notif.metadata?.mahasiswa_id,
+          message: `Dosen ${lecturerName} menerima permintaan pembimbingan Anda ✅`,
+          type: 'pembimbing_accepted'
+        })
+
+      if (notifError) throw notifError
+
+      // Update state locally
+      setNotifications(prev =>
+        prev.map(n => (n.id === notif.id ? { ...n, is_read: true } : n))
+      )
+      setUnreadCount(prev => Math.max(0, prev - 1))
+      toast.success('Permintaan pembimbing berhasil diterima')
+    } catch (err: any) {
+      toast.error('Gagal memproses tindakan: ' + err.message)
+    } finally {
+      setProcessingNotifId(null)
+    }
+  }
+
+  // Tolak pembimbing_request
+  const handleRejectPembimbing = async (notif: any) => {
+    setProcessingNotifId(notif.id)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Dosen belum login')
+
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('nama_lengkap')
+        .eq('id', user.id)
+        .single()
+      
+      const lecturerName = profileData?.nama_lengkap || 'Dosen Pembimbing'
+
+      // Update student profiles setting dosen_id = null
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ dosen_id: null })
+        .eq('id', notif.metadata?.mahasiswa_id)
+
+      if (profileError) throw profileError
+
+      // Mark request notification as read
+      const { error: readError } = await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('id', notif.id)
+
+      if (readError) throw readError
+
+      // Send rejection notification back to student
+      const { error: notifError } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: notif.metadata?.mahasiswa_id,
+          message: `Dosen ${lecturerName} menolak permintaan pembimbingan Anda ❌`,
+          type: 'pembimbing_rejected'
+        })
+
+      if (notifError) throw notifError
+
+      // Update state locally
+      setNotifications(prev =>
+        prev.map(n => (n.id === notif.id ? { ...n, is_read: true } : n))
+      )
+      setUnreadCount(prev => Math.max(0, prev - 1))
+      toast.success('Permintaan pembimbing ditolak')
+    } catch (err: any) {
+      toast.error('Gagal memproses tindakan: ' + err.message)
+    } finally {
+      setProcessingNotifId(null)
+    }
+  }
+
+  // Approve log_bimbingan
+  const handleApproveBimbingan = async (notif: any) => {
+    setProcessingNotifId(notif.id)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Dosen belum login')
+
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('nama_lengkap')
+        .eq('id', user.id)
+        .single()
+      
+      const lecturerName = profileData?.nama_lengkap || 'Dosen Pembimbing'
+
+      // Update log_bimbingan status to Disetujui
+      const { error: bimbinganError } = await supabase
+        .from('log_bimbingan')
+        .update({ status: 'Disetujui' })
+        .eq('id', notif.metadata?.bimbingan_id)
+
+      if (bimbinganError) throw bimbinganError
+
+      // Mark notification as read
+      const { error: readError } = await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('id', notif.id)
+
+      if (readError) throw readError
+
+      // Send notification back to student
+      const { error: notifError } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: notif.metadata?.mahasiswa_id,
+          message: `Dosen ${lecturerName} menyetujui log bimbingan Anda ✅`,
+          type: 'bimbingan_approved'
+        })
+
+      if (notifError) throw notifError
+
+      // Update state locally
+      setNotifications(prev =>
+        prev.map(n => (n.id === notif.id ? { ...n, is_read: true } : n))
+      )
+      setUnreadCount(prev => Math.max(0, prev - 1))
+      toast.success('Log bimbingan disetujui')
+    } catch (err: any) {
+      toast.error('Gagal memproses tindakan: ' + err.message)
+    } finally {
+      setProcessingNotifId(null)
+    }
+  }
+
+  // Reject log_bimbingan
+  const handleRejectBimbingan = async (notif: any) => {
+    setProcessingNotifId(notif.id)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Dosen belum login')
+
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('nama_lengkap')
+        .eq('id', user.id)
+        .single()
+      
+      const lecturerName = profileData?.nama_lengkap || 'Dosen Pembimbing'
+
+      // Update status to Ditolak in log_bimbingan
+      const { error: bimbinganError } = await supabase
+        .from('log_bimbingan')
+        .update({ status: 'Ditolak' })
+        .eq('id', notif.metadata?.bimbingan_id)
+
+      if (bimbinganError) throw bimbinganError
+
+      // Mark request notification as read
+      const { error: readError } = await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('id', notif.id)
+
+      if (readError) throw readError
+
+      // Send confirmation feedback notification back to student
+      const { error: notifError } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: notif.metadata?.mahasiswa_id,
+          message: `Dosen ${lecturerName} menolak log bimbingan Anda ❌`,
+          type: 'bimbingan_rejected'
+        })
+
+      if (notifError) throw notifError
+
+      // Update state locally
+      setNotifications(prev =>
+        prev.map(n => (n.id === notif.id ? { ...n, is_read: true } : n))
+      )
+      setUnreadCount(prev => Math.max(0, prev - 1))
+      toast.success('Log bimbingan ditolak')
+    } catch (err: any) {
+      toast.error('Gagal memproses tindakan: ' + err.message)
+    } finally {
+      setProcessingNotifId(null)
+    }
+  }
+
   const handleItemClick = async (notif: any) => {
-    // Mark single notification as read
+    // For specific requests requiring action clicks, clicking on the item does not mark it read or route it.
+    if (notif.type === 'pembimbing_request' || notif.type === 'bimbingan_baru') {
+      return
+    }
+
     if (!notif.is_read) {
       const { error } = await supabase
         .from('notifications')
@@ -192,6 +429,12 @@ export default function NotificationBell() {
       router.push('/dashboard/berkas')
     } else if (notif.type === 'jurnal_approved' || notif.type === 'jurnal_rejected') {
       router.push('/dashboard/kegiatan')
+    } else if (notif.type === 'jurnal_baru') {
+      router.push(`/dosen/monitor/${notif.metadata?.mahasiswa_id || ''}`)
+    } else if (notif.type === 'berkas_baru') {
+      router.push(`/dosen/berkas/${notif.metadata?.mahasiswa_id || ''}`)
+    } else if (notif.type === 'bimbingan_baru') {
+      router.push('/dosen/bimbingan')
     }
   }
 
@@ -247,7 +490,7 @@ export default function NotificationBell() {
           </div>
 
           {/* List items */}
-          <div className="max-h-[350px] overflow-y-auto divide-y divide-gray-100">
+          <div className="max-h-[380px] overflow-y-auto divide-y divide-gray-100">
             {notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 px-4 text-center space-y-2">
                 <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400">
@@ -261,32 +504,105 @@ export default function NotificationBell() {
                 <div
                   key={notif.id}
                   onClick={() => handleItemClick(notif)}
-                  className={`flex gap-3 px-5 py-4 cursor-pointer transition-colors relative ${
+                  className={`flex flex-col gap-2 px-5 py-4 cursor-pointer transition-colors relative ${
                     notif.is_read ? 'bg-white hover:bg-gray-50/70' : 'bg-blue-50/15 hover:bg-blue-50/30'
                   }`}
                 >
-                  {/* Left Column: Icon depending on notification category */}
-                  <div className="mt-0.5 shrink-0">
-                    <div className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center border border-gray-100 shadow-sm">
-                      {getNotificationIcon(notif.type)}
+                  <div className="flex gap-3">
+                    {/* Left Column: Icon depending on notification category */}
+                    <div className="mt-0.5 shrink-0">
+                      <div className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center border border-gray-100 shadow-sm">
+                        {getNotificationIcon(notif.type)}
+                      </div>
                     </div>
+
+                    {/* Middle Column: Message text & Relative Time */}
+                    <div className="flex-1 space-y-1">
+                      <p className={`text-xs leading-relaxed ${notif.is_read ? 'text-gray-600 font-semibold' : 'text-gray-900 font-bold'}`}>
+                        {notif.message}
+                      </p>
+                      <div className="flex items-center gap-1.5 text-[9px] text-gray-400 font-semibold">
+                        <Clock size={10} />
+                        <span>{getRelativeTime(notif.created_at)}</span>
+                      </div>
+                    </div>
+
+                    {/* Right Column: Unread status indicator (blue dot) */}
+                    {!notif.is_read && (
+                      <div className="shrink-0 flex items-center justify-center self-center pl-1">
+                        <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Middle Column: Message text & Relative Time */}
-                  <div className="flex-1 space-y-1">
-                    <p className={`text-xs leading-relaxed ${notif.is_read ? 'text-gray-600 font-semibold' : 'text-gray-900 font-bold'}`}>
-                      {notif.message}
-                    </p>
-                    <div className="flex items-center gap-1.5 text-[9px] text-gray-400 font-semibold">
-                      <Clock size={10} />
-                      <span>{getRelativeTime(notif.created_at)}</span>
-                    </div>
-                  </div>
-
-                  {/* Right Column: Unread status indicator (blue dot) */}
+                  {/* Inline Action Buttons */}
                   {!notif.is_read && (
-                    <div className="shrink-0 flex items-center justify-center self-center pl-1">
-                      <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
+                    <div className="pl-11" onClick={(e) => e.stopPropagation()}>
+                      {notif.type === 'pembimbing_request' && (
+                        <div className="flex gap-2 pt-1.5">
+                          <button
+                            onClick={() => handleAcceptPembimbing(notif)}
+                            disabled={processingNotifId === notif.id}
+                            className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-extrabold rounded-lg shadow-sm cursor-pointer disabled:opacity-50"
+                          >
+                            ✅ Terima
+                          </button>
+                          <button
+                            onClick={() => handleRejectPembimbing(notif)}
+                            disabled={processingNotifId === notif.id}
+                            className="px-3 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 text-[10px] font-extrabold rounded-lg border border-rose-100 cursor-pointer disabled:opacity-50"
+                          >
+                            ❌ Tolak
+                          </button>
+                        </div>
+                      )}
+
+                      {notif.type === 'bimbingan_baru' && (
+                        <div className="flex gap-2 pt-1.5">
+                          <button
+                            onClick={() => handleApproveBimbingan(notif)}
+                            disabled={processingNotifId === notif.id}
+                            className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-extrabold rounded-lg shadow-sm cursor-pointer disabled:opacity-50"
+                          >
+                            ✅ Setujui
+                          </button>
+                          <button
+                            onClick={() => handleRejectBimbingan(notif)}
+                            disabled={processingNotifId === notif.id}
+                            className="px-3 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 text-[10px] font-extrabold rounded-lg border border-rose-100 cursor-pointer disabled:opacity-50"
+                          >
+                            ❌ Tolak
+                          </button>
+                        </div>
+                      )}
+
+                      {notif.type === 'jurnal_baru' && (
+                        <div className="pt-1.5">
+                          <button
+                            onClick={() => {
+                              router.push(`/dosen/monitor/${notif.metadata?.mahasiswa_id || ''}`)
+                              handleItemClick(notif)
+                            }}
+                            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-extrabold rounded-lg shadow-sm flex items-center gap-1 cursor-pointer"
+                          >
+                            👁 Lihat Jurnal
+                          </button>
+                        </div>
+                      )}
+
+                      {notif.type === 'berkas_baru' && (
+                        <div className="pt-1.5">
+                          <button
+                            onClick={() => {
+                              router.push(`/dosen/berkas/${notif.metadata?.mahasiswa_id || ''}`)
+                              handleItemClick(notif)
+                            }}
+                            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-extrabold rounded-lg shadow-sm flex items-center gap-1 cursor-pointer"
+                          >
+                            👁 Lihat Berkas
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
