@@ -20,7 +20,7 @@ import {
   FileText
 } from 'lucide-react'
 
-import Header from '@/components/Header'
+import NotificationBell from '@/components/NotificationBell'
 import AppTour from '@/components/AppTour'
 import PeriodeSwitcher from '@/components/PeriodeSwitcher'
 
@@ -202,7 +202,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             <PeriodeSwitcher />
 
-            <Header />
+            <NotificationBell />
 
             <div className="w-10 h-10 rounded-full overflow-hidden bg-white border border-gray-200 shadow-md flex items-center justify-center">
               {profile?.avatar_url ? (
