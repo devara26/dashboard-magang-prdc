@@ -36,11 +36,12 @@ export default function NotificationBell() {
 
   // Fetch notifications and subscribe to real-time updates
   useEffect(() => {
+    let isMounted = true
     let channel: any
 
     async function initNotifications() {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user || !isMounted) return
 
       // 1. Fetch top 10 latest notifications
       const { data, error } = await supabase
@@ -49,6 +50,8 @@ export default function NotificationBell() {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(10)
+
+      if (!isMounted) return
 
       if (error) {
         console.error('Error fetching notifications:', error)
@@ -63,11 +66,25 @@ export default function NotificationBell() {
         .eq('user_id', user.id)
         .eq('is_read', false)
 
+      if (!isMounted) return
+
       if (!countError) {
         setUnreadCount(count || 0)
       }
 
-      // 3. Realtime Subscription
+      // Remove any existing duplicate channel reference before subscribing
+      try {
+        const existingChannel = supabase.getChannels().find(c => c.topic === 'realtime_notifications')
+        if (existingChannel) {
+          await supabase.removeChannel(existingChannel)
+        }
+      } catch (e) {
+        console.error('Error removing existing channel:', e)
+      }
+
+      if (!isMounted) return
+
+      // 3. Realtime Subscription (ensure .on() is chained BEFORE .subscribe())
       channel = supabase.channel('realtime_notifications')
         .on(
           'postgres_changes',
@@ -78,6 +95,7 @@ export default function NotificationBell() {
             filter: `user_id=eq.${user.id}`
           },
           (payload: any) => {
+            if (!isMounted) return
             const newNotif = payload.new
             
             // Add new notification to top of local state
@@ -98,8 +116,15 @@ export default function NotificationBell() {
     initNotifications()
 
     return () => {
+      isMounted = false
       if (channel) {
         supabase.removeChannel(channel)
+      } else {
+        // Fallback: search and remove by name synchronously during cleanup
+        const existingChannel = supabase.getChannels().find(c => c.topic === 'realtime_notifications')
+        if (existingChannel) {
+          supabase.removeChannel(existingChannel)
+        }
       }
     }
   }, [])
