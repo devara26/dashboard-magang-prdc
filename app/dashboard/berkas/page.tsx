@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { 
   FileText, 
@@ -50,6 +50,9 @@ export default function BerkasSayaPage() {
   const [uploadStatus, setUploadStatus] = useState<Record<string, 'idle' | 'uploading' | 'success' | 'error'>>({})
   const [uploadErrorMsg, setUploadErrorMsg] = useState<Record<string, string>>({})
   const [showUploaderId, setShowUploaderId] = useState<string | null>(null)
+  const [replacingId, setReplacingId] = useState<string | null>(null)
+  const [replacingBerkas, setReplacingBerkas] = useState<BerkasMahasiswa | null>(null)
+  const replaceInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     fetchInitialData()
@@ -193,6 +196,118 @@ export default function BerkasSayaPage() {
     setUploadErrorMsg(prev => ({ ...prev, [jenisBerkasId]: '' }))
   }
 
+  const getStorageInfoFromUrl = (url: string) => {
+    try {
+      const parsedUrl = new URL(url)
+      const pathname = parsedUrl.pathname
+      const searchStr = '/storage/v1/object/public/'
+      const index = pathname.indexOf(searchStr)
+      if (index !== -1) {
+        const remaining = pathname.substring(index + searchStr.length)
+        const parts = remaining.split('/')
+        const bucket = parts[0]
+        const path = parts.slice(1).join('/')
+        return { bucket, path }
+      }
+    } catch (e) {
+      console.error('Failed to parse URL:', e)
+    }
+    return { bucket: 'berkas', path: '' }
+  }
+
+  const handleReplaceClick = (berkas: BerkasMahasiswa) => {
+    setReplacingBerkas(berkas)
+    if (replaceInputRef.current) {
+      replaceInputRef.current.click()
+    }
+  }
+
+  const handleReplaceFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !replacingBerkas || !userId) return
+
+    const berkasId = replacingBerkas.id
+    const jenisBerkasId = replacingBerkas.jenis_berkas_id
+    const oldFileUrl = replacingBerkas.file_url
+
+    // Validate size (max 5MB)
+    const maxSizeMB = 5
+    if (file.size / (1024 * 1024) > maxSizeMB) {
+      toast.error(`Ukuran file melebihi batas maksimum (${maxSizeMB} MB)`)
+      if (replaceInputRef.current) replaceInputRef.current.value = ''
+      setReplacingBerkas(null)
+      return
+    }
+
+    setReplacingId(berkasId)
+
+    try {
+      const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.]/g, '_')
+      const filePath = `${userId}/${jenisBerkasId}/${sanitizedFileName}`
+
+      // 1. Upload to Supabase Storage bucket 'berkas-magang'
+      const { error: uploadError } = await supabase.storage
+        .from('berkas-magang')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        })
+
+      if (uploadError) throw uploadError
+
+      // 2. Get Public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('berkas-magang')
+        .getPublicUrl(filePath)
+
+      // 3. Delete old file from storage
+      if (oldFileUrl) {
+        const { bucket, path } = getStorageInfoFromUrl(oldFileUrl)
+        if (path) {
+          await supabase.storage.from(bucket).remove([path])
+        }
+      }
+
+      // 4. Update berkas table
+      const { error: dbError } = await supabase
+        .from('berkas')
+        .update({
+          file_url: publicUrl,
+          nama_file: file.name,
+          tipe_file: file.type,
+          ukuran_bytes: file.size,
+          status: 'Menunggu Review',
+          catatan_dosen: null,
+          tanggal_upload: new Date().toISOString()
+        })
+        .eq('id', berkasId)
+
+      if (dbError) throw dbError
+
+      toast.success('Berkas berhasil diganti, menunggu verifikasi ulang dari dosen')
+
+      // 5. Refresh data berkas mahasiswa
+      const { data: uploadData, error: refreshError } = await supabase
+        .from('berkas')
+        .select('*')
+        .eq('mahasiswa_id', userId)
+        .eq('periode_id', activePeriodeId)
+      
+      if (refreshError) throw refreshError
+      setBerkasUploaded(uploadData || [])
+
+    } catch (error: any) {
+      console.error('Error replacing file:', JSON.stringify(error))
+      toast.error('Gagal mengganti berkas: ' + (error.message || 'Terjadi kesalahan'))
+    } finally {
+      setReplacingId(null)
+      setReplacingBerkas(null)
+      if (replaceInputRef.current) {
+        replaceInputRef.current.value = ''
+      }
+    }
+  }
+
   // Calculate stats
   // "Diverifikasi" counts as complete
   const verifiedCount = berkasUploaded.filter(b => b.status === 'Diverifikasi').length
@@ -317,14 +432,26 @@ export default function BerkasSayaPage() {
                       >
                         Lihat Berkas
                       </a>
-                      {userFile.status === 'Ditolak' && (
-                        <button
-                          onClick={() => setShowUploaderId(jenis.id)}
-                          className="flex-1 md:flex-initial px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm"
-                        >
-                          <RefreshCw size={14} /> Upload Ulang
-                        </button>
-                      )}
+                      {(() => {
+                        const isRejected = userFile.status === 'Ditolak'
+                        const isReplacing = replacingId === userFile.id
+                        const buttonLabel = isRejected ? 'Upload Ulang' : 'Ganti File'
+                        
+                        const buttonClass = isRejected
+                          ? 'flex-1 md:flex-initial px-5 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed'
+                          : 'flex-1 md:flex-initial px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-750 text-gray-700 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 border border-gray-200 disabled:opacity-60 disabled:cursor-not-allowed'
+
+                        return (
+                          <button
+                            onClick={() => handleReplaceClick(userFile)}
+                            disabled={isReplacing || (uploadingId !== null)}
+                            className={buttonClass}
+                          >
+                            <RefreshCw size={14} className={isReplacing ? 'animate-spin' : ''} />
+                            {isReplacing ? 'Mengunggah...' : buttonLabel}
+                          </button>
+                        )
+                      })()}
                     </div>
                   </div>
                 ) : (
@@ -359,6 +486,13 @@ export default function BerkasSayaPage() {
           )
         })}
       </div>
+      <input
+        type="file"
+        ref={replaceInputRef}
+        className="hidden"
+        accept=".pdf,.jpg,.jpeg,.png,.docx,.xlsx,.xls"
+        onChange={handleReplaceFileChange}
+      />
     </div>
   )
 }
